@@ -1,0 +1,9 @@
+{
+  "name": "gutcheck",
+  "version": "0.2.0",
+  "description": "Cheap typed judgments (Jev) and hooks that keep text out of Claude's context and catch risky Bash before it runs.",
+  "author": {"name": "dreamfactory-gg"},
+  "homepage": "https://github.com/dreamfactory-gg/gutcheck",
+  "repository": "https://github.com/dreamfactory-gg/gutcheck",
+  "license": "MIT"
+}

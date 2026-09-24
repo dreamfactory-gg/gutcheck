@@ -1,0 +1,16 @@
+{
+  "name": "gutcheck",
+  "owner": {
+    "name": "dreamfactory-gg"
+  },
+  "metadata": {
+    "description": "gutcheck: longer, cheaper Claude Code sessions."
+  },
+  "plugins": [
+    {
+      "name": "gutcheck",
+      "source": "./gutcheck",
+      "description": "Longer, cheaper Claude Code sessions: hooks, skills and a CLI that keep noise out of context and catch risky commands."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+# gitleaks config: the default rules, minus the made-up keys the secret scanner's own tests must contain.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "made-up keys in the secret scanner's tests"
+paths = ['''tests/test_secretscan\.py''']

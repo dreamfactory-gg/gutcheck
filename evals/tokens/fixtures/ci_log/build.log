@@ -1,0 +1,2345 @@
+[00:00.061] runner: starting job 'unit-tests' on worker ci-worker-07 (image py311-slim)
+[00:00.090] pip: Collecting pkg238==5.29.6
+[00:00.167] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:00.246] pip: Collecting pkg181==0.12.7
+[00:00.271] pip: Collecting pkg367==3.17.6
+[00:00.318] pip: Collecting pkg266==7.23.8
+[00:00.357] pip: Collecting pkg148==9.1.8
+[00:00.414] pip: Collecting pkg089==3.30.0
+[00:00.428] pip: Collecting pkg251==7.29.3
+[00:00.499] pip: Collecting pkg133==0.14.5
+[00:00.561] pip: Collecting pkg097==5.25.4
+[00:00.583] pip: Collecting pkg237==6.22.1
+[00:00.646] pip: Collecting pkg280==8.7.3
+[00:00.706] pip: Collecting pkg185==4.18.3
+[00:00.764] pip: Collecting pkg218==4.13.5
+[00:00.844] pip: Collecting pkg144==1.21.0
+[00:00.862] pip: Collecting pkg326==4.5.5
+[00:00.864] pip: Collecting pkg371==2.14.4
+[00:00.889] pip: Collecting pkg229==8.25.0
+[00:00.904] pip: Collecting pkg184==3.25.6
+[00:00.911] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:00.951] pip: Collecting pkg315==4.16.0
+[00:00.975] pip: Collecting pkg398==1.0.0
+[00:01.000] pip: Collecting pkg335==4.20.0
+[00:01.048] pip: Collecting pkg363==0.21.0
+[00:01.072] pip: Collecting pkg226==8.7.4
+[00:01.073] pip: Collecting pkg201==9.15.5
+[00:01.083] pip: Collecting pkg034==2.29.3
+[00:01.132] pip: Collecting pkg183==1.6.8
+[00:01.212] pip: Collecting pkg008==3.9.4
+[00:01.241] pip: Collecting pkg281==8.20.7
+[00:01.298] pip: Collecting pkg201==5.27.4
+[00:01.357] pip: Collecting pkg019==8.30.0
+[00:01.414] pip: Collecting pkg311==9.3.5
+[00:01.473] pip: Collecting pkg228==3.2.7
+[00:01.512] pip: Collecting pkg161==9.5.8
+[00:01.546] pip: Collecting pkg061==1.17.8
+[00:01.618] pip: Collecting pkg119==5.30.7
+[00:01.672] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:01.747] pip: Collecting pkg358==6.14.0
+[00:01.753] pip: Collecting pkg040==5.9.8
+[00:01.772] pip: Collecting pkg316==4.11.0
+[00:01.847] pip: Collecting pkg056==1.27.9
+[00:01.916] pip: Collecting pkg055==6.19.6
+[00:01.925] pip: Collecting pkg399==5.22.2
+[00:01.950] pip: Collecting pkg332==3.5.4
+[00:01.971] pip: Collecting pkg040==6.24.2
+[00:02.008] pip: Collecting pkg106==9.17.1
+[00:02.018] pip: Collecting pkg254==7.21.6
+[00:02.091] pip: Collecting pkg030==6.22.4
+[00:02.113] pip: Collecting pkg344==7.28.1
+[00:02.135] pip: Collecting pkg364==1.12.6
+[00:02.156] pip: Collecting pkg148==9.5.1
+[00:02.234] pip: Collecting pkg058==3.27.4
+[00:02.308] pip: Collecting pkg373==9.27.3
+[00:02.376] pip: Collecting pkg030==7.14.4
+[00:02.391] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:02.394] pip: Collecting pkg372==5.24.2
+[00:02.443] pip: Collecting pkg213==9.13.8
+[00:02.502] pip: Collecting pkg170==6.15.6
+[00:02.519] pip: Collecting pkg250==7.13.7
+[00:02.582] pip: Collecting pkg142==2.18.4
+[00:02.607] pip: Collecting pkg165==5.10.7
+[00:02.626] pip: Collecting pkg058==4.30.4
+[00:02.702] pip: Collecting pkg185==4.17.8
+[00:02.776] pip: Collecting pkg172==8.8.6
+[00:02.832] pip: Collecting pkg016==7.29.7
+[00:02.855] pip: Collecting pkg009==0.5.6
+[00:02.887] pip: Collecting pkg305==6.0.1
+[00:02.914] pip: Collecting pkg226==3.9.1
+[00:02.923] pip: Collecting pkg153==6.26.7
+[00:02.938] pip: Collecting pkg290==5.10.9
+[00:02.961] pip: Collecting pkg108==7.1.1
+[00:02.966] pip: Collecting pkg213==0.14.9
+[00:03.020] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:03.091] pip: Collecting pkg350==8.27.7
+[00:03.128] pip: Collecting pkg002==0.7.0
+[00:03.148] pip: Collecting pkg127==7.24.6
+[00:03.208] pip: Collecting pkg297==6.21.7
+[00:03.226] pip: Collecting pkg152==0.11.6
+[00:03.273] pip: Collecting pkg101==9.21.4
+[00:03.329] pip: Collecting pkg196==8.21.3
+[00:03.371] pip: Collecting pkg073==2.23.3
+[00:03.393] pip: Collecting pkg060==2.4.7
+[00:03.442] pip: Collecting pkg040==0.16.6
+[00:03.517] pip: Collecting pkg288==8.6.3
+[00:03.574] pip: Collecting pkg191==3.23.6
+[00:03.627] pip: Collecting pkg389==5.28.4
+[00:03.655] pip: Collecting pkg326==7.14.5
+[00:03.684] pip: Collecting pkg290==1.14.7
+[00:03.711] pip: Collecting pkg022==6.21.6
+[00:03.761] pip: Collecting pkg376==6.13.2
+[00:03.837] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:03.899] pip: Collecting pkg378==3.26.6
+[00:03.917] pip: Collecting pkg151==6.17.7
+[00:03.995] pip: Collecting pkg373==9.11.2
+[00:04.002] pip: Collecting pkg331==8.13.6
+[00:04.054] pip: Collecting pkg244==3.2.4
+[00:04.127] pip: Collecting pkg065==0.18.6
+[00:04.185] pip: Collecting pkg224==5.8.2
+[00:04.216] pip: Collecting pkg146==7.4.9
+[00:04.265] pip: Collecting pkg324==8.18.9
+[00:04.328] pip: Collecting pkg144==2.13.6
+[00:04.396] pip: Collecting pkg309==1.26.9
+[00:04.421] pip: Collecting pkg076==4.1.2
+[00:04.473] pip: Collecting pkg177==8.9.0
+[00:04.527] pip: Collecting pkg256==2.28.1
+[00:04.550] pip: Collecting pkg096==6.23.8
+[00:04.619] pip: Collecting pkg233==9.2.4
+[00:04.681] pip: Collecting pkg075==3.6.1
+[00:04.756] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:04.773] pip: Collecting pkg047==5.0.3
+[00:04.830] pip: Collecting pkg388==8.6.8
+[00:04.899] pip: Collecting pkg145==5.12.5
+[00:04.975] pip: Collecting pkg136==5.26.3
+[00:05.044] pip: Collecting pkg031==9.1.0
+[00:05.082] pip: Collecting pkg039==8.25.0
+[00:05.143] pip: Collecting pkg256==1.26.6
+[00:05.148] pip: Collecting pkg273==4.16.4
+[00:05.213] pip: Collecting pkg263==1.4.4
+[00:05.270] pip: Collecting pkg331==8.6.5
+[00:05.277] pip: Collecting pkg301==3.14.6
+[00:05.312] pip: Collecting pkg052==8.26.0
+[00:05.365] pip: Collecting pkg376==9.2.3
+[00:05.421] pip: Collecting pkg309==4.15.9
+[00:05.424] pip: Collecting pkg130==3.9.8
+[00:05.429] pip: Collecting pkg165==4.16.9
+[00:05.504] pip: Collecting pkg134==9.30.5
+[00:05.564] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:05.596] pip: Collecting pkg360==1.19.7
+[00:05.616] pip: Collecting pkg349==8.27.8
+[00:05.660] pip: Collecting pkg230==8.29.6
+[00:05.678] pip: Collecting pkg055==9.28.4
+[00:05.713] pip: Collecting pkg006==5.21.6
+[00:05.732] pip: Collecting pkg265==7.24.7
+[00:05.756] pip: Collecting pkg122==9.8.7
+[00:05.803] pip: Collecting pkg035==5.15.8
+[00:05.813] pip: Collecting pkg106==3.22.2
+[00:05.844] pip: Collecting pkg281==3.20.1
+[00:05.879] pip: Collecting pkg087==3.6.8
+[00:05.938] pip: Collecting pkg300==8.6.9
+[00:05.976] pip: Collecting pkg153==0.4.2
+[00:06.031] pip: Collecting pkg138==7.9.0
+[00:06.077] pip: Collecting pkg078==0.6.3
+[00:06.117] pip: Collecting pkg266==3.13.3
+[00:06.140] pip: Collecting pkg162==1.15.5
+[00:06.175] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:06.230] pip: Collecting pkg098==4.9.3
+[00:06.251] pip: Collecting pkg354==5.20.4
+[00:06.277] pip: Collecting pkg361==3.13.9
+[00:06.285] pip: Collecting pkg104==0.13.4
+[00:06.332] pip: Collecting pkg177==0.4.5
+[00:06.397] pip: Collecting pkg291==1.21.7
+[00:06.453] pip: Collecting pkg345==4.16.5
+[00:06.454] pip: Collecting pkg115==9.7.1
+[00:06.497] pip: Collecting pkg137==7.14.7
+[00:06.566] pip: Collecting pkg240==8.7.0
+[00:06.614] pip: Collecting pkg345==1.24.2
+[00:06.672] pip: Collecting pkg069==9.15.4
+[00:06.740] pip: Collecting pkg240==7.10.8
+[00:06.809] pip: Collecting pkg073==1.0.7
+[00:06.831] pip: Collecting pkg098==5.9.3
+[00:06.838] pip: Collecting pkg224==3.1.0
+[00:06.848] pip: Collecting pkg130==2.3.1
+[00:06.906] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:06.915] pip: Collecting pkg138==7.11.4
+[00:06.953] pip: Collecting pkg326==7.25.9
+[00:07.004] pip: Collecting pkg022==6.5.7
+[00:07.067] pip: Collecting pkg295==8.10.9
+[00:07.142] pip: Collecting pkg197==5.0.6
+[00:07.149] pip: Collecting pkg251==0.8.0
+[00:07.155] pip: Collecting pkg093==2.22.8
+[00:07.162] pip: Collecting pkg090==9.4.9
+[00:07.207] pip: Collecting pkg151==9.26.6
+[00:07.270] pip: Collecting pkg063==6.0.9
+[00:07.324] pip: Collecting pkg345==9.0.9
+[00:07.327] pip: Collecting pkg233==5.9.7
+[00:07.407] pip: Collecting pkg197==8.26.2
+[00:07.483] pip: Collecting pkg120==4.3.0
+[00:07.485] pip: Collecting pkg063==6.7.7
+[00:07.530] pip: Collecting pkg059==1.5.6
+[00:07.562] pip: Collecting pkg143==9.19.6
+[00:07.569] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:07.588] pip: Collecting pkg344==2.6.2
+[00:07.590] pip: Collecting pkg382==3.12.3
+[00:07.641] pip: Collecting pkg199==3.1.0
+[00:07.680] pip: Collecting pkg397==7.13.8
+[00:07.743] pip: Collecting pkg054==6.21.8
+[00:07.801] pip: Collecting pkg221==2.9.5
+[00:07.862] pip: Collecting pkg314==0.17.1
+[00:07.925] pip: Collecting pkg312==7.13.6
+[00:07.999] pip: Collecting pkg032==4.29.7
+[00:08.063] pip: Collecting pkg220==9.16.3
+[00:08.084] pip: Collecting pkg395==6.0.5
+[00:08.131] pip: Collecting pkg260==5.4.0
+[00:08.140] pip: Collecting pkg341==1.11.7
+[00:08.198] pip: Collecting pkg318==6.11.0
+[00:08.251] pip: Collecting pkg292==0.21.3
+[00:08.314] pip: Collecting pkg082==8.8.1
+[00:08.385] pip: Collecting pkg077==1.13.5
+[00:08.444] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:08.507] pip: Collecting pkg160==4.4.7
+[00:08.561] pip: Collecting pkg324==1.6.9
+[00:08.604] pip: Collecting pkg038==3.29.3
+[00:08.657] pip: Collecting pkg164==4.27.3
+[00:08.703] pip: Collecting pkg308==0.19.6
+[00:08.721] pip: Collecting pkg132==0.24.1
+[00:08.770] pip: Collecting pkg118==4.21.8
+[00:08.798] pip: Collecting pkg101==1.17.3
+[00:08.844] pip: Collecting pkg117==3.22.9
+[00:08.884] pip: Collecting pkg134==2.9.7
+[00:08.957] pip: Collecting pkg023==7.27.4
+[00:08.998] pip: Collecting pkg226==5.21.6
+[00:09.015] pip: Collecting pkg130==8.17.4
+[00:09.029] pip: Collecting pkg311==9.8.4
+[00:09.077] pip: Collecting pkg214==0.3.0
+[00:09.129] pip: Collecting pkg131==6.28.0
+[00:09.163] pip: Collecting pkg200==5.9.0
+[00:09.208] pip: WARNING: slow mirror, retrying download (attempt 1/3) ... ok
+[00:09.220] pip: Collecting pkg171==7.8.3
+[00:09.221] pip: Collecting pkg287==3.9.4
+[00:09.280] pip: Collecting pkg283==3.10.5
+[00:09.286] pip: Collecting pkg305==5.18.2
+[00:09.359] pip: Collecting pkg368==7.23.5
+[00:09.420] pip: Collecting pkg274==5.29.0
+[00:09.488] pip: Collecting pkg381==6.30.9
+[00:09.534] pip: Collecting pkg391==1.10.3
+[00:09.554] pip: Collecting pkg299==7.16.8
+[00:09.557] pip: Collecting pkg317==8.26.9
+[00:09.619] pip: Collecting pkg116==0.17.1
+[00:09.669] pip: Collecting pkg331==5.16.3
+[00:09.672] pip: Collecting pkg328==3.0.3
+[00:09.699] pip: Collecting pkg278==7.6.1
+[00:09.768] pip: Collecting pkg004==8.9.0
+[00:09.795] pip: Successfully installed 220 packages
+[00:09.873] pytest: ============================= test session starts ==============================
+[00:09.916] pytest: collected 1242 items
+[00:09.966] pytest: tests/test_invoice.py::test_retries_unicode_names_0 PASSED
+[00:10.035] app: DEBUG request id=e6de425028 status=200 ms=1
+[00:10.070] pytest: tests/test_shipping.py::test_rejects_empty_input_1 PASSED
+[00:10.100] pytest:   log: retry budget 3, nothing retried so far
+[00:10.120] app: DEBUG request id=44e3644633 status=200 ms=77
+[00:10.178] pytest: tests/test_auth.py::test_handles_timezone_offsets_2 PASSED
+[00:10.241] pytest: tests/test_catalog.py::test_handles_zero_quantity_3 PASSED
+[00:10.308] pytest: tests/test_search.py::test_caches_zero_quantity_4 PASSED
+[00:10.322] pytest:   log: retry budget 3, nothing retried so far
+[00:10.371] app: DEBUG request id=7d12f59afa status=200 ms=29
+[00:10.398] pytest: tests/test_cart.py::test_parses_long_descriptions_5 PASSED
+[00:10.469] app: DEBUG request id=8353e324ba status=200 ms=76
+[00:10.515] pytest: tests/test_ledger.py::test_formats_duplicate_ids_6 PASSED
+[00:10.539] app: DEBUG request id=97f63bbff3 status=200 ms=18
+[00:10.552] pytest: tests/test_notify.py::test_splits_stale_cache_7 PASSED
+[00:10.564] pytest: tests/test_export.py::test_retries_missing_fields_8 PASSED
+[00:10.629] app: DEBUG request id=26dd591859 status=200 ms=68
+[00:10.685] pytest: tests/test_report.py::test_handles_negative_totals_9 PASSED
+[00:10.709] app: DEBUG request id=1075571865 status=200 ms=31
+[00:10.778] pytest: tests/test_invoice.py::test_parses_stale_cache_10 PASSED
+[00:10.790] app: DEBUG request id=cd6d6a3074 status=200 ms=59
+[00:10.813] pytest: tests/test_shipping.py::test_accepts_long_descriptions_11 PASSED
+[00:10.826] app: DEBUG request id=66eb15a0ae status=200 ms=28
+[00:10.885] pytest: tests/test_auth.py::test_merges_duplicate_ids_12 PASSED
+[00:10.888] pytest: tests/test_catalog.py::test_splits_unicode_names_13 PASSED
+[00:10.952] app: DEBUG request id=41c400989c status=200 ms=46
+[00:11.006] pytest: tests/test_search.py::test_merges_missing_fields_14 PASSED
+[00:11.071] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:11.098] pytest: tests/test_cart.py::test_rejects_negative_totals_15 PASSED
+[00:11.149] app: DEBUG request id=51c215d407 status=200 ms=48
+[00:11.160] pytest: tests/test_ledger.py::test_accepts_empty_input_16 PASSED
+[00:11.171] pytest: tests/test_notify.py::test_rejects_unicode_names_17 PASSED
+[00:11.191] app: DEBUG request id=418b242f2c status=200 ms=21
+[00:11.271] pytest: tests/test_export.py::test_formats_large_batch_18 PASSED
+[00:11.273] app: DEBUG request id=78403478a5 status=200 ms=31
+[00:11.312] pytest: tests/test_report.py::test_sorts_timezone_offsets_19 PASSED
+[00:11.334] app: DEBUG request id=8c3d9b36b6 status=200 ms=36
+[00:11.336] pytest: tests/test_invoice.py::test_caches_zero_quantity_20 PASSED
+[00:11.343] app: DEBUG request id=d19a2dea54 status=200 ms=46
+[00:11.411] pytest: tests/test_shipping.py::test_formats_negative_totals_21 PASSED
+[00:11.449] app: DEBUG request id=9859ceed54 status=200 ms=10
+[00:11.453] pytest: tests/test_auth.py::test_sorts_empty_input_22 PASSED
+[00:11.462] pytest: tests/test_catalog.py::test_formats_stale_cache_23 PASSED
+[00:11.517] app: DEBUG request id=add34aac0c status=200 ms=8
+[00:11.569] pytest: tests/test_search.py::test_retries_large_batch_24 PASSED
+[00:11.615] app: DEBUG request id=2534c07bf1 status=200 ms=38
+[00:11.627] pytest: tests/test_cart.py::test_rejects_large_batch_25 PASSED
+[00:11.660] app: DEBUG request id=d4c502c478 status=200 ms=75
+[00:11.662] pytest: tests/test_ledger.py::test_accepts_large_batch_26 PASSED
+[00:11.728] pytest: tests/test_notify.py::test_accepts_unicode_names_27 PASSED
+[00:11.776] app: DEBUG request id=191a22b3f0 status=200 ms=67
+[00:11.846] pytest: tests/test_export.py::test_formats_zero_quantity_28 PASSED
+[00:11.906] pytest: tests/test_report.py::test_retries_unicode_names_29 PASSED
+[00:11.946] app: DEBUG request id=1fa7483afc status=200 ms=12
+[00:11.990] pytest: tests/test_invoice.py::test_caches_long_descriptions_30 PASSED
+[00:12.031] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:12.054] pytest: tests/test_shipping.py::test_accepts_large_batch_31 PASSED
+[00:12.132] app: DEBUG request id=6d5d124af0 status=200 ms=60
+[00:12.178] pytest: tests/test_auth.py::test_accepts_empty_input_32 PASSED
+[00:12.256] app: DEBUG request id=e157c4b2f4 status=200 ms=69
+[00:12.298] pytest: tests/test_catalog.py::test_retries_stale_cache_33 PASSED
+[00:12.304] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:12.369] app: DEBUG request id=0e2a5372ac status=200 ms=14
+[00:12.380] pytest: tests/test_search.py::test_caches_stale_cache_34 PASSED
+[00:12.432] app: DEBUG request id=8bd994868d status=200 ms=75
+[00:12.496] pytest: tests/test_cart.py::test_retries_stale_cache_35 PASSED
+[00:12.563] pytest: tests/test_ledger.py::test_splits_zero_quantity_36 PASSED
+[00:12.571] app: DEBUG request id=411f9f4ea2 status=200 ms=29
+[00:12.584] pytest: tests/test_notify.py::test_sorts_unicode_names_37 PASSED
+[00:12.606] app: DEBUG request id=40e7a11efb status=200 ms=83
+[00:12.632] pytest: tests/test_export.py::test_sorts_large_batch_38 PASSED
+[00:12.647] pytest: tests/test_report.py::test_formats_unicode_names_39 PASSED
+[00:12.697] app: DEBUG request id=3c4afd788d status=200 ms=18
+[00:12.698] pytest: tests/test_invoice.py::test_parses_unicode_names_40 PASSED
+[00:12.708] pytest: tests/test_shipping.py::test_rejects_empty_input_41 PASSED
+[00:12.742] pytest:   log: retry budget 3, nothing retried so far
+[00:12.789] app: DEBUG request id=b4d04740b3 status=200 ms=51
+[00:12.859] pytest: tests/test_auth.py::test_splits_long_descriptions_42 PASSED
+[00:12.885] app: DEBUG request id=634b7d252f status=200 ms=71
+[00:12.891] pytest: tests/test_catalog.py::test_formats_unicode_names_43 PASSED
+[00:12.933] app: DEBUG request id=1b2620221f status=200 ms=48
+[00:12.991] pytest: tests/test_search.py::test_retries_large_batch_44 PASSED
+[00:13.035] pytest: tests/test_cart.py::test_handles_duplicate_ids_45 PASSED
+[00:13.096] pytest: tests/test_ledger.py::test_parses_zero_quantity_46 PASSED
+[00:13.170] app: DEBUG request id=8bcd1bf9d2 status=200 ms=81
+[00:13.235] pytest: tests/test_notify.py::test_formats_missing_fields_47 PASSED
+[00:13.293] app: DEBUG request id=9dd77fbc7e status=200 ms=62
+[00:13.295] pytest: tests/test_export.py::test_accepts_duplicate_ids_48 PASSED
+[00:13.374] app: DEBUG request id=c44a3d48f7 status=200 ms=89
+[00:13.411] pytest: tests/test_report.py::test_sorts_missing_fields_49 PASSED
+[00:13.419] pytest: tests/test_invoice.py::test_formats_large_batch_50 PASSED
+[00:13.496] pytest: tests/test_shipping.py::test_splits_timezone_offsets_51 PASSED
+[00:13.562] app: DEBUG request id=8f691af92a status=200 ms=86
+[00:13.567] pytest: tests/test_auth.py::test_caches_missing_fields_52 PASSED
+[00:13.585] app: DEBUG request id=10513f4de8 status=200 ms=73
+[00:13.654] pytest: tests/test_catalog.py::test_rejects_long_descriptions_53 PASSED
+[00:13.691] app: DEBUG request id=b4f10ff47b status=200 ms=90
+[00:13.748] pytest: tests/test_search.py::test_accepts_timezone_offsets_54 PASSED
+[00:13.817] app: DEBUG request id=5c00442745 status=200 ms=84
+[00:13.859] pytest: tests/test_cart.py::test_sorts_stale_cache_55 PASSED
+[00:13.862] app: DEBUG request id=c0e6d267d3 status=200 ms=79
+[00:13.865] pytest: tests/test_ledger.py::test_sorts_duplicate_ids_56 PASSED
+[00:13.943] app: DEBUG request id=33b5b3f711 status=200 ms=57
+[00:13.970] pytest: tests/test_notify.py::test_sorts_stale_cache_57 PASSED
+[00:13.981] pytest: tests/test_export.py::test_accepts_long_descriptions_58 PASSED
+[00:14.004] pytest: tests/test_report.py::test_caches_negative_totals_59 PASSED
+[00:14.026] app: DEBUG request id=35edc44938 status=200 ms=67
+[00:14.106] pytest: tests/test_invoice.py::test_merges_negative_totals_60 PASSED
+[00:14.148] app: DEBUG request id=0eed19674e status=200 ms=56
+[00:14.204] pytest: tests/test_shipping.py::test_accepts_duplicate_ids_61 PASSED
+[00:14.208] app: DEBUG request id=f0df8a515f status=200 ms=90
+[00:14.234] pytest: tests/test_auth.py::test_retries_empty_input_62 PASSED
+[00:14.282] app: DEBUG request id=6b850b7183 status=200 ms=16
+[00:14.345] pytest: tests/test_catalog.py::test_caches_missing_fields_63 PASSED
+[00:14.424] pytest:   log: retry budget 3, nothing retried so far
+[00:14.468] app: DEBUG request id=a0f14b4b31 status=200 ms=31
+[00:14.510] pytest: tests/test_search.py::test_accepts_duplicate_ids_64 PASSED
+[00:14.554] app: DEBUG request id=0bfee2bb4b status=200 ms=66
+[00:14.555] pytest: tests/test_cart.py::test_handles_duplicate_ids_65 PASSED
+[00:14.624] app: DEBUG request id=8513c5e7d2 status=200 ms=29
+[00:14.636] pytest: tests/test_ledger.py::test_formats_large_batch_66 PASSED
+[00:14.678] app: DEBUG request id=1fe50022e9 status=200 ms=55
+[00:14.726] pytest: tests/test_notify.py::test_rejects_stale_cache_67 PASSED
+[00:14.768] pytest: tests/test_export.py::test_accepts_empty_input_68 PASSED
+[00:14.797] app: DEBUG request id=1b1c615570 status=200 ms=64
+[00:14.869] pytest: tests/test_report.py::test_splits_duplicate_ids_69 PASSED
+[00:14.871] pytest: tests/test_invoice.py::test_rejects_timezone_offsets_70 PASSED
+[00:14.940] app: DEBUG request id=abc53d9248 status=200 ms=29
+[00:14.953] pytest: tests/test_shipping.py::test_retries_stale_cache_71 PASSED
+[00:14.975] app: DEBUG request id=036648179e status=200 ms=43
+[00:14.979] pytest: tests/test_auth.py::test_retries_long_descriptions_72 PASSED
+[00:14.991] app: DEBUG request id=0b3c01ced7 status=200 ms=73
+[00:15.044] pytest: tests/test_catalog.py::test_rejects_zero_quantity_73 PASSED
+[00:15.074] pytest: tests/test_search.py::test_splits_large_batch_74 PASSED
+[00:15.086] pytest: tests/test_cart.py::test_merges_long_descriptions_75 PASSED
+[00:15.103] pytest: tests/test_ledger.py::test_formats_large_batch_76 PASSED
+[00:15.122] pytest: tests/test_notify.py::test_rejects_empty_input_77 PASSED
+[00:15.161] app: DEBUG request id=6614cd0de3 status=200 ms=14
+[00:15.220] pytest: tests/test_export.py::test_handles_timezone_offsets_78 PASSED
+[00:15.238] app: DEBUG request id=9cc82d802d status=200 ms=36
+[00:15.313] pytest: tests/test_report.py::test_merges_unicode_names_79 PASSED
+[00:15.337] pytest: tests/test_invoice.py::test_splits_empty_input_80 PASSED
+[00:15.400] pytest: tests/test_shipping.py::test_parses_unicode_names_81 PASSED
+[00:15.459] app: DEBUG request id=8e7126ecf9 status=200 ms=50
+[00:15.469] pytest: tests/test_auth.py::test_rejects_negative_totals_82 PASSED
+[00:15.548] pytest: tests/test_catalog.py::test_accepts_unicode_names_83 PASSED
+[00:15.613] pytest: tests/test_search.py::test_rejects_negative_totals_84 PASSED
+[00:15.670] app: DEBUG request id=62fdeadc70 status=200 ms=27
+[00:15.702] pytest: tests/test_cart.py::test_merges_zero_quantity_85 PASSED
+[00:15.721] app: DEBUG request id=7b6aba2357 status=200 ms=67
+[00:15.788] pytest: tests/test_ledger.py::test_retries_zero_quantity_86 PASSED
+[00:15.868] app: DEBUG request id=ffda121a20 status=200 ms=33
+[00:15.887] pytest: tests/test_notify.py::test_retries_unicode_names_87 PASSED
+[00:15.946] app: DEBUG request id=60d728c683 status=200 ms=77
+[00:15.991] pytest: tests/test_export.py::test_sorts_negative_totals_88 PASSED
+[00:16.019] app: DEBUG request id=1da54dfc78 status=200 ms=57
+[00:16.088] pytest: tests/test_report.py::test_accepts_unicode_names_89 PASSED
+[00:16.141] app: DEBUG request id=e6143869f3 status=200 ms=33
+[00:16.179] pytest: tests/test_invoice.py::test_retries_duplicate_ids_90 PASSED
+[00:16.251] app: DEBUG request id=7f3f26f9be status=200 ms=30
+[00:16.257] pytest: tests/test_shipping.py::test_parses_missing_fields_91 PASSED
+[00:16.310] app: DEBUG request id=2d23ae48da status=200 ms=64
+[00:16.330] pytest: tests/test_auth.py::test_rejects_long_descriptions_92 PASSED
+[00:16.397] pytest: tests/test_catalog.py::test_caches_large_batch_93 PASSED
+[00:16.438] app: DEBUG request id=2b6283f981 status=200 ms=76
+[00:16.507] pytest: tests/test_search.py::test_sorts_large_batch_94 PASSED
+[00:16.548] app: DEBUG request id=1f5437c530 status=200 ms=67
+[00:16.623] pytest: tests/test_cart.py::test_caches_large_batch_95 PASSED
+[00:16.695] pytest: tests/test_ledger.py::test_accepts_negative_totals_96 PASSED
+[00:16.717] pytest: tests/test_notify.py::test_retries_stale_cache_97 PASSED
+[00:16.793] pytest: tests/test_export.py::test_formats_zero_quantity_98 PASSED
+[00:16.870] app: DEBUG request id=8af56cc938 status=200 ms=9
+[00:16.933] pytest: tests/test_report.py::test_retries_large_batch_99 PASSED
+[00:16.940] app: DEBUG request id=7136034f71 status=200 ms=38
+[00:16.961] pytest: tests/test_invoice.py::test_formats_empty_input_100 PASSED
+[00:17.000] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:17.026] pytest:   log: retry budget 3, nothing retried so far
+[00:17.037] app: DEBUG request id=e93614a3fb status=200 ms=36
+[00:17.092] pytest: tests/test_shipping.py::test_merges_stale_cache_101 PASSED
+[00:17.096] pytest: tests/test_auth.py::test_handles_negative_totals_102 PASSED
+[00:17.109] pytest:   log: retry budget 3, nothing retried so far
+[00:17.165] pytest: tests/test_catalog.py::test_caches_stale_cache_103 PASSED
+[00:17.208] app: DEBUG request id=6236638349 status=200 ms=61
+[00:17.246] pytest: tests/test_search.py::test_accepts_zero_quantity_104 PASSED
+[00:17.304] app: DEBUG request id=18dc733be7 status=200 ms=11
+[00:17.322] pytest: tests/test_cart.py::test_retries_duplicate_ids_105 PASSED
+[00:17.344] app: DEBUG request id=d80c010d81 status=200 ms=63
+[00:17.409] pytest: tests/test_ledger.py::test_sorts_missing_fields_106 PASSED
+[00:17.440] app: DEBUG request id=084149943f status=200 ms=41
+[00:17.507] pytest: tests/test_notify.py::test_retries_timezone_offsets_107 PASSED
+[00:17.520] pytest: tests/test_export.py::test_formats_negative_totals_108 PASSED
+[00:17.539] app: DEBUG request id=a2006d6bc4 status=200 ms=58
+[00:17.564] pytest: tests/test_report.py::test_retries_duplicate_ids_109 PASSED
+[00:17.612] pytest: tests/test_invoice.py::test_sorts_long_descriptions_110 PASSED
+[00:17.681] app: DEBUG request id=981c013048 status=200 ms=49
+[00:17.747] pytest: tests/test_shipping.py::test_rejects_timezone_offsets_111 PASSED
+[00:17.785] app: DEBUG request id=2509a540ca status=200 ms=55
+[00:17.823] pytest: tests/test_auth.py::test_splits_stale_cache_112 PASSED
+[00:17.849] app: DEBUG request id=c8b4b528aa status=200 ms=62
+[00:17.853] pytest: tests/test_catalog.py::test_handles_missing_fields_113 PASSED
+[00:17.915] app: DEBUG request id=681491add5 status=200 ms=18
+[00:17.930] pytest: tests/test_search.py::test_sorts_unicode_names_114 PASSED
+[00:17.982] app: DEBUG request id=80114c1c63 status=200 ms=32
+[00:18.043] pytest: tests/test_cart.py::test_sorts_zero_quantity_115 PASSED
+[00:18.058] app: DEBUG request id=12ff1c217b status=200 ms=4
+[00:18.067] pytest: tests/test_ledger.py::test_accepts_empty_input_116 PASSED
+[00:18.112] app: DEBUG request id=2fcf5d108a status=200 ms=45
+[00:18.181] pytest: tests/test_notify.py::test_merges_empty_input_117 PASSED
+[00:18.242] app: DEBUG request id=c3cc1c13d0 status=200 ms=27
+[00:18.306] pytest: tests/test_export.py::test_caches_zero_quantity_118 PASSED
+[00:18.322] app: DEBUG request id=f9c4fe5795 status=200 ms=50
+[00:18.371] pytest: tests/test_report.py::test_handles_stale_cache_119 PASSED
+[00:18.448] app: DEBUG request id=add5359d52 status=200 ms=77
+[00:18.508] pytest: tests/test_invoice.py::test_caches_missing_fields_120 PASSED
+[00:18.551] app: DEBUG request id=49f4a97855 status=200 ms=3
+[00:18.618] pytest: tests/test_shipping.py::test_retries_missing_fields_121 PASSED
+[00:18.693] app: DEBUG request id=856c56b896 status=200 ms=22
+[00:18.723] pytest: tests/test_auth.py::test_handles_stale_cache_122 PASSED
+[00:18.744] pytest: tests/test_catalog.py::test_splits_negative_totals_123 PASSED
+[00:18.797] pytest: tests/test_search.py::test_parses_stale_cache_124 PASSED
+[00:18.807] app: DEBUG request id=b4406d4498 status=200 ms=6
+[00:18.831] pytest: tests/test_cart.py::test_accepts_zero_quantity_125 PASSED
+[00:18.910] app: DEBUG request id=cb46b815f6 status=200 ms=60
+[00:18.919] pytest: tests/test_ledger.py::test_accepts_duplicate_ids_126 PASSED
+[00:18.959] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:19.004] app: DEBUG request id=3a87f42229 status=200 ms=4
+[00:19.015] pytest: tests/test_notify.py::test_formats_duplicate_ids_127 PASSED
+[00:19.092] pytest: tests/test_export.py::test_handles_empty_input_128 PASSED
+[00:19.134] app: DEBUG request id=d83f17beaf status=200 ms=4
+[00:19.169] pytest: tests/test_report.py::test_sorts_large_batch_129 PASSED
+[00:19.191] pytest: tests/test_invoice.py::test_sorts_empty_input_130 PASSED
+[00:19.267] pytest: tests/test_shipping.py::test_retries_duplicate_ids_131 PASSED
+[00:19.336] app: DEBUG request id=ab79948754 status=200 ms=13
+[00:19.402] pytest: tests/test_auth.py::test_formats_timezone_offsets_132 PASSED
+[00:19.433] pytest: tests/test_catalog.py::test_accepts_empty_input_133 PASSED
+[00:19.479] pytest: tests/test_search.py::test_retries_large_batch_134 PASSED
+[00:19.548] pytest:   log: retry budget 3, nothing retried so far
+[00:19.591] pytest: tests/test_cart.py::test_handles_stale_cache_135 PASSED
+[00:19.616] app: DEBUG request id=95e8915550 status=200 ms=69
+[00:19.653] pytest: tests/test_ledger.py::test_merges_empty_input_136 PASSED
+[00:19.719] app: DEBUG request id=f098c2376b status=200 ms=58
+[00:19.771] pytest: tests/test_notify.py::test_splits_unicode_names_137 PASSED
+[00:19.792] app: DEBUG request id=eb0ca92b44 status=200 ms=33
+[00:19.796] pytest: tests/test_export.py::test_retries_timezone_offsets_138 PASSED
+[00:19.846] app: DEBUG request id=657ec7882c status=200 ms=29
+[00:19.914] pytest: tests/test_report.py::test_handles_unicode_names_139 PASSED
+[00:19.936] app: DEBUG request id=1fe7257329 status=200 ms=40
+[00:19.973] pytest: tests/test_invoice.py::test_splits_negative_totals_140 PASSED
+[00:19.992] app: DEBUG request id=46c80330dc status=200 ms=57
+[00:20.010] pytest: tests/test_shipping.py::test_rejects_negative_totals_141 PASSED
+[00:20.032] app: DEBUG request id=84f5511cad status=200 ms=16
+[00:20.036] pytest: tests/test_auth.py::test_rejects_empty_input_142 PASSED
+[00:20.100] pytest: tests/test_catalog.py::test_handles_duplicate_ids_143 PASSED
+[00:20.133] pytest: tests/test_search.py::test_merges_large_batch_144 PASSED
+[00:20.135] app: DEBUG request id=130063fd4b status=200 ms=74
+[00:20.161] pytest: tests/test_cart.py::test_caches_negative_totals_145 PASSED
+[00:20.195] pytest: tests/test_ledger.py::test_sorts_empty_input_146 PASSED
+[00:20.207] app: DEBUG request id=b051df92d8 status=200 ms=63
+[00:20.236] pytest: tests/test_notify.py::test_splits_zero_quantity_147 PASSED
+[00:20.261] app: DEBUG request id=33a2344493 status=200 ms=89
+[00:20.277] pytest: tests/test_export.py::test_splits_empty_input_148 PASSED
+[00:20.332] pytest: tests/test_report.py::test_merges_long_descriptions_149 PASSED
+[00:20.396] app: DEBUG request id=b906cf284c status=200 ms=17
+[00:20.450] pytest: tests/test_invoice.py::test_parses_empty_input_150 PASSED
+[00:20.488] pytest: tests/test_shipping.py::test_handles_duplicate_ids_151 PASSED
+[00:20.530] app: DEBUG request id=4f61a13b58 status=200 ms=84
+[00:20.567] pytest: tests/test_auth.py::test_rejects_duplicate_ids_152 PASSED
+[00:20.587] pytest: tests/test_catalog.py::test_sorts_long_descriptions_153 PASSED
+[00:20.608] app: DEBUG request id=1f34d918e8 status=200 ms=86
+[00:20.639] pytest: tests/test_search.py::test_retries_large_batch_154 PASSED
+[00:20.649] pytest: tests/test_cart.py::test_retries_duplicate_ids_155 PASSED
+[00:20.692] pytest: tests/test_ledger.py::test_accepts_duplicate_ids_156 PASSED
+[00:20.751] pytest: tests/test_notify.py::test_merges_zero_quantity_157 PASSED
+[00:20.762] app: DEBUG request id=27555386e0 status=200 ms=14
+[00:20.764] pytest: tests/test_export.py::test_retries_missing_fields_158 PASSED
+[00:20.782] app: DEBUG request id=21c0cc162d status=200 ms=56
+[00:20.855] pytest: tests/test_report.py::test_splits_long_descriptions_159 PASSED
+[00:20.884] pytest: tests/test_invoice.py::test_handles_negative_totals_160 PASSED
+[00:20.885] app: DEBUG request id=82ed3a0475 status=200 ms=18
+[00:20.888] pytest: tests/test_shipping.py::test_formats_large_batch_161 PASSED
+[00:20.960] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:21.013] pytest: tests/test_auth.py::test_parses_unicode_names_162 PASSED
+[00:21.022] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:21.045] app: DEBUG request id=250032b443 status=200 ms=79
+[00:21.108] pytest: tests/test_catalog.py::test_caches_long_descriptions_163 PASSED
+[00:21.177] pytest: tests/test_search.py::test_retries_stale_cache_164 PASSED
+[00:21.251] app: DEBUG request id=a055e70924 status=200 ms=87
+[00:21.262] pytest: tests/test_cart.py::test_handles_large_batch_165 PASSED
+[00:21.305] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:21.330] pytest: tests/test_ledger.py::test_splits_zero_quantity_166 PASSED
+[00:21.342] app: DEBUG request id=006de4f579 status=200 ms=47
+[00:21.355] pytest: tests/test_notify.py::test_rejects_large_batch_167 PASSED
+[00:21.369] pytest: tests/test_export.py::test_accepts_empty_input_168 PASSED
+[00:21.435] app: DEBUG request id=74a3810a07 status=200 ms=10
+[00:21.476] pytest: tests/test_report.py::test_splits_empty_input_169 PASSED
+[00:21.550] app: DEBUG request id=f08526f139 status=200 ms=2
+[00:21.601] pytest: tests/test_invoice.py::test_caches_empty_input_170 PASSED
+[00:21.662] app: DEBUG request id=9b97825981 status=200 ms=63
+[00:21.715] pytest: tests/test_shipping.py::test_retries_zero_quantity_171 PASSED
+[00:21.746] app: DEBUG request id=1f16514b04 status=200 ms=5
+[00:21.785] pytest: tests/test_auth.py::test_merges_zero_quantity_172 PASSED
+[00:21.847] app: DEBUG request id=4fee2e8b29 status=200 ms=48
+[00:21.903] pytest: tests/test_catalog.py::test_accepts_long_descriptions_173 PASSED
+[00:21.917] app: DEBUG request id=ff87edf733 status=200 ms=76
+[00:21.988] pytest: tests/test_search.py::test_retries_long_descriptions_174 PASSED
+[00:22.067] pytest:   log: retry budget 3, nothing retried so far
+[00:22.118] pytest: tests/test_cart.py::test_caches_empty_input_175 PASSED
+[00:22.148] pytest: tests/test_ledger.py::test_rejects_unicode_names_176 PASSED
+[00:22.186] app: DEBUG request id=241bfbdd4a status=200 ms=58
+[00:22.216] pytest: tests/test_notify.py::test_splits_timezone_offsets_177 PASSED
+[00:22.269] pytest: tests/test_export.py::test_parses_missing_fields_178 PASSED
+[00:22.310] app: DEBUG request id=bd920bf480 status=200 ms=75
+[00:22.329] pytest: tests/test_report.py::test_formats_large_batch_179 PASSED
+[00:22.335] app: DEBUG request id=e28a05e74a status=200 ms=4
+[00:22.347] pytest: tests/test_invoice.py::test_splits_negative_totals_180 PASSED
+[00:22.424] pytest: tests/test_shipping.py::test_accepts_missing_fields_181 PASSED
+[00:22.487] app: DEBUG request id=0acf59619d status=200 ms=26
+[00:22.565] pytest: tests/test_auth.py::test_caches_zero_quantity_182 PASSED
+[00:22.570] pytest: tests/test_catalog.py::test_retries_negative_totals_183 PASSED
+[00:22.607] app: DEBUG request id=eb3310fbcb status=200 ms=76
+[00:22.641] pytest: tests/test_search.py::test_splits_large_batch_184 PASSED
+[00:22.659] pytest: tests/test_cart.py::test_caches_empty_input_185 PASSED
+[00:22.677] app: DEBUG request id=70138a43c4 status=200 ms=46
+[00:22.745] pytest: tests/test_ledger.py::test_splits_stale_cache_186 PASSED
+[00:22.808] app: DEBUG request id=87e2539419 status=200 ms=66
+[00:22.853] pytest: tests/test_notify.py::test_merges_large_batch_187 PASSED
+[00:22.870] pytest: tests/test_export.py::test_splits_negative_totals_188 PASSED
+[00:22.912] app: DEBUG request id=bb18b7da7f status=200 ms=65
+[00:22.990] pytest: tests/test_report.py::test_sorts_missing_fields_189 PASSED
+[00:23.061] app: DEBUG request id=d2ff6d033a status=200 ms=73
+[00:23.120] pytest: tests/test_invoice.py::test_formats_negative_totals_190 PASSED
+[00:23.149] app: DEBUG request id=5adca15484 status=200 ms=50
+[00:23.197] pytest: tests/test_shipping.py::test_caches_negative_totals_191 PASSED
+[00:23.229] app: DEBUG request id=f7d3c77110 status=200 ms=35
+[00:23.289] pytest: tests/test_auth.py::test_caches_unicode_names_192 PASSED
+[00:23.348] pytest: tests/test_catalog.py::test_merges_stale_cache_193 PASSED
+[00:23.368] pytest:   log: retry budget 3, nothing retried so far
+[00:23.388] app: DEBUG request id=5969bb04b4 status=200 ms=7
+[00:23.434] pytest: tests/test_search.py::test_handles_stale_cache_194 PASSED
+[00:23.446] app: DEBUG request id=af1c1c222b status=200 ms=4
+[00:23.500] pytest: tests/test_cart.py::test_parses_duplicate_ids_195 PASSED
+[00:23.579] app: DEBUG request id=777ec0f2c6 status=200 ms=75
+[00:23.639] pytest: tests/test_ledger.py::test_parses_negative_totals_196 PASSED
+[00:23.688] app: DEBUG request id=5ca5c8e856 status=200 ms=84
+[00:23.740] pytest: tests/test_notify.py::test_rejects_empty_input_197 PASSED
+[00:23.787] app: DEBUG request id=fb13687b8a status=200 ms=74
+[00:23.813] pytest: tests/test_export.py::test_handles_timezone_offsets_198 PASSED
+[00:23.886] app: DEBUG request id=b7991eae31 status=200 ms=15
+[00:23.942] pytest: tests/test_report.py::test_rejects_duplicate_ids_199 PASSED
+[00:23.950] app: DEBUG request id=918e480bf5 status=200 ms=14
+[00:24.009] pytest: tests/test_invoice.py::test_retries_timezone_offsets_200 PASSED
+[00:24.057] app: DEBUG request id=4fb73c4cf5 status=200 ms=46
+[00:24.073] pytest: tests/test_shipping.py::test_merges_stale_cache_201 PASSED
+[00:24.097] app: DEBUG request id=fb704f0b7c status=200 ms=4
+[00:24.156] pytest: tests/test_auth.py::test_caches_negative_totals_202 PASSED
+[00:24.185] app: DEBUG request id=0b7192d1e0 status=200 ms=22
+[00:24.206] pytest: tests/test_catalog.py::test_caches_long_descriptions_203 PASSED
+[00:24.242] pytest: tests/test_search.py::test_parses_unicode_names_204 PASSED
+[00:24.285] app: DEBUG request id=c391206f05 status=200 ms=64
+[00:24.342] pytest: tests/test_cart.py::test_formats_negative_totals_205 PASSED
+[00:24.374] app: DEBUG request id=ef0f533d56 status=200 ms=21
+[00:24.387] pytest: tests/test_ledger.py::test_splits_timezone_offsets_206 PASSED
+[00:24.397] pytest: tests/test_notify.py::test_formats_unicode_names_207 PASSED
+[00:24.472] pytest:   log: retry budget 3, nothing retried so far
+[00:24.549] app: DEBUG request id=91a212ece0 status=200 ms=43
+[00:24.578] pytest: tests/test_export.py::test_rejects_zero_quantity_208 PASSED
+[00:24.643] app: DEBUG request id=c2f1fb87fd status=200 ms=73
+[00:24.699] pytest: tests/test_report.py::test_merges_zero_quantity_209 PASSED
+[00:24.754] app: DEBUG request id=cf5b0156a1 status=200 ms=50
+[00:24.808] pytest: tests/test_invoice.py::test_accepts_long_descriptions_210 PASSED
+[00:24.864] app: DEBUG request id=1e0b9e454e status=200 ms=31
+[00:24.875] pytest: tests/test_shipping.py::test_parses_empty_input_211 PASSED
+[00:24.914] pytest: tests/test_auth.py::test_retries_zero_quantity_212 PASSED
+[00:24.951] app: DEBUG request id=3efd9fd6d5 status=200 ms=55
+[00:24.954] pytest: tests/test_catalog.py::test_rejects_unicode_names_213 PASSED
+[00:25.016] app: DEBUG request id=19dc35338f status=200 ms=32
+[00:25.075] pytest: tests/test_search.py::test_accepts_missing_fields_214 PASSED
+[00:25.102] app: DEBUG request id=d5aff5485c status=200 ms=43
+[00:25.140] pytest: tests/test_cart.py::test_merges_missing_fields_215 PASSED
+[00:25.199] pytest: tests/test_ledger.py::test_handles_timezone_offsets_216 PASSED
+[00:25.253] pytest: tests/test_notify.py::test_sorts_duplicate_ids_217 PASSED
+[00:25.326] app: DEBUG request id=324185e733 status=200 ms=8
+[00:25.369] pytest: tests/test_export.py::test_merges_empty_input_218 PASSED
+[00:25.400] pytest: tests/test_report.py::test_rejects_negative_totals_219 PASSED
+[00:25.405] app: DEBUG request id=f2d2389189 status=200 ms=32
+[00:25.436] pytest: tests/test_invoice.py::test_formats_duplicate_ids_220 PASSED
+[00:25.481] app: DEBUG request id=02fff7fea3 status=200 ms=21
+[00:25.560] pytest: tests/test_shipping.py::test_merges_missing_fields_221 PASSED
+[00:25.569] app: DEBUG request id=5d165942f6 status=200 ms=63
+[00:25.628] pytest: tests/test_auth.py::test_sorts_duplicate_ids_222 PASSED
+[00:25.672] app: DEBUG request id=e3db63341a status=200 ms=7
+[00:25.705] pytest: tests/test_catalog.py::test_formats_timezone_offsets_223 PASSED
+[00:25.715] app: DEBUG request id=b64c9dfab3 status=200 ms=24
+[00:25.788] pytest: tests/test_search.py::test_rejects_large_batch_224 PASSED
+[00:25.805] pytest: tests/test_cart.py::test_formats_negative_totals_225 PASSED
+[00:25.836] pytest: tests/test_ledger.py::test_handles_long_descriptions_226 PASSED
+[00:25.879] app: DEBUG request id=0bb7ca4188 status=200 ms=86
+[00:25.907] pytest: tests/test_notify.py::test_formats_unicode_names_227 PASSED
+[00:25.965] pytest: tests/test_export.py::test_splits_stale_cache_228 PASSED
+[00:25.979] pytest: tests/test_report.py::test_sorts_unicode_names_229 PASSED
+[00:26.000] app: DEBUG request id=48dd87146a status=200 ms=17
+[00:26.036] pytest: tests/test_invoice.py::test_handles_long_descriptions_230 PASSED
+[00:26.056] pytest:   log: retry budget 3, nothing retried so far
+[00:26.121] pytest: tests/test_shipping.py::test_handles_zero_quantity_231 PASSED
+[00:26.163] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:26.180] app: DEBUG request id=b5e8a16d13 status=200 ms=6
+[00:26.229] pytest: tests/test_auth.py::test_formats_unicode_names_232 PASSED
+[00:26.230] pytest: tests/test_catalog.py::test_rejects_large_batch_233 PASSED
+[00:26.299] app: DEBUG request id=0b7753680a status=200 ms=6
+[00:26.361] pytest: tests/test_search.py::test_caches_negative_totals_234 PASSED
+[00:26.416] app: DEBUG request id=35b167ea24 status=200 ms=75
+[00:26.470] pytest: tests/test_cart.py::test_retries_stale_cache_235 PASSED
+[00:26.492] app: DEBUG request id=fb822e84ad status=200 ms=59
+[00:26.517] pytest: tests/test_ledger.py::test_splits_stale_cache_236 PASSED
+[00:26.574] pytest: tests/test_notify.py::test_sorts_duplicate_ids_237 PASSED
+[00:26.592] pytest: tests/test_export.py::test_rejects_empty_input_238 PASSED
+[00:26.598] app: DEBUG request id=adf20278ce status=200 ms=11
+[00:26.603] pytest: tests/test_report.py::test_merges_negative_totals_239 PASSED
+[00:26.640] pytest: tests/test_invoice.py::test_accepts_unicode_names_240 PASSED
+[00:26.649] pytest: tests/test_shipping.py::test_merges_timezone_offsets_241 PASSED
+[00:26.702] app: DEBUG request id=2ed51507df status=200 ms=63
+[00:26.735] pytest: tests/test_auth.py::test_accepts_empty_input_242 PASSED
+[00:26.757] app: DEBUG request id=b96d0bf621 status=200 ms=54
+[00:26.761] pytest: tests/test_catalog.py::test_accepts_missing_fields_243 PASSED
+[00:26.776] pytest: tests/test_search.py::test_sorts_negative_totals_244 PASSED
+[00:26.826] pytest: tests/test_cart.py::test_rejects_stale_cache_245 PASSED
+[00:26.887] app: DEBUG request id=ed044d8e49 status=200 ms=56
+[00:26.963] pytest: tests/test_ledger.py::test_formats_negative_totals_246 PASSED
+[00:26.964] pytest: tests/test_notify.py::test_splits_timezone_offsets_247 PASSED
+[00:26.972] pytest: tests/test_export.py::test_merges_zero_quantity_248 PASSED
+[00:27.009] app: DEBUG request id=66147a6308 status=200 ms=38
+[00:27.026] pytest: tests/test_report.py::test_accepts_negative_totals_249 PASSED
+[00:27.078] pytest: tests/test_invoice.py::test_retries_large_batch_250 PASSED
+[00:27.140] app: DEBUG request id=cfc61d2646 status=200 ms=37
+[00:27.154] pytest: tests/test_shipping.py::test_splits_zero_quantity_251 PASSED
+[00:27.188] app: DEBUG request id=dfdd775077 status=200 ms=21
+[00:27.199] pytest: tests/test_auth.py::test_parses_zero_quantity_252 PASSED
+[00:27.232] pytest: tests/test_catalog.py::test_rejects_missing_fields_253 PASSED
+[00:27.297] app: DEBUG request id=f63a9dcb3d status=200 ms=22
+[00:27.372] pytest: tests/test_search.py::test_accepts_empty_input_254 PASSED
+[00:27.439] pytest: tests/test_cart.py::test_retries_long_descriptions_255 PASSED
+[00:27.453] pytest: tests/test_ledger.py::test_parses_unicode_names_256 PASSED
+[00:27.478] app: DEBUG request id=55c60709ec status=200 ms=12
+[00:27.480] pytest: tests/test_notify.py::test_parses_zero_quantity_257 PASSED
+[00:27.497] pytest: tests/test_export.py::test_splits_stale_cache_258 PASSED
+[00:27.561] pytest: tests/test_report.py::test_caches_empty_input_259 PASSED
+[00:27.611] app: DEBUG request id=ebc65466a0 status=200 ms=52
+[00:27.664] pytest: tests/test_invoice.py::test_sorts_large_batch_260 PASSED
+[00:27.673] app: DEBUG request id=9ae015bdaf status=200 ms=48
+[00:27.716] pytest: tests/test_shipping.py::test_sorts_duplicate_ids_261 PASSED
+[00:27.786] pytest: tests/test_auth.py::test_handles_large_batch_262 PASSED
+[00:27.793] app: DEBUG request id=ccd1a545e1 status=200 ms=12
+[00:27.872] pytest: tests/test_catalog.py::test_merges_zero_quantity_263 PASSED
+[00:27.904] pytest: tests/test_search.py::test_splits_duplicate_ids_264 PASSED
+[00:27.942] pytest: tests/test_cart.py::test_caches_zero_quantity_265 PASSED
+[00:27.993] app: DEBUG request id=196542eaad status=200 ms=70
+[00:28.028] pytest: tests/test_ledger.py::test_handles_duplicate_ids_266 PASSED
+[00:28.054] pytest: tests/test_notify.py::test_merges_empty_input_267 PASSED
+[00:28.088] app: DEBUG request id=c8514073ec status=200 ms=38
+[00:28.153] pytest: tests/test_export.py::test_accepts_large_batch_268 PASSED
+[00:28.232] app: DEBUG request id=3fb160b720 status=200 ms=9
+[00:28.302] pytest: tests/test_report.py::test_caches_long_descriptions_269 PASSED
+[00:28.353] pytest: tests/test_invoice.py::test_parses_large_batch_270 PASSED
+[00:28.363] app: DEBUG request id=c6e0c7601a status=200 ms=75
+[00:28.396] pytest: tests/test_shipping.py::test_sorts_empty_input_271 PASSED
+[00:28.425] pytest: tests/test_auth.py::test_parses_unicode_names_272 PASSED
+[00:28.484] app: DEBUG request id=b7d262e888 status=200 ms=45
+[00:28.514] pytest: tests/test_catalog.py::test_splits_zero_quantity_273 PASSED
+[00:28.571] pytest: tests/test_search.py::test_merges_missing_fields_274 PASSED
+[00:28.611] app: DEBUG request id=d0ba6a148a status=200 ms=39
+[00:28.672] pytest: tests/test_cart.py::test_sorts_timezone_offsets_275 PASSED
+[00:28.701] pytest: tests/test_ledger.py::test_sorts_stale_cache_276 PASSED
+[00:28.719] app: DEBUG request id=b8fd0c930f status=200 ms=89
+[00:28.790] pytest: tests/test_notify.py::test_handles_long_descriptions_277 PASSED
+[00:28.814] pytest: tests/test_export.py::test_accepts_negative_totals_278 PASSED
+[00:28.825] pytest: tests/test_report.py::test_splits_unicode_names_279 PASSED
+[00:28.838] pytest: tests/test_invoice.py::test_handles_timezone_offsets_280 PASSED
+[00:28.852] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:28.883] pytest: tests/test_shipping.py::test_handles_large_batch_281 PASSED
+[00:28.962] app: DEBUG request id=af33e66fdf status=200 ms=33
+[00:29.032] pytest: tests/test_auth.py::test_splits_duplicate_ids_282 PASSED
+[00:29.096] pytest: tests/test_catalog.py::test_sorts_empty_input_283 PASSED
+[00:29.119] pytest: tests/test_search.py::test_formats_empty_input_284 PASSED
+[00:29.176] app: DEBUG request id=54b0a9c93a status=200 ms=22
+[00:29.214] pytest: tests/test_cart.py::test_retries_long_descriptions_285 PASSED
+[00:29.261] app: DEBUG request id=905042bbcb status=200 ms=17
+[00:29.279] pytest: tests/test_ledger.py::test_merges_empty_input_286 PASSED
+[00:29.335] pytest: tests/test_notify.py::test_formats_long_descriptions_287 PASSED
+[00:29.372] app: DEBUG request id=668f176c50 status=200 ms=9
+[00:29.379] pytest: tests/test_export.py::test_splits_empty_input_288 PASSED
+[00:29.418] app: DEBUG request id=783bb6eba3 status=200 ms=76
+[00:29.473] pytest: tests/test_report.py::test_merges_large_batch_289 PASSED
+[00:29.493] pytest: tests/test_invoice.py::test_formats_large_batch_290 PASSED
+[00:29.518] app: DEBUG request id=364746f0de status=200 ms=86
+[00:29.553] pytest: tests/test_shipping.py::test_accepts_unicode_names_291 PASSED
+[00:29.598] pytest:   log: retry budget 3, nothing retried so far
+[00:29.625] pytest: tests/test_auth.py::test_formats_unicode_names_292 PASSED
+[00:29.671] pytest: tests/test_catalog.py::test_accepts_zero_quantity_293 PASSED
+[00:29.749] pytest: tests/test_search.py::test_formats_negative_totals_294 PASSED
+[00:29.789] pytest: tests/test_cart.py::test_retries_missing_fields_295 PASSED
+[00:29.806] pytest: tests/test_ledger.py::test_caches_negative_totals_296 PASSED
+[00:29.846] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:29.847] app: DEBUG request id=67ae69ffee status=200 ms=27
+[00:29.901] pytest: tests/test_notify.py::test_parses_stale_cache_297 PASSED
+[00:29.954] app: DEBUG request id=2cb08ce37a status=200 ms=23
+[00:30.019] pytest: tests/test_export.py::test_sorts_unicode_names_298 PASSED
+[00:30.086] pytest: tests/test_report.py::test_merges_empty_input_299 PASSED
+[00:30.147] app: DEBUG request id=15995a9895 status=200 ms=1
+[00:30.219] pytest: tests/test_invoice.py::test_rounding_half_even FAILED
+[00:30.255] pytest: tests/test_shipping.py::test_caches_long_descriptions_301 PASSED
+[00:30.285] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:30.353] pytest: tests/test_auth.py::test_handles_timezone_offsets_302 PASSED
+[00:30.384] pytest: tests/test_catalog.py::test_retries_missing_fields_303 PASSED
+[00:30.400] pytest: tests/test_search.py::test_rejects_duplicate_ids_304 PASSED
+[00:30.475] pytest: tests/test_cart.py::test_caches_unicode_names_305 PASSED
+[00:30.554] app: DEBUG request id=de162121cc status=200 ms=81
+[00:30.615] pytest: tests/test_ledger.py::test_caches_empty_input_306 PASSED
+[00:30.660] pytest: tests/test_notify.py::test_formats_timezone_offsets_307 PASSED
+[00:30.704] pytest: tests/test_export.py::test_retries_timezone_offsets_308 PASSED
+[00:30.764] app: DEBUG request id=ed75687745 status=200 ms=43
+[00:30.843] pytest: tests/test_report.py::test_retries_zero_quantity_309 PASSED
+[00:30.850] app: DEBUG request id=f8d7ae236e status=200 ms=22
+[00:30.888] pytest: tests/test_invoice.py::test_sorts_empty_input_310 PASSED
+[00:30.898] app: DEBUG request id=9d5a6715b9 status=200 ms=30
+[00:30.914] pytest: tests/test_shipping.py::test_parses_missing_fields_311 PASSED
+[00:30.970] app: DEBUG request id=82cee6957a status=200 ms=34
+[00:31.011] pytest: tests/test_auth.py::test_parses_missing_fields_312 PASSED
+[00:31.078] app: DEBUG request id=c90d48010e status=200 ms=41
+[00:31.136] pytest: tests/test_catalog.py::test_sorts_unicode_names_313 PASSED
+[00:31.148] app: DEBUG request id=8da5015dcb status=200 ms=67
+[00:31.161] pytest: tests/test_search.py::test_sorts_large_batch_314 PASSED
+[00:31.222] app: DEBUG request id=5321bc136c status=200 ms=23
+[00:31.281] pytest: tests/test_cart.py::test_retries_empty_input_315 PASSED
+[00:31.287] app: DEBUG request id=8b313e0db3 status=200 ms=69
+[00:31.313] pytest: tests/test_ledger.py::test_formats_large_batch_316 PASSED
+[00:31.344] app: DEBUG request id=55e53b1c5e status=200 ms=90
+[00:31.401] pytest: tests/test_notify.py::test_rejects_negative_totals_317 PASSED
+[00:31.406] app: DEBUG request id=db59a13507 status=200 ms=42
+[00:31.463] pytest: tests/test_export.py::test_splits_unicode_names_318 PASSED
+[00:31.506] app: DEBUG request id=cb4c909b6a status=200 ms=25
+[00:31.519] pytest: tests/test_report.py::test_rejects_negative_totals_319 PASSED
+[00:31.579] app: DEBUG request id=b0a7d2afbb status=200 ms=58
+[00:31.612] pytest: tests/test_invoice.py::test_rejects_empty_input_320 PASSED
+[00:31.683] app: DEBUG request id=82bbd940a9 status=200 ms=67
+[00:31.746] pytest: tests/test_shipping.py::test_parses_negative_totals_321 PASSED
+[00:31.806] app: DEBUG request id=cdc2138588 status=200 ms=53
+[00:31.869] pytest: tests/test_auth.py::test_merges_unicode_names_322 PASSED
+[00:31.942] app: DEBUG request id=0bacece4c4 status=200 ms=47
+[00:31.957] pytest: tests/test_catalog.py::test_formats_missing_fields_323 PASSED
+[00:32.034] pytest: tests/test_search.py::test_caches_stale_cache_324 PASSED
+[00:32.106] app: DEBUG request id=12f551d793 status=200 ms=74
+[00:32.110] pytest: tests/test_cart.py::test_parses_unicode_names_325 PASSED
+[00:32.171] pytest: tests/test_ledger.py::test_accepts_missing_fields_326 PASSED
+[00:32.190] pytest: tests/test_notify.py::test_parses_stale_cache_327 PASSED
+[00:32.195] app: DEBUG request id=d9e72f1eff status=200 ms=90
+[00:32.204] pytest: tests/test_export.py::test_retries_unicode_names_328 PASSED
+[00:32.239] app: DEBUG request id=6c3bd8d7fe status=200 ms=30
+[00:32.268] pytest: tests/test_report.py::test_parses_timezone_offsets_329 PASSED
+[00:32.299] app: DEBUG request id=d09c81b6bf status=200 ms=32
+[00:32.326] pytest: tests/test_invoice.py::test_rejects_duplicate_ids_330 PASSED
+[00:32.355] app: DEBUG request id=e4bd57bc28 status=200 ms=61
+[00:32.362] pytest: tests/test_shipping.py::test_retries_missing_fields_331 PASSED
+[00:32.387] app: DEBUG request id=e4fa28f6ed status=200 ms=76
+[00:32.438] pytest: tests/test_auth.py::test_accepts_unicode_names_332 PASSED
+[00:32.441] app: DEBUG request id=a931169cf5 status=200 ms=17
+[00:32.489] pytest: tests/test_catalog.py::test_accepts_zero_quantity_333 PASSED
+[00:32.497] app: DEBUG request id=4dbc562e93 status=200 ms=11
+[00:32.525] pytest: tests/test_search.py::test_formats_stale_cache_334 PASSED
+[00:32.529] pytest: tests/test_cart.py::test_parses_zero_quantity_335 PASSED
+[00:32.588] pytest: tests/test_ledger.py::test_sorts_timezone_offsets_336 PASSED
+[00:32.608] app: DEBUG request id=3ede503fae status=200 ms=29
+[00:32.669] pytest: tests/test_notify.py::test_handles_long_descriptions_337 PASSED
+[00:32.687] pytest: tests/test_export.py::test_merges_missing_fields_338 PASSED
+[00:32.762] app: DEBUG request id=3dfb9c6205 status=200 ms=65
+[00:32.832] pytest: tests/test_report.py::test_caches_unicode_names_339 PASSED
+[00:32.876] app: DEBUG request id=d58a578980 status=200 ms=13
+[00:32.919] pytest: tests/test_invoice.py::test_sorts_large_batch_340 PASSED
+[00:32.987] app: DEBUG request id=bf5cbc09a6 status=200 ms=72
+[00:33.003] pytest: tests/test_shipping.py::test_caches_long_descriptions_341 PASSED
+[00:33.061] app: DEBUG request id=f6c55f2c2e status=200 ms=1
+[00:33.134] pytest: tests/test_auth.py::test_sorts_stale_cache_342 PASSED
+[00:33.151] app: DEBUG request id=572af2d24e status=200 ms=48
+[00:33.214] pytest: tests/test_catalog.py::test_handles_timezone_offsets_343 PASSED
+[00:33.218] app: DEBUG request id=fb888fadac status=200 ms=84
+[00:33.226] pytest: tests/test_search.py::test_parses_stale_cache_344 PASSED
+[00:33.286] pytest: tests/test_cart.py::test_caches_negative_totals_345 PASSED
+[00:33.296] app: DEBUG request id=e74fda7a67 status=200 ms=8
+[00:33.301] pytest: tests/test_ledger.py::test_accepts_long_descriptions_346 PASSED
+[00:33.336] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:33.358] app: DEBUG request id=10fb8fb66d status=200 ms=6
+[00:33.388] pytest: tests/test_notify.py::test_accepts_stale_cache_347 PASSED
+[00:33.410] pytest: tests/test_export.py::test_splits_timezone_offsets_348 PASSED
+[00:33.484] pytest: tests/test_report.py::test_splits_unicode_names_349 PASSED
+[00:33.524] app: DEBUG request id=dc3eb32dca status=200 ms=53
+[00:33.599] pytest: tests/test_invoice.py::test_caches_negative_totals_350 PASSED
+[00:33.601] pytest: tests/test_shipping.py::test_formats_unicode_names_351 PASSED
+[00:33.664] app: DEBUG request id=a74cadb047 status=200 ms=69
+[00:33.736] pytest: tests/test_auth.py::test_formats_unicode_names_352 PASSED
+[00:33.804] pytest: tests/test_catalog.py::test_splits_empty_input_353 PASSED
+[00:33.861] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:33.908] pytest: tests/test_search.py::test_caches_large_batch_354 PASSED
+[00:33.930] pytest: tests/test_cart.py::test_splits_empty_input_355 PASSED
+[00:33.945] app: DEBUG request id=c73af3c8c3 status=200 ms=45
+[00:34.000] pytest: tests/test_ledger.py::test_formats_unicode_names_356 PASSED
+[00:34.037] app: DEBUG request id=ec0421f380 status=200 ms=15
+[00:34.071] pytest: tests/test_notify.py::test_caches_missing_fields_357 PASSED
+[00:34.146] app: DEBUG request id=d50bb582b4 status=200 ms=43
+[00:34.200] pytest: tests/test_export.py::test_rejects_long_descriptions_358 PASSED
+[00:34.269] app: DEBUG request id=62864947b6 status=200 ms=46
+[00:34.291] pytest: tests/test_report.py::test_accepts_empty_input_359 PASSED
+[00:34.337] app: DEBUG request id=031ae891c0 status=200 ms=61
+[00:34.374] pytest: tests/test_invoice.py::test_retries_duplicate_ids_360 PASSED
+[00:34.428] app: DEBUG request id=b9c16d56bb status=200 ms=2
+[00:34.459] pytest: tests/test_shipping.py::test_handles_negative_totals_361 PASSED
+[00:34.520] app: DEBUG request id=0e44035ced status=200 ms=26
+[00:34.537] pytest: tests/test_auth.py::test_handles_empty_input_362 PASSED
+[00:34.611] pytest: tests/test_catalog.py::test_rejects_stale_cache_363 PASSED
+[00:34.687] app: DEBUG request id=950c9ac14f status=200 ms=85
+[00:34.738] pytest: tests/test_search.py::test_caches_unicode_names_364 PASSED
+[00:34.813] app: DEBUG request id=4f3611dd44 status=200 ms=36
+[00:34.887] pytest: tests/test_cart.py::test_merges_duplicate_ids_365 PASSED
+[00:34.891] pytest: tests/test_ledger.py::test_caches_timezone_offsets_366 PASSED
+[00:34.909] app: DEBUG request id=2b8683c833 status=200 ms=12
+[00:34.986] pytest: tests/test_notify.py::test_parses_missing_fields_367 PASSED
+[00:34.994] pytest:   log: retry budget 3, nothing retried so far
+[00:35.060] pytest: tests/test_export.py::test_splits_empty_input_368 PASSED
+[00:35.083] app: DEBUG request id=a5c6144620 status=200 ms=55
+[00:35.096] pytest: tests/test_report.py::test_rejects_long_descriptions_369 PASSED
+[00:35.119] pytest: tests/test_invoice.py::test_parses_zero_quantity_370 PASSED
+[00:35.152] pytest: tests/test_shipping.py::test_accepts_large_batch_371 PASSED
+[00:35.222] app: DEBUG request id=6e77034e4f status=200 ms=22
+[00:35.229] pytest: tests/test_auth.py::test_retries_negative_totals_372 PASSED
+[00:35.241] pytest: tests/test_catalog.py::test_retries_zero_quantity_373 PASSED
+[00:35.285] pytest: tests/test_search.py::test_handles_unicode_names_374 PASSED
+[00:35.304] pytest: tests/test_cart.py::test_formats_stale_cache_375 PASSED
+[00:35.337] pytest: tests/test_ledger.py::test_retries_zero_quantity_376 PASSED
+[00:35.387] app: DEBUG request id=a8e8bcfa51 status=200 ms=41
+[00:35.441] pytest: tests/test_notify.py::test_accepts_timezone_offsets_377 PASSED
+[00:35.452] app: DEBUG request id=bc47a19b7e status=200 ms=45
+[00:35.493] pytest: tests/test_export.py::test_formats_timezone_offsets_378 PASSED
+[00:35.498] app: DEBUG request id=ed49a49079 status=200 ms=76
+[00:35.546] pytest: tests/test_report.py::test_sorts_empty_input_379 PASSED
+[00:35.625] app: DEBUG request id=ae1964c781 status=200 ms=45
+[00:35.629] pytest: tests/test_invoice.py::test_formats_unicode_names_380 PASSED
+[00:35.653] app: DEBUG request id=e6f0b08ae7 status=200 ms=69
+[00:35.683] pytest: tests/test_shipping.py::test_handles_unicode_names_381 PASSED
+[00:35.688] app: DEBUG request id=0ab4f77873 status=200 ms=32
+[00:35.734] pytest: tests/test_auth.py::test_handles_zero_quantity_382 PASSED
+[00:35.737] app: DEBUG request id=f73bc1a2ef status=200 ms=49
+[00:35.741] pytest: tests/test_catalog.py::test_retries_zero_quantity_383 PASSED
+[00:35.801] pytest: tests/test_search.py::test_merges_timezone_offsets_384 PASSED
+[00:35.848] app: DEBUG request id=1b1fb24512 status=200 ms=60
+[00:35.861] pytest: tests/test_cart.py::test_merges_stale_cache_385 PASSED
+[00:35.866] pytest: tests/test_ledger.py::test_accepts_unicode_names_386 PASSED
+[00:35.933] app: DEBUG request id=cca672c9b2 status=200 ms=34
+[00:35.980] pytest: tests/test_notify.py::test_rejects_timezone_offsets_387 PASSED
+[00:36.053] app: DEBUG request id=355b3865d8 status=200 ms=69
+[00:36.090] pytest: tests/test_export.py::test_retries_zero_quantity_388 PASSED
+[00:36.163] app: DEBUG request id=c769fa3b43 status=200 ms=12
+[00:36.236] pytest: tests/test_report.py::test_formats_missing_fields_389 PASSED
+[00:36.242] pytest: tests/test_invoice.py::test_sorts_duplicate_ids_390 PASSED
+[00:36.316] pytest: tests/test_shipping.py::test_sorts_missing_fields_391 PASSED
+[00:36.350] app: DEBUG request id=8a6351be00 status=200 ms=81
+[00:36.404] pytest: tests/test_auth.py::test_formats_unicode_names_392 PASSED
+[00:36.418] pytest: tests/test_catalog.py::test_retries_long_descriptions_393 PASSED
+[00:36.467] pytest: tests/test_search.py::test_splits_unicode_names_394 PASSED
+[00:36.541] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:36.618] pytest: tests/test_cart.py::test_retries_large_batch_395 PASSED
+[00:36.641] pytest: tests/test_ledger.py::test_sorts_stale_cache_396 PASSED
+[00:36.649] app: DEBUG request id=b8698b93cc status=200 ms=46
+[00:36.675] pytest: tests/test_notify.py::test_formats_zero_quantity_397 PASSED
+[00:36.737] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:36.808] pytest: tests/test_export.py::test_splits_stale_cache_398 PASSED
+[00:36.847] app: DEBUG request id=fd9adbb093 status=200 ms=56
+[00:36.890] pytest: tests/test_report.py::test_formats_missing_fields_399 PASSED
+[00:36.938] pytest: tests/test_invoice.py::test_sorts_zero_quantity_400 PASSED
+[00:36.995] app: DEBUG request id=7f1abb4ec5 status=200 ms=74
+[00:37.070] pytest: tests/test_shipping.py::test_merges_stale_cache_401 PASSED
+[00:37.096] app: DEBUG request id=f36fc72abc status=200 ms=46
+[00:37.159] pytest: tests/test_auth.py::test_rejects_long_descriptions_402 PASSED
+[00:37.225] app: DEBUG request id=ad8d6dc592 status=200 ms=83
+[00:37.254] pytest: tests/test_catalog.py::test_parses_zero_quantity_403 PASSED
+[00:37.293] app: DEBUG request id=dc24e5c099 status=200 ms=16
+[00:37.323] pytest: tests/test_search.py::test_retries_duplicate_ids_404 PASSED
+[00:37.342] pytest:   log: retry budget 3, nothing retried so far
+[00:37.371] app: DEBUG request id=756ddcd15a status=200 ms=5
+[00:37.430] pytest: tests/test_cart.py::test_rejects_timezone_offsets_405 PASSED
+[00:37.503] app: DEBUG request id=49aa00e870 status=200 ms=2
+[00:37.556] pytest: tests/test_ledger.py::test_caches_large_batch_406 PASSED
+[00:37.624] pytest: tests/test_notify.py::test_parses_stale_cache_407 PASSED
+[00:37.677] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:37.741] app: DEBUG request id=9e5824fccc status=200 ms=69
+[00:37.765] pytest: tests/test_export.py::test_formats_missing_fields_408 PASSED
+[00:37.788] pytest: tests/test_report.py::test_retries_large_batch_409 PASSED
+[00:37.792] app: DEBUG request id=1b0506edd1 status=200 ms=7
+[00:37.805] pytest: tests/test_invoice.py::test_rejects_empty_input_410 PASSED
+[00:37.848] app: DEBUG request id=4f8895a84d status=200 ms=85
+[00:37.920] pytest: tests/test_shipping.py::test_formats_empty_input_411 PASSED
+[00:37.995] app: DEBUG request id=d0df29173f status=200 ms=65
+[00:38.008] pytest: tests/test_auth.py::test_rejects_missing_fields_412 PASSED
+[00:38.046] pytest: tests/test_catalog.py::test_rejects_empty_input_413 PASSED
+[00:38.124] pytest: tests/test_search.py::test_accepts_unicode_names_414 PASSED
+[00:38.148] pytest: tests/test_cart.py::test_formats_large_batch_415 PASSED
+[00:38.196] app: DEBUG request id=9600fde56e status=200 ms=17
+[00:38.219] pytest: tests/test_ledger.py::test_splits_timezone_offsets_416 PASSED
+[00:38.253] pytest: tests/test_notify.py::test_handles_empty_input_417 PASSED
+[00:38.283] app: DEBUG request id=707cede2ae status=200 ms=82
+[00:38.303] pytest: tests/test_export.py::test_handles_missing_fields_418 PASSED
+[00:38.355] pytest: tests/test_report.py::test_sorts_duplicate_ids_419 PASSED
+[00:38.381] app: DEBUG request id=38e5d0de3f status=200 ms=82
+[00:38.417] pytest: tests/test_invoice.py::test_caches_large_batch_420 PASSED
+[00:38.443] app: DEBUG request id=14d7a1904f status=200 ms=12
+[00:38.468] pytest: tests/test_shipping.py::test_splits_stale_cache_421 PASSED
+[00:38.517] app: DEBUG request id=56bd2c5886 status=200 ms=10
+[00:38.520] pytest: tests/test_auth.py::test_formats_large_batch_422 PASSED
+[00:38.597] pytest: tests/test_catalog.py::test_rejects_unicode_names_423 PASSED
+[00:38.631] pytest:   log: retry budget 3, nothing retried so far
+[00:38.634] app: DEBUG request id=f1283069b0 status=200 ms=6
+[00:38.639] pytest: tests/test_search.py::test_handles_stale_cache_424 PASSED
+[00:38.656] app: DEBUG request id=e078d25869 status=200 ms=81
+[00:38.690] pytest: tests/test_cart.py::test_handles_zero_quantity_425 PASSED
+[00:38.691] pytest: tests/test_ledger.py::test_handles_negative_totals_426 PASSED
+[00:38.748] app: DEBUG request id=808fec0309 status=200 ms=77
+[00:38.813] pytest: tests/test_notify.py::test_handles_zero_quantity_427 PASSED
+[00:38.870] app: DEBUG request id=c7e4f28ed2 status=200 ms=90
+[00:38.934] pytest: tests/test_export.py::test_splits_zero_quantity_428 PASSED
+[00:38.956] pytest: tests/test_report.py::test_formats_large_batch_429 PASSED
+[00:39.017] app: DEBUG request id=a688194d14 status=200 ms=39
+[00:39.053] pytest: tests/test_invoice.py::test_caches_stale_cache_430 PASSED
+[00:39.058] app: DEBUG request id=1ff1b2af99 status=200 ms=61
+[00:39.116] pytest: tests/test_shipping.py::test_handles_stale_cache_431 PASSED
+[00:39.143] pytest: tests/test_auth.py::test_formats_long_descriptions_432 PASSED
+[00:39.181] app: DEBUG request id=b7533418c8 status=200 ms=48
+[00:39.191] pytest: tests/test_catalog.py::test_parses_zero_quantity_433 PASSED
+[00:39.240] pytest: tests/test_search.py::test_formats_negative_totals_434 PASSED
+[00:39.305] app: DEBUG request id=9040422b34 status=200 ms=12
+[00:39.347] pytest: tests/test_cart.py::test_merges_stale_cache_435 PASSED
+[00:39.349] pytest: tests/test_ledger.py::test_rejects_timezone_offsets_436 PASSED
+[00:39.419] app: DEBUG request id=38f96a47ec status=200 ms=7
+[00:39.442] pytest: tests/test_notify.py::test_accepts_unicode_names_437 PASSED
+[00:39.470] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:39.508] pytest: tests/test_export.py::test_retries_unicode_names_438 PASSED
+[00:39.564] app: DEBUG request id=3badff6494 status=200 ms=35
+[00:39.604] pytest: tests/test_report.py::test_handles_duplicate_ids_439 PASSED
+[00:39.678] app: DEBUG request id=ffa60cdcfc status=200 ms=29
+[00:39.712] pytest: tests/test_invoice.py::test_sorts_stale_cache_440 PASSED
+[00:39.775] pytest: tests/test_shipping.py::test_rejects_duplicate_ids_441 PASSED
+[00:39.781] app: DEBUG request id=3b7bcf8767 status=200 ms=44
+[00:39.831] pytest: tests/test_auth.py::test_accepts_large_batch_442 PASSED
+[00:39.834] pytest: tests/test_catalog.py::test_merges_large_batch_443 PASSED
+[00:39.898] app: DEBUG request id=b19e8b344f status=200 ms=69
+[00:39.920] pytest: tests/test_search.py::test_caches_empty_input_444 PASSED
+[00:39.956] app: DEBUG request id=a1a66f3dd0 status=200 ms=49
+[00:39.979] pytest: tests/test_cart.py::test_caches_empty_input_445 PASSED
+[00:39.982] pytest: tests/test_ledger.py::test_accepts_large_batch_446 PASSED
+[00:39.990] app: DEBUG request id=776183ed74 status=200 ms=1
+[00:40.029] pytest: tests/test_notify.py::test_caches_large_batch_447 PASSED
+[00:40.037] pytest: tests/test_export.py::test_retries_stale_cache_448 PASSED
+[00:40.089] app: DEBUG request id=e8a56f2030 status=200 ms=4
+[00:40.109] pytest: tests/test_report.py::test_formats_unicode_names_449 PASSED
+[00:40.121] app: DEBUG request id=cbf0a98a3a status=200 ms=55
+[00:40.186] pytest: tests/test_invoice.py::test_splits_long_descriptions_450 PASSED
+[00:40.232] pytest: tests/test_shipping.py::test_rejects_duplicate_ids_451 PASSED
+[00:40.293] app: DEBUG request id=85cf8d0fef status=200 ms=78
+[00:40.350] pytest: tests/test_auth.py::test_accepts_zero_quantity_452 PASSED
+[00:40.370] app: DEBUG request id=4e8ebdcf23 status=200 ms=43
+[00:40.417] pytest: tests/test_catalog.py::test_splits_duplicate_ids_453 PASSED
+[00:40.439] pytest: tests/test_search.py::test_retries_duplicate_ids_454 PASSED
+[00:40.462] app: DEBUG request id=cc2be22830 status=200 ms=5
+[00:40.500] pytest: tests/test_cart.py::test_caches_zero_quantity_455 PASSED
+[00:40.541] pytest: tests/test_ledger.py::test_accepts_stale_cache_456 PASSED
+[00:40.604] pytest: tests/test_notify.py::test_accepts_long_descriptions_457 PASSED
+[00:40.615] app: DEBUG request id=c210c0bd17 status=200 ms=37
+[00:40.644] pytest: tests/test_export.py::test_retries_timezone_offsets_458 PASSED
+[00:40.703] pytest: tests/test_report.py::test_sorts_timezone_offsets_459 PASSED
+[00:40.763] app: DEBUG request id=08140cc3c3 status=200 ms=28
+[00:40.827] pytest: tests/test_invoice.py::test_splits_empty_input_460 PASSED
+[00:40.832] pytest: tests/test_shipping.py::test_formats_duplicate_ids_461 PASSED
+[00:40.855] pytest: tests/test_auth.py::test_sorts_negative_totals_462 PASSED
+[00:40.886] app: DEBUG request id=9496c3f011 status=200 ms=21
+[00:40.891] pytest: tests/test_catalog.py::test_handles_negative_totals_463 PASSED
+[00:40.912] pytest: tests/test_search.py::test_caches_large_batch_464 PASSED
+[00:40.957] app: DEBUG request id=9ae73d3d9d status=200 ms=37
+[00:41.035] pytest: tests/test_cart.py::test_parses_missing_fields_465 PASSED
+[00:41.063] pytest: tests/test_ledger.py::test_handles_large_batch_466 PASSED
+[00:41.111] app: DEBUG request id=a27ab7b19d status=200 ms=32
+[00:41.143] pytest: tests/test_notify.py::test_parses_large_batch_467 PASSED
+[00:41.192] app: DEBUG request id=f215d8ba4e status=200 ms=35
+[00:41.265] pytest: tests/test_export.py::test_rejects_missing_fields_468 PASSED
+[00:41.300] app: DEBUG request id=66e9f3462b status=200 ms=72
+[00:41.320] pytest: tests/test_report.py::test_merges_unicode_names_469 PASSED
+[00:41.348] app: DEBUG request id=6eec25766d status=200 ms=3
+[00:41.376] pytest: tests/test_invoice.py::test_retries_stale_cache_470 PASSED
+[00:41.383] pytest: tests/test_shipping.py::test_sorts_unicode_names_471 PASSED
+[00:41.403] app: DEBUG request id=2858f637fb status=200 ms=90
+[00:41.430] pytest: tests/test_auth.py::test_retries_zero_quantity_472 PASSED
+[00:41.474] app: DEBUG request id=4a82e94bde status=200 ms=51
+[00:41.493] pytest: tests/test_catalog.py::test_splits_negative_totals_473 PASSED
+[00:41.534] app: DEBUG request id=272ca755aa status=200 ms=56
+[00:41.593] pytest: tests/test_search.py::test_rejects_long_descriptions_474 PASSED
+[00:41.671] app: DEBUG request id=8487fa2282 status=200 ms=7
+[00:41.719] pytest: tests/test_cart.py::test_retries_negative_totals_475 PASSED
+[00:41.769] app: DEBUG request id=5c4514da6e status=200 ms=5
+[00:41.771] pytest: tests/test_ledger.py::test_accepts_stale_cache_476 PASSED
+[00:41.851] app: DEBUG request id=da14e7545b status=200 ms=53
+[00:41.885] pytest: tests/test_notify.py::test_handles_duplicate_ids_477 PASSED
+[00:41.913] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:41.914] pytest: tests/test_export.py::test_retries_empty_input_478 PASSED
+[00:41.973] pytest: tests/test_report.py::test_formats_missing_fields_479 PASSED
+[00:42.030] app: DEBUG request id=74e3986950 status=200 ms=60
+[00:42.050] pytest: tests/test_invoice.py::test_merges_missing_fields_480 PASSED
+[00:42.077] app: DEBUG request id=fe086a5b91 status=200 ms=7
+[00:42.114] pytest: tests/test_shipping.py::test_rejects_negative_totals_481 PASSED
+[00:42.168] app: DEBUG request id=f3688dd66d status=200 ms=15
+[00:42.247] pytest: tests/test_auth.py::test_handles_stale_cache_482 PASSED
+[00:42.299] pytest: tests/test_catalog.py::test_retries_long_descriptions_483 PASSED
+[00:42.309] pytest: tests/test_search.py::test_accepts_missing_fields_484 PASSED
+[00:42.386] pytest: tests/test_cart.py::test_retries_long_descriptions_485 PASSED
+[00:42.411] app: DEBUG request id=d0606236b6 status=200 ms=7
+[00:42.479] pytest: tests/test_ledger.py::test_merges_stale_cache_486 PASSED
+[00:42.544] pytest: tests/test_notify.py::test_parses_unicode_names_487 PASSED
+[00:42.550] app: DEBUG request id=55515aca89 status=200 ms=9
+[00:42.603] pytest: tests/test_export.py::test_merges_unicode_names_488 PASSED
+[00:42.642] pytest: tests/test_report.py::test_rejects_negative_totals_489 PASSED
+[00:42.672] pytest: tests/test_invoice.py::test_formats_missing_fields_490 PASSED
+[00:42.684] pytest: tests/test_shipping.py::test_formats_timezone_offsets_491 PASSED
+[00:42.753] app: DEBUG request id=c94435a4f8 status=200 ms=54
+[00:42.819] pytest: tests/test_auth.py::test_merges_unicode_names_492 PASSED
+[00:42.886] app: DEBUG request id=193f3d9c1b status=200 ms=55
+[00:42.962] pytest: tests/test_catalog.py::test_sorts_empty_input_493 PASSED
+[00:42.978] pytest: tests/test_search.py::test_sorts_long_descriptions_494 PASSED
+[00:43.035] app: DEBUG request id=ace6ded501 status=200 ms=35
+[00:43.113] pytest: tests/test_cart.py::test_parses_large_batch_495 PASSED
+[00:43.142] app: DEBUG request id=47c4951e91 status=200 ms=44
+[00:43.145] pytest: tests/test_ledger.py::test_merges_unicode_names_496 PASSED
+[00:43.154] pytest: tests/test_notify.py::test_handles_missing_fields_497 PASSED
+[00:43.171] app: DEBUG request id=5fb8516b9c status=200 ms=44
+[00:43.203] pytest: tests/test_export.py::test_parses_long_descriptions_498 PASSED
+[00:43.215] app: DEBUG request id=3d992c69a5 status=200 ms=14
+[00:43.253] pytest: tests/test_report.py::test_rejects_missing_fields_499 PASSED
+[00:43.287] app: DEBUG request id=2c53d8c7cb status=200 ms=67
+[00:43.314] pytest: tests/test_invoice.py::test_sorts_long_descriptions_500 PASSED
+[00:43.356] app: DEBUG request id=d4759e1432 status=200 ms=47
+[00:43.420] pytest: tests/test_shipping.py::test_accepts_large_batch_501 PASSED
+[00:43.430] app: DEBUG request id=995606b060 status=200 ms=10
+[00:43.483] pytest: tests/test_auth.py::test_handles_zero_quantity_502 PASSED
+[00:43.521] app: DEBUG request id=7be984db47 status=200 ms=28
+[00:43.547] pytest: tests/test_catalog.py::test_splits_stale_cache_503 PASSED
+[00:43.588] app: DEBUG request id=a21150e63f status=200 ms=87
+[00:43.622] pytest: tests/test_search.py::test_rejects_large_batch_504 PASSED
+[00:43.692] app: DEBUG request id=7b7cdd4f65 status=200 ms=57
+[00:43.710] pytest: tests/test_cart.py::test_retries_large_batch_505 PASSED
+[00:43.789] app: DEBUG request id=b39ac3864d status=200 ms=50
+[00:43.797] pytest: tests/test_ledger.py::test_sorts_long_descriptions_506 PASSED
+[00:43.871] app: DEBUG request id=af4fd3d9d5 status=200 ms=54
+[00:43.908] pytest: tests/test_notify.py::test_merges_negative_totals_507 PASSED
+[00:43.980] app: DEBUG request id=0ffa28b5bd status=200 ms=21
+[00:44.005] pytest: tests/test_export.py::test_parses_stale_cache_508 PASSED
+[00:44.040] app: DEBUG request id=30845e183d status=200 ms=27
+[00:44.074] pytest: tests/test_report.py::test_rejects_long_descriptions_509 PASSED
+[00:44.128] pytest: tests/test_invoice.py::test_caches_timezone_offsets_510 PASSED
+[00:44.183] app: DEBUG request id=b833ad88e5 status=200 ms=36
+[00:44.226] pytest: tests/test_shipping.py::test_retries_empty_input_511 PASSED
+[00:44.255] app: DEBUG request id=4488e1e752 status=200 ms=5
+[00:44.327] pytest: tests/test_auth.py::test_accepts_large_batch_512 PASSED
+[00:44.395] app: DEBUG request id=ac73613682 status=200 ms=46
+[00:44.426] pytest: tests/test_catalog.py::test_parses_empty_input_513 PASSED
+[00:44.459] app: DEBUG request id=f7c4e9a260 status=200 ms=47
+[00:44.466] pytest: tests/test_search.py::test_formats_duplicate_ids_514 PASSED
+[00:44.536] pytest: tests/test_cart.py::test_handles_timezone_offsets_515 PASSED
+[00:44.557] pytest: tests/test_ledger.py::test_parses_large_batch_516 PASSED
+[00:44.606] pytest: tests/test_notify.py::test_caches_unicode_names_517 PASSED
+[00:44.673] app: DEBUG request id=6f69ecccd1 status=200 ms=25
+[00:44.678] pytest: tests/test_export.py::test_handles_long_descriptions_518 PASSED
+[00:44.714] pytest: tests/test_report.py::test_formats_stale_cache_519 PASSED
+[00:44.751] app: DEBUG request id=bc21e17d52 status=200 ms=23
+[00:44.800] pytest: tests/test_invoice.py::test_rejects_stale_cache_520 PASSED
+[00:44.865] app: DEBUG request id=fdd1106f12 status=200 ms=25
+[00:44.894] pytest: tests/test_shipping.py::test_rejects_empty_input_521 PASSED
+[00:44.946] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:45.022] app: DEBUG request id=39bbf3bb7e status=200 ms=60
+[00:45.032] pytest: tests/test_auth.py::test_parses_zero_quantity_522 PASSED
+[00:45.100] pytest:   log: retry budget 3, nothing retried so far
+[00:45.111] app: DEBUG request id=36d6d7f5c1 status=200 ms=88
+[00:45.144] pytest: tests/test_catalog.py::test_handles_negative_totals_523 PASSED
+[00:45.192] app: DEBUG request id=78bd02ca2b status=200 ms=83
+[00:45.194] pytest: tests/test_search.py::test_sorts_negative_totals_524 PASSED
+[00:45.260] pytest:   log: retry budget 3, nothing retried so far
+[00:45.315] app: DEBUG request id=b112f64616 status=200 ms=62
+[00:45.362] pytest: tests/test_cart.py::test_parses_missing_fields_525 PASSED
+[00:45.409] app: DEBUG request id=0642a0a050 status=200 ms=80
+[00:45.481] pytest: tests/test_ledger.py::test_rejects_negative_totals_526 PASSED
+[00:45.549] pytest: tests/test_notify.py::test_splits_missing_fields_527 PASSED
+[00:45.564] pytest: tests/test_export.py::test_merges_timezone_offsets_528 PASSED
+[00:45.627] app: DEBUG request id=fc36eaae19 status=200 ms=88
+[00:45.639] pytest: tests/test_report.py::test_accepts_timezone_offsets_529 PASSED
+[00:45.656] pytest: tests/test_invoice.py::test_parses_timezone_offsets_530 PASSED
+[00:45.658] app: DEBUG request id=3704de08e8 status=200 ms=22
+[00:45.689] pytest: tests/test_shipping.py::test_accepts_missing_fields_531 PASSED
+[00:45.739] pytest: tests/test_auth.py::test_merges_large_batch_532 PASSED
+[00:45.798] app: DEBUG request id=f8d1648464 status=200 ms=12
+[00:45.852] pytest: tests/test_catalog.py::test_formats_duplicate_ids_533 PASSED
+[00:45.903] app: DEBUG request id=6057b8928e status=200 ms=33
+[00:45.925] pytest: tests/test_search.py::test_caches_timezone_offsets_534 PASSED
+[00:45.939] app: DEBUG request id=c12d184984 status=200 ms=79
+[00:45.975] pytest: tests/test_cart.py::test_parses_duplicate_ids_535 PASSED
+[00:46.046] app: DEBUG request id=3a54fd9869 status=200 ms=23
+[00:46.063] pytest: tests/test_ledger.py::test_retries_duplicate_ids_536 PASSED
+[00:46.119] pytest: tests/test_notify.py::test_formats_stale_cache_537 PASSED
+[00:46.141] app: DEBUG request id=dd934923ae status=200 ms=66
+[00:46.176] pytest: tests/test_export.py::test_caches_zero_quantity_538 PASSED
+[00:46.251] app: DEBUG request id=6aaf8e13ec status=200 ms=32
+[00:46.272] pytest: tests/test_report.py::test_handles_empty_input_539 PASSED
+[00:46.293] app: DEBUG request id=7dd3c7ebb1 status=200 ms=47
+[00:46.302] pytest: tests/test_invoice.py::test_formats_negative_totals_540 PASSED
+[00:46.357] app: DEBUG request id=92c11569a6 status=200 ms=67
+[00:46.420] pytest: tests/test_shipping.py::test_caches_duplicate_ids_541 PASSED
+[00:46.445] app: DEBUG request id=6d70513d16 status=200 ms=89
+[00:46.454] pytest: tests/test_auth.py::test_formats_negative_totals_542 PASSED
+[00:46.510] pytest: tests/test_catalog.py::test_splits_duplicate_ids_543 PASSED
+[00:46.582] app: DEBUG request id=830f091273 status=200 ms=44
+[00:46.602] pytest: tests/test_search.py::test_merges_missing_fields_544 PASSED
+[00:46.672] pytest: tests/test_cart.py::test_handles_timezone_offsets_545 PASSED
+[00:46.750] app: DEBUG request id=b4e2830835 status=200 ms=39
+[00:46.816] pytest: tests/test_ledger.py::test_accepts_missing_fields_546 PASSED
+[00:46.856] app: DEBUG request id=cca4aa0503 status=200 ms=26
+[00:46.902] pytest: tests/test_notify.py::test_retries_duplicate_ids_547 PASSED
+[00:46.967] pytest: tests/test_export.py::test_merges_stale_cache_548 PASSED
+[00:47.007] pytest: tests/test_report.py::test_sorts_large_batch_549 PASSED
+[00:47.031] pytest: tests/test_invoice.py::test_rejects_large_batch_550 PASSED
+[00:47.094] pytest: tests/test_shipping.py::test_retries_large_batch_551 PASSED
+[00:47.116] app: DEBUG request id=444b60ad0c status=200 ms=52
+[00:47.122] pytest: tests/test_auth.py::test_accepts_stale_cache_552 PASSED
+[00:47.129] pytest:   log: retry budget 3, nothing retried so far
+[00:47.148] app: DEBUG request id=fcecbc6d30 status=200 ms=23
+[00:47.211] pytest: tests/test_catalog.py::test_accepts_long_descriptions_553 PASSED
+[00:47.216] app: DEBUG request id=c895aa5f96 status=200 ms=39
+[00:47.243] pytest: tests/test_search.py::test_sorts_duplicate_ids_554 PASSED
+[00:47.287] pytest: tests/test_cart.py::test_formats_zero_quantity_555 PASSED
+[00:47.329] pytest: tests/test_ledger.py::test_accepts_zero_quantity_556 PASSED
+[00:47.373] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:47.425] pytest: tests/test_notify.py::test_merges_zero_quantity_557 PASSED
+[00:47.490] app: DEBUG request id=015311a002 status=200 ms=24
+[00:47.538] pytest: tests/test_export.py::test_retries_negative_totals_558 PASSED
+[00:47.558] app: DEBUG request id=b807ab80e1 status=200 ms=10
+[00:47.567] pytest: tests/test_report.py::test_sorts_negative_totals_559 PASSED
+[00:47.606] app: DEBUG request id=d8c6a02702 status=200 ms=17
+[00:47.679] pytest: tests/test_invoice.py::test_merges_long_descriptions_560 PASSED
+[00:47.720] pytest: tests/test_shipping.py::test_accepts_empty_input_561 PASSED
+[00:47.780] app: DEBUG request id=c138646307 status=200 ms=12
+[00:47.819] pytest: tests/test_auth.py::test_caches_duplicate_ids_562 PASSED
+[00:47.834] pytest: tests/test_catalog.py::test_parses_large_batch_563 PASSED
+[00:47.873] app: DEBUG request id=4b5ca4f500 status=200 ms=82
+[00:47.922] pytest: tests/test_search.py::test_splits_unicode_names_564 PASSED
+[00:47.981] pytest: tests/test_cart.py::test_rejects_timezone_offsets_565 PASSED
+[00:47.993] pytest: tests/test_ledger.py::test_handles_duplicate_ids_566 PASSED
+[00:48.058] pytest: tests/test_notify.py::test_handles_large_batch_567 PASSED
+[00:48.084] pytest: tests/test_export.py::test_merges_timezone_offsets_568 PASSED
+[00:48.145] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:48.185] pytest: tests/test_report.py::test_splits_negative_totals_569 PASSED
+[00:48.240] app: DEBUG request id=ffc8c42f80 status=200 ms=20
+[00:48.266] pytest: tests/test_invoice.py::test_merges_unicode_names_570 PASSED
+[00:48.296] app: DEBUG request id=ba1d8604a9 status=200 ms=78
+[00:48.304] pytest: tests/test_shipping.py::test_formats_empty_input_571 PASSED
+[00:48.344] app: DEBUG request id=8ac984154d status=200 ms=22
+[00:48.346] pytest: tests/test_auth.py::test_rejects_timezone_offsets_572 PASSED
+[00:48.393] pytest: tests/test_catalog.py::test_splits_missing_fields_573 PASSED
+[00:48.419] pytest:   log: retry budget 3, nothing retried so far
+[00:48.450] app: DEBUG request id=ebfcf1329e status=200 ms=8
+[00:48.475] pytest: tests/test_search.py::test_parses_empty_input_574 PASSED
+[00:48.551] pytest: tests/test_cart.py::test_merges_timezone_offsets_575 PASSED
+[00:48.566] app: DEBUG request id=7db05e2a30 status=200 ms=7
+[00:48.582] pytest: tests/test_ledger.py::test_accepts_duplicate_ids_576 PASSED
+[00:48.628] pytest:   log: retry budget 3, nothing retried so far
+[00:48.653] pytest: tests/test_notify.py::test_merges_long_descriptions_577 PASSED
+[00:48.691] pytest: tests/test_export.py::test_splits_empty_input_578 PASSED
+[00:48.739] app: DEBUG request id=1fa14d41eb status=200 ms=84
+[00:48.745] pytest: tests/test_report.py::test_sorts_empty_input_579 PASSED
+[00:48.778] pytest: tests/test_invoice.py::test_accepts_long_descriptions_580 PASSED
+[00:48.833] app: DEBUG request id=30b2ddd11b status=200 ms=38
+[00:48.890] pytest: tests/test_shipping.py::test_sorts_negative_totals_581 PASSED
+[00:48.914] app: DEBUG request id=3383b39378 status=200 ms=14
+[00:48.943] pytest: tests/test_auth.py::test_sorts_duplicate_ids_582 PASSED
+[00:48.963] app: DEBUG request id=2a99bd315a status=200 ms=39
+[00:49.035] pytest: tests/test_catalog.py::test_retries_large_batch_583 PASSED
+[00:49.040] pytest: tests/test_search.py::test_formats_empty_input_584 PASSED
+[00:49.097] app: DEBUG request id=3ca8ac8b12 status=200 ms=62
+[00:49.138] pytest: tests/test_cart.py::test_merges_large_batch_585 PASSED
+[00:49.202] app: DEBUG request id=1ad0c865e8 status=200 ms=75
+[00:49.217] pytest: tests/test_ledger.py::test_handles_stale_cache_586 PASSED
+[00:49.274] app: DEBUG request id=7fdba7d69e status=200 ms=36
+[00:49.301] pytest: tests/test_notify.py::test_parses_zero_quantity_587 PASSED
+[00:49.352] pytest: tests/test_export.py::test_accepts_negative_totals_588 PASSED
+[00:49.370] app: DEBUG request id=023c66196c status=200 ms=6
+[00:49.428] pytest: tests/test_report.py::test_handles_zero_quantity_589 PASSED
+[00:49.434] pytest: tests/test_invoice.py::test_accepts_duplicate_ids_590 PASSED
+[00:49.503] app: DEBUG request id=d86cf7ecf6 status=200 ms=54
+[00:49.546] pytest: tests/test_shipping.py::test_handles_duplicate_ids_591 PASSED
+[00:49.580] pytest: tests/test_auth.py::test_sorts_large_batch_592 PASSED
+[00:49.660] app: DEBUG request id=2cce0e9153 status=200 ms=42
+[00:49.710] pytest: tests/test_catalog.py::test_accepts_long_descriptions_593 PASSED
+[00:49.712] app: DEBUG request id=4df9019e2d status=200 ms=63
+[00:49.780] pytest: tests/test_search.py::test_handles_duplicate_ids_594 PASSED
+[00:49.802] pytest: tests/test_cart.py::test_rejects_timezone_offsets_595 PASSED
+[00:49.808] pytest: tests/test_ledger.py::test_formats_large_batch_596 PASSED
+[00:49.858] app: DEBUG request id=10ed1de9e3 status=200 ms=63
+[00:49.898] pytest: tests/test_notify.py::test_handles_duplicate_ids_597 PASSED
+[00:49.962] pytest: tests/test_export.py::test_sorts_empty_input_598 PASSED
+[00:50.035] app: DEBUG request id=b1e893cb01 status=200 ms=78
+[00:50.078] pytest: tests/test_report.py::test_merges_zero_quantity_599 PASSED
+[00:50.111] pytest: tests/test_invoice.py::test_sorts_negative_totals_600 PASSED
+[00:50.163] app: DEBUG request id=8e8ddb1090 status=200 ms=27
+[00:50.231] pytest: tests/test_shipping.py::test_formats_large_batch_601 PASSED
+[00:50.280] pytest: tests/test_auth.py::test_sorts_duplicate_ids_602 PASSED
+[00:50.286] app: DEBUG request id=24bba2ade3 status=200 ms=63
+[00:50.351] pytest: tests/test_catalog.py::test_parses_duplicate_ids_603 PASSED
+[00:50.430] app: DEBUG request id=b5c21da4bd status=200 ms=79
+[00:50.501] pytest: tests/test_search.py::test_splits_negative_totals_604 PASSED
+[00:50.567] app: DEBUG request id=8da7145a2a status=200 ms=4
+[00:50.570] pytest: tests/test_cart.py::test_parses_unicode_names_605 PASSED
+[00:50.586] pytest: tests/test_ledger.py::test_sorts_timezone_offsets_606 PASSED
+[00:50.647] pytest: tests/test_notify.py::test_parses_long_descriptions_607 PASSED
+[00:50.669] pytest: tests/test_export.py::test_caches_missing_fields_608 PASSED
+[00:50.695] app: DEBUG request id=b1873ad1fd status=200 ms=85
+[00:50.752] pytest: tests/test_report.py::test_rejects_zero_quantity_609 PASSED
+[00:50.820] pytest: tests/test_invoice.py::test_sorts_large_batch_610 PASSED
+[00:50.887] pytest: tests/test_shipping.py::test_splits_stale_cache_611 PASSED
+[00:50.900] pytest: tests/test_auth.py::test_caches_negative_totals_612 PASSED
+[00:50.961] pytest: tests/test_catalog.py::test_sorts_long_descriptions_613 PASSED
+[00:50.979] app: DEBUG request id=026353fa96 status=200 ms=82
+[00:51.024] pytest: tests/test_search.py::test_caches_stale_cache_614 PASSED
+[00:51.046] app: DEBUG request id=9b74cfa17b status=200 ms=45
+[00:51.099] pytest: tests/test_cart.py::test_caches_zero_quantity_615 PASSED
+[00:51.139] pytest: tests/test_ledger.py::test_sorts_zero_quantity_616 PASSED
+[00:51.174] app: DEBUG request id=a6f3b47982 status=200 ms=25
+[00:51.184] pytest: tests/test_notify.py::test_rejects_negative_totals_617 PASSED
+[00:51.250] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:51.291] pytest: tests/test_export.py::test_caches_zero_quantity_618 PASSED
+[00:51.369] pytest: tests/test_report.py::test_splits_large_batch_619 PASSED
+[00:51.405] app: DEBUG request id=fb139ed011 status=200 ms=90
+[00:51.469] pytest: tests/test_invoice.py::test_merges_missing_fields_620 PASSED
+[00:51.474] pytest:   log: retry budget 3, nothing retried so far
+[00:51.495] pytest: tests/test_shipping.py::test_handles_large_batch_621 PASSED
+[00:51.526] pytest: tests/test_auth.py::test_parses_zero_quantity_622 PASSED
+[00:51.554] app: DEBUG request id=3752704d69 status=200 ms=54
+[00:51.606] pytest: tests/test_catalog.py::test_formats_unicode_names_623 PASSED
+[00:51.648] app: DEBUG request id=703724114f status=200 ms=16
+[00:51.711] pytest: tests/test_search.py::test_formats_negative_totals_624 PASSED
+[00:51.719] pytest: tests/test_cart.py::test_handles_timezone_offsets_625 PASSED
+[00:51.754] app: DEBUG request id=1a9aedb666 status=200 ms=56
+[00:51.828] pytest: tests/test_ledger.py::test_formats_unicode_names_626 PASSED
+[00:51.870] pytest: tests/test_notify.py::test_merges_stale_cache_627 PASSED
+[00:51.944] pytest: tests/test_export.py::test_handles_large_batch_628 PASSED
+[00:51.985] app: DEBUG request id=72ab105e6d status=200 ms=24
+[00:52.062] pytest: tests/test_report.py::test_handles_timezone_offsets_629 PASSED
+[00:52.081] pytest: tests/test_invoice.py::test_retries_timezone_offsets_630 PASSED
+[00:52.096] app: DEBUG request id=7b2265fca0 status=200 ms=68
+[00:52.133] pytest: tests/test_shipping.py::test_retries_empty_input_631 PASSED
+[00:52.174] app: DEBUG request id=f177ca17ab status=200 ms=88
+[00:52.206] pytest: tests/test_auth.py::test_merges_stale_cache_632 PASSED
+[00:52.236] pytest: tests/test_catalog.py::test_splits_negative_totals_633 PASSED
+[00:52.312] pytest: tests/test_search.py::test_sorts_zero_quantity_634 PASSED
+[00:52.318] app: DEBUG request id=347bc8ddac status=200 ms=79
+[00:52.387] pytest: tests/test_cart.py::test_rejects_large_batch_635 PASSED
+[00:52.414] app: DEBUG request id=0e2f1fee3f status=200 ms=54
+[00:52.481] pytest: tests/test_ledger.py::test_parses_missing_fields_636 PASSED
+[00:52.550] app: DEBUG request id=4f47cd7b20 status=200 ms=84
+[00:52.615] pytest: tests/test_notify.py::test_formats_zero_quantity_637 PASSED
+[00:52.687] pytest: tests/test_export.py::test_rejects_missing_fields_638 PASSED
+[00:52.746] app: DEBUG request id=7a48a8a723 status=200 ms=2
+[00:52.807] pytest: tests/test_report.py::test_parses_stale_cache_639 PASSED
+[00:52.842] pytest: tests/test_invoice.py::test_caches_long_descriptions_640 PASSED
+[00:52.846] app: DEBUG request id=561d1d9ea3 status=200 ms=56
+[00:52.868] pytest: tests/test_shipping.py::test_retries_stale_cache_641 PASSED
+[00:52.946] pytest: tests/test_auth.py::test_retries_duplicate_ids_642 PASSED
+[00:52.959] app: DEBUG request id=9f75e35888 status=200 ms=68
+[00:52.977] pytest: tests/test_catalog.py::test_sorts_empty_input_643 PASSED
+[00:53.041] app: DEBUG request id=c99e5db324 status=200 ms=53
+[00:53.105] pytest: tests/test_search.py::test_caches_stale_cache_644 PASSED
+[00:53.134] app: DEBUG request id=946f9f7e68 status=200 ms=38
+[00:53.180] pytest: tests/test_cart.py::test_formats_timezone_offsets_645 PASSED
+[00:53.206] pytest: tests/test_ledger.py::test_splits_stale_cache_646 PASSED
+[00:53.212] pytest:   log: retry budget 3, nothing retried so far
+[00:53.216] app: DEBUG request id=2b1f72644c status=200 ms=29
+[00:53.218] pytest: tests/test_notify.py::test_sorts_stale_cache_647 PASSED
+[00:53.264] pytest: tests/test_export.py::test_splits_large_batch_648 PASSED
+[00:53.328] pytest: tests/test_report.py::test_rejects_duplicate_ids_649 PASSED
+[00:53.349] app: DEBUG request id=770433ede3 status=200 ms=12
+[00:53.392] pytest: tests/test_invoice.py::test_formats_empty_input_650 PASSED
+[00:53.406] pytest: tests/test_shipping.py::test_splits_long_descriptions_651 PASSED
+[00:53.464] app: DEBUG request id=206a4f5d51 status=200 ms=22
+[00:53.475] pytest: tests/test_auth.py::test_rejects_duplicate_ids_652 PASSED
+[00:53.508] pytest: tests/test_catalog.py::test_parses_large_batch_653 PASSED
+[00:53.529] app: DEBUG request id=89b5098c37 status=200 ms=37
+[00:53.535] pytest: tests/test_search.py::test_accepts_timezone_offsets_654 PASSED
+[00:53.551] pytest: tests/test_cart.py::test_splits_long_descriptions_655 PASSED
+[00:53.589] app: DEBUG request id=ef9dce1450 status=200 ms=64
+[00:53.648] pytest: tests/test_ledger.py::test_accepts_long_descriptions_656 PASSED
+[00:53.689] app: DEBUG request id=0887b8490b status=200 ms=70
+[00:53.696] pytest: tests/test_notify.py::test_merges_unicode_names_657 PASSED
+[00:53.709] app: DEBUG request id=3bc282124f status=200 ms=8
+[00:53.724] pytest: tests/test_export.py::test_rejects_empty_input_658 PASSED
+[00:53.737] app: DEBUG request id=2c1cc95660 status=200 ms=13
+[00:53.814] pytest: tests/test_report.py::test_splits_missing_fields_659 PASSED
+[00:53.869] app: DEBUG request id=9a39d5bf9d status=200 ms=39
+[00:53.900] pytest: tests/test_invoice.py::test_caches_timezone_offsets_660 PASSED
+[00:53.974] pytest: tests/test_shipping.py::test_rejects_duplicate_ids_661 PASSED
+[00:53.999] pytest: tests/test_auth.py::test_merges_zero_quantity_662 PASSED
+[00:54.062] pytest: tests/test_catalog.py::test_formats_long_descriptions_663 PASSED
+[00:54.084] app: DEBUG request id=3618fe6533 status=200 ms=49
+[00:54.136] pytest: tests/test_search.py::test_merges_negative_totals_664 PASSED
+[00:54.167] app: DEBUG request id=3f0f36d088 status=200 ms=31
+[00:54.246] pytest: tests/test_cart.py::test_retries_duplicate_ids_665 PASSED
+[00:54.251] app: DEBUG request id=b65d9f52c1 status=200 ms=38
+[00:54.290] pytest: tests/test_ledger.py::test_retries_large_batch_666 PASSED
+[00:54.332] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:54.362] app: DEBUG request id=a2316f42e3 status=200 ms=79
+[00:54.389] pytest: tests/test_notify.py::test_accepts_stale_cache_667 PASSED
+[00:54.399] app: DEBUG request id=27f5481d5b status=200 ms=50
+[00:54.454] pytest: tests/test_export.py::test_rejects_empty_input_668 PASSED
+[00:54.511] app: DEBUG request id=22fe78a9ed status=200 ms=20
+[00:54.545] pytest: tests/test_report.py::test_parses_missing_fields_669 PASSED
+[00:54.549] app: DEBUG request id=ab6e68869b status=200 ms=18
+[00:54.571] pytest: tests/test_invoice.py::test_handles_unicode_names_670 PASSED
+[00:54.638] app: DEBUG request id=d174bb7cd1 status=200 ms=15
+[00:54.670] pytest: tests/test_shipping.py::test_sorts_unicode_names_671 PASSED
+[00:54.737] pytest: tests/test_auth.py::test_merges_duplicate_ids_672 PASSED
+[00:54.749] pytest: tests/test_catalog.py::test_rejects_duplicate_ids_673 PASSED
+[00:54.754] pytest: tests/test_search.py::test_merges_stale_cache_674 PASSED
+[00:54.789] app: DEBUG request id=ef7c573de6 status=200 ms=21
+[00:54.791] pytest: tests/test_cart.py::test_merges_negative_totals_675 PASSED
+[00:54.836] app: DEBUG request id=e7a1c37a8d status=200 ms=62
+[00:54.863] pytest: tests/test_ledger.py::test_handles_empty_input_676 PASSED
+[00:54.898] pytest: tests/test_notify.py::test_sorts_stale_cache_677 PASSED
+[00:54.946] app: DEBUG request id=b4a5972959 status=200 ms=11
+[00:54.994] pytest: tests/test_export.py::test_formats_stale_cache_678 PASSED
+[00:55.001] app: DEBUG request id=00f2dc3d37 status=200 ms=6
+[00:55.058] pytest: tests/test_report.py::test_splits_zero_quantity_679 PASSED
+[00:55.114] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:55.141] pytest: tests/test_invoice.py::test_rejects_stale_cache_680 PASSED
+[00:55.205] pytest: tests/test_shipping.py::test_sorts_duplicate_ids_681 PASSED
+[00:55.240] app: DEBUG request id=d727a20584 status=200 ms=77
+[00:55.286] pytest: tests/test_auth.py::test_merges_long_descriptions_682 PASSED
+[00:55.352] pytest: tests/test_catalog.py::test_formats_timezone_offsets_683 PASSED
+[00:55.365] app: DEBUG request id=615a08410c status=200 ms=69
+[00:55.393] pytest: tests/test_search.py::test_splits_empty_input_684 PASSED
+[00:55.468] app: DEBUG request id=fb818eec32 status=200 ms=57
+[00:55.471] pytest: tests/test_cart.py::test_caches_duplicate_ids_685 PASSED
+[00:55.508] app: DEBUG request id=4e6fced7b5 status=200 ms=11
+[00:55.545] pytest: tests/test_ledger.py::test_merges_zero_quantity_686 PASSED
+[00:55.564] pytest: tests/test_notify.py::test_rejects_stale_cache_687 PASSED
+[00:55.626] pytest: tests/test_export.py::test_accepts_unicode_names_688 PASSED
+[00:55.684] pytest: tests/test_report.py::test_rejects_stale_cache_689 PASSED
+[00:55.750] app: DEBUG request id=bb309a1b2e status=200 ms=26
+[00:55.795] pytest: tests/test_invoice.py::test_retries_timezone_offsets_690 PASSED
+[00:55.850] app: DEBUG request id=451b542456 status=200 ms=84
+[00:55.904] pytest: tests/test_shipping.py::test_formats_unicode_names_691 PASSED
+[00:55.954] app: DEBUG request id=a5efce3d7e status=200 ms=50
+[00:56.014] pytest: tests/test_auth.py::test_sorts_timezone_offsets_692 PASSED
+[00:56.089] app: DEBUG request id=16fbdb29c8 status=200 ms=46
+[00:56.107] pytest: tests/test_catalog.py::test_retries_timezone_offsets_693 PASSED
+[00:56.180] pytest: tests/test_search.py::test_accepts_missing_fields_694 PASSED
+[00:56.214] pytest: tests/test_cart.py::test_splits_negative_totals_695 PASSED
+[00:56.253] app: DEBUG request id=1fcf1ef6e2 status=200 ms=13
+[00:56.313] pytest: tests/test_ledger.py::test_caches_long_descriptions_696 PASSED
+[00:56.364] app: DEBUG request id=f41c656e94 status=200 ms=28
+[00:56.442] pytest: tests/test_notify.py::test_parses_long_descriptions_697 PASSED
+[00:56.511] pytest: tests/test_export.py::test_rejects_long_descriptions_698 PASSED
+[00:56.526] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:56.551] app: DEBUG request id=c8fba76d38 status=200 ms=63
+[00:56.585] pytest: tests/test_report.py::test_handles_duplicate_ids_699 PASSED
+[00:56.646] app: DEBUG request id=c038ee66ea status=200 ms=79
+[00:56.673] pytest: tests/test_invoice.py::test_retries_long_descriptions_700 PASSED
+[00:56.720] pytest: tests/test_shipping.py::test_sorts_unicode_names_701 PASSED
+[00:56.795] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:56.800] pytest: tests/test_auth.py::test_splits_zero_quantity_702 PASSED
+[00:56.842] pytest: tests/test_catalog.py::test_splits_negative_totals_703 PASSED
+[00:56.881] app: DEBUG request id=426836b5c0 status=200 ms=70
+[00:56.887] pytest: tests/test_search.py::test_merges_empty_input_704 PASSED
+[00:56.951] app: DEBUG request id=2800bd41f4 status=200 ms=50
+[00:56.973] pytest: tests/test_cart.py::test_merges_unicode_names_705 PASSED
+[00:57.036] pytest:   log: retry budget 3, nothing retried so far
+[00:57.083] pytest: tests/test_ledger.py::test_merges_missing_fields_706 PASSED
+[00:57.104] pytest: tests/test_notify.py::test_caches_negative_totals_707 PASSED
+[00:57.124] app: DEBUG request id=c5ebdcbaa3 status=200 ms=43
+[00:57.159] pytest: tests/test_export.py::test_merges_missing_fields_708 PASSED
+[00:57.166] app: DEBUG request id=3462a60054 status=200 ms=21
+[00:57.210] pytest: tests/test_report.py::test_formats_large_batch_709 PASSED
+[00:57.264] pytest: tests/test_invoice.py::test_handles_stale_cache_710 PASSED
+[00:57.334] app: DEBUG request id=e7fb2f27d9 status=200 ms=39
+[00:57.357] pytest: tests/test_shipping.py::test_parses_missing_fields_711 PASSED
+[00:57.378] app: DEBUG request id=7cc6a2da65 status=200 ms=13
+[00:57.446] pytest: tests/test_auth.py::test_formats_unicode_names_712 PASSED
+[00:57.524] pytest: tests/test_catalog.py::test_accepts_missing_fields_713 PASSED
+[00:57.555] pytest: tests/test_search.py::test_merges_empty_input_714 PASSED
+[00:57.628] app: DEBUG request id=d97604ab40 status=200 ms=11
+[00:57.681] pytest: tests/test_cart.py::test_splits_long_descriptions_715 PASSED
+[00:57.709] pytest: tests/test_ledger.py::test_handles_large_batch_716 PASSED
+[00:57.733] pytest: tests/test_notify.py::test_retries_negative_totals_717 PASSED
+[00:57.765] app: DEBUG request id=0133e37fa0 status=200 ms=40
+[00:57.818] pytest: tests/test_export.py::test_handles_negative_totals_718 PASSED
+[00:57.828] pytest: tests/test_report.py::test_sorts_negative_totals_719 PASSED
+[00:57.840] pytest: tests/test_invoice.py::test_handles_large_batch_720 PASSED
+[00:57.908] app: DEBUG request id=152e2e422c status=200 ms=9
+[00:57.952] pytest: tests/test_shipping.py::test_caches_unicode_names_721 PASSED
+[00:57.965] pytest: tests/test_auth.py::test_splits_duplicate_ids_722 PASSED
+[00:58.021] app: DEBUG request id=b15882af20 status=200 ms=64
+[00:58.075] pytest: tests/test_catalog.py::test_accepts_zero_quantity_723 PASSED
+[00:58.107] app: DEBUG request id=f62484689a status=200 ms=32
+[00:58.122] pytest: tests/test_search.py::test_merges_stale_cache_724 PASSED
+[00:58.168] app: DEBUG request id=c9b0354920 status=200 ms=81
+[00:58.209] pytest: tests/test_cart.py::test_accepts_timezone_offsets_725 PASSED
+[00:58.237] app: DEBUG request id=bd366c4252 status=200 ms=72
+[00:58.286] pytest: tests/test_ledger.py::test_rejects_zero_quantity_726 PASSED
+[00:58.321] pytest:   log: retry budget 3, nothing retried so far
+[00:58.368] pytest: tests/test_notify.py::test_sorts_timezone_offsets_727 PASSED
+[00:58.424] app: DEBUG request id=5df813c773 status=200 ms=48
+[00:58.481] pytest: tests/test_export.py::test_handles_timezone_offsets_728 PASSED
+[00:58.507] app: DEBUG request id=11f0016439 status=200 ms=62
+[00:58.527] pytest: tests/test_report.py::test_formats_empty_input_729 PASSED
+[00:58.531] pytest: tests/test_invoice.py::test_formats_negative_totals_730 PASSED
+[00:58.598] pytest: tests/test_shipping.py::test_splits_stale_cache_731 PASSED
+[00:58.627] pytest: tests/test_auth.py::test_merges_long_descriptions_732 PASSED
+[00:58.659] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:58.678] app: DEBUG request id=6d8d865905 status=200 ms=19
+[00:58.737] pytest: tests/test_catalog.py::test_sorts_long_descriptions_733 PASSED
+[00:58.764] app: DEBUG request id=81f3e6cd67 status=200 ms=7
+[00:58.828] pytest: tests/test_search.py::test_retries_empty_input_734 PASSED
+[00:58.842] app: DEBUG request id=c2ac2b1809 status=200 ms=12
+[00:58.852] pytest: tests/test_cart.py::test_retries_negative_totals_735 PASSED
+[00:58.860] app: DEBUG request id=f1eeff7959 status=200 ms=61
+[00:58.933] pytest: tests/test_ledger.py::test_formats_duplicate_ids_736 PASSED
+[00:58.981] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:59.045] pytest: tests/test_notify.py::test_rejects_timezone_offsets_737 PASSED
+[00:59.123] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:59.144] pytest: tests/test_export.py::test_rejects_timezone_offsets_738 PASSED
+[00:59.185] app: DEBUG request id=f939664041 status=200 ms=35
+[00:59.200] pytest: tests/test_report.py::test_sorts_zero_quantity_739 PASSED
+[00:59.205] pytest: tests/test_invoice.py::test_merges_negative_totals_740 PASSED
+[00:59.217] app: DEBUG request id=27325bd437 status=200 ms=67
+[00:59.240] pytest: tests/test_shipping.py::test_sorts_stale_cache_741 PASSED
+[00:59.294] app: DEBUG request id=4c80808dce status=200 ms=59
+[00:59.307] pytest: tests/test_auth.py::test_accepts_negative_totals_742 PASSED
+[00:59.358] app: DEBUG request id=35bd695b7e status=200 ms=31
+[00:59.384] pytest: tests/test_catalog.py::test_caches_unicode_names_743 PASSED
+[00:59.422] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[00:59.456] pytest: tests/test_search.py::test_splits_long_descriptions_744 PASSED
+[00:59.520] app: DEBUG request id=f395f09092 status=200 ms=48
+[00:59.574] pytest: tests/test_cart.py::test_handles_large_batch_745 PASSED
+[00:59.643] pytest: tests/test_ledger.py::test_merges_stale_cache_746 PASSED
+[00:59.645] pytest: tests/test_notify.py::test_merges_zero_quantity_747 PASSED
+[00:59.648] app: DEBUG request id=724852bfc7 status=200 ms=47
+[00:59.718] pytest: tests/test_export.py::test_sorts_zero_quantity_748 PASSED
+[00:59.788] app: DEBUG request id=8eb9c0f90a status=200 ms=65
+[00:59.809] pytest: tests/test_report.py::test_retries_duplicate_ids_749 PASSED
+[00:59.881] app: DEBUG request id=ff6b7976e1 status=200 ms=35
+[00:59.941] pytest: tests/test_invoice.py::test_rejects_duplicate_ids_750 PASSED
+[00:59.969] app: DEBUG request id=3f31eb8cb9 status=200 ms=2
+[01:00.032] pytest: tests/test_shipping.py::test_retries_zero_quantity_751 PASSED
+[01:00.053] app: DEBUG request id=f4e63a8fa4 status=200 ms=7
+[01:00.088] pytest: tests/test_auth.py::test_rejects_duplicate_ids_752 PASSED
+[01:00.104] app: DEBUG request id=55a7ae1fc5 status=200 ms=61
+[01:00.183] pytest: tests/test_catalog.py::test_rejects_missing_fields_753 PASSED
+[01:00.213] pytest: tests/test_search.py::test_handles_long_descriptions_754 PASSED
+[01:00.260] app: DEBUG request id=a0f203f251 status=200 ms=70
+[01:00.299] pytest: tests/test_cart.py::test_rejects_negative_totals_755 PASSED
+[01:00.322] pytest: tests/test_ledger.py::test_handles_negative_totals_756 PASSED
+[01:00.354] pytest: tests/test_notify.py::test_accepts_missing_fields_757 PASSED
+[01:00.373] app: DEBUG request id=07d7e3e115 status=200 ms=84
+[01:00.384] pytest: tests/test_export.py::test_formats_unicode_names_758 PASSED
+[01:00.428] pytest: tests/test_report.py::test_accepts_unicode_names_759 PASSED
+[01:00.497] pytest:   log: retry budget 3, nothing retried so far
+[01:00.550] app: DEBUG request id=cfba60b458 status=200 ms=61
+[01:00.590] pytest: tests/test_invoice.py::test_retries_negative_totals_760 PASSED
+[01:00.628] app: DEBUG request id=1ad8bcc8dd status=200 ms=75
+[01:00.637] pytest: tests/test_shipping.py::test_retries_unicode_names_761 PASSED
+[01:00.711] pytest: tests/test_auth.py::test_rejects_missing_fields_762 PASSED
+[01:00.763] app: DEBUG request id=f85cbd65f8 status=200 ms=90
+[01:00.843] pytest: tests/test_catalog.py::test_handles_unicode_names_763 PASSED
+[01:00.875] app: DEBUG request id=29ed29d342 status=200 ms=21
+[01:00.890] pytest: tests/test_search.py::test_handles_empty_input_764 PASSED
+[01:00.915] app: DEBUG request id=f6f5ec02d0 status=200 ms=2
+[01:00.983] pytest: tests/test_cart.py::test_splits_duplicate_ids_765 PASSED
+[01:01.054] pytest: tests/test_ledger.py::test_sorts_zero_quantity_766 PASSED
+[01:01.116] app: DEBUG request id=1ccd6a4180 status=200 ms=55
+[01:01.174] pytest: tests/test_notify.py::test_splits_zero_quantity_767 PASSED
+[01:01.241] pytest: tests/test_export.py::test_formats_large_batch_768 PASSED
+[01:01.244] pytest: tests/test_report.py::test_formats_timezone_offsets_769 PASSED
+[01:01.302] app: DEBUG request id=4888298ecf status=200 ms=70
+[01:01.352] pytest: tests/test_invoice.py::test_sorts_zero_quantity_770 PASSED
+[01:01.427] app: DEBUG request id=ae7f22aa3c status=200 ms=35
+[01:01.489] pytest: tests/test_shipping.py::test_accepts_unicode_names_771 PASSED
+[01:01.533] app: DEBUG request id=0fa74767aa status=200 ms=2
+[01:01.589] pytest: tests/test_auth.py::test_sorts_missing_fields_772 PASSED
+[01:01.609] pytest: tests/test_catalog.py::test_caches_large_batch_773 PASSED
+[01:01.629] app: DEBUG request id=92021ab764 status=200 ms=53
+[01:01.645] pytest: tests/test_search.py::test_handles_timezone_offsets_774 PASSED
+[01:01.677] app: DEBUG request id=0b6758c9ce status=200 ms=86
+[01:01.745] pytest: tests/test_cart.py::test_rejects_timezone_offsets_775 PASSED
+[01:01.815] pytest: tests/test_ledger.py::test_accepts_empty_input_776 PASSED
+[01:01.842] app: DEBUG request id=fb624a2b9f status=200 ms=67
+[01:01.902] pytest: tests/test_shipping.py::test_zone_lookup_unknown FAILED
+[01:01.922] pytest: tests/test_export.py::test_rejects_missing_fields_778 PASSED
+[01:01.958] pytest: tests/test_report.py::test_parses_unicode_names_779 PASSED
+[01:01.981] app: DEBUG request id=e5c0653300 status=200 ms=73
+[01:02.057] pytest: tests/test_invoice.py::test_retries_long_descriptions_780 PASSED
+[01:02.096] app: DEBUG request id=f0c279cf93 status=200 ms=25
+[01:02.103] pytest: tests/test_shipping.py::test_accepts_timezone_offsets_781 PASSED
+[01:02.107] app: DEBUG request id=8ba68c9b2b status=200 ms=34
+[01:02.152] pytest: tests/test_auth.py::test_parses_missing_fields_782 PASSED
+[01:02.192] pytest: tests/test_catalog.py::test_retries_duplicate_ids_783 PASSED
+[01:02.234] pytest: tests/test_search.py::test_handles_empty_input_784 PASSED
+[01:02.237] app: DEBUG request id=1afe7729fa status=200 ms=23
+[01:02.239] pytest: tests/test_cart.py::test_splits_long_descriptions_785 PASSED
+[01:02.241] pytest: tests/test_ledger.py::test_accepts_zero_quantity_786 PASSED
+[01:02.267] pytest: tests/test_notify.py::test_caches_stale_cache_787 PASSED
+[01:02.289] app: DEBUG request id=8bb3ac9d05 status=200 ms=35
+[01:02.306] pytest: tests/test_export.py::test_handles_long_descriptions_788 PASSED
+[01:02.352] app: DEBUG request id=d30775ac49 status=200 ms=74
+[01:02.391] pytest: tests/test_report.py::test_sorts_duplicate_ids_789 PASSED
+[01:02.427] pytest: tests/test_invoice.py::test_caches_empty_input_790 PASSED
+[01:02.495] pytest: tests/test_shipping.py::test_parses_negative_totals_791 PASSED
+[01:02.559] app: DEBUG request id=e37744cf31 status=200 ms=50
+[01:02.614] pytest: tests/test_auth.py::test_accepts_duplicate_ids_792 PASSED
+[01:02.668] app: DEBUG request id=10eacc7266 status=200 ms=77
+[01:02.708] pytest: tests/test_catalog.py::test_sorts_unicode_names_793 PASSED
+[01:02.769] app: DEBUG request id=e159edb467 status=200 ms=47
+[01:02.798] pytest: tests/test_search.py::test_caches_missing_fields_794 PASSED
+[01:02.868] pytest: tests/test_cart.py::test_parses_unicode_names_795 PASSED
+[01:02.875] pytest: tests/test_ledger.py::test_parses_empty_input_796 PASSED
+[01:02.922] pytest: tests/test_notify.py::test_retries_stale_cache_797 PASSED
+[01:02.971] pytest: tests/test_export.py::test_retries_empty_input_798 PASSED
+[01:02.974] pytest: tests/test_report.py::test_parses_unicode_names_799 PASSED
+[01:03.040] app: DEBUG request id=cff969434b status=200 ms=79
+[01:03.062] pytest: tests/test_invoice.py::test_retries_stale_cache_800 PASSED
+[01:03.089] pytest: tests/test_shipping.py::test_merges_negative_totals_801 PASSED
+[01:03.116] app: DEBUG request id=ed9f401c50 status=200 ms=17
+[01:03.192] pytest: tests/test_auth.py::test_sorts_duplicate_ids_802 PASSED
+[01:03.216] app: DEBUG request id=eef50a87e5 status=200 ms=43
+[01:03.229] pytest: tests/test_catalog.py::test_caches_stale_cache_803 PASSED
+[01:03.290] pytest: tests/test_search.py::test_accepts_zero_quantity_804 PASSED
+[01:03.316] app: DEBUG request id=231c24fbb0 status=200 ms=23
+[01:03.333] pytest: tests/test_cart.py::test_accepts_stale_cache_805 PASSED
+[01:03.355] app: DEBUG request id=4383861eb2 status=200 ms=35
+[01:03.406] pytest: tests/test_ledger.py::test_splits_long_descriptions_806 PASSED
+[01:03.482] pytest: tests/test_notify.py::test_rejects_missing_fields_807 PASSED
+[01:03.554] pytest: tests/test_export.py::test_handles_stale_cache_808 PASSED
+[01:03.598] app: DEBUG request id=e0c8b43844 status=200 ms=87
+[01:03.603] pytest: tests/test_report.py::test_parses_empty_input_809 PASSED
+[01:03.621] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:03.658] app: DEBUG request id=64526527ca status=200 ms=10
+[01:03.704] pytest: tests/test_invoice.py::test_splits_empty_input_810 PASSED
+[01:03.764] app: DEBUG request id=5c213e118f status=200 ms=27
+[01:03.798] pytest: tests/test_shipping.py::test_handles_timezone_offsets_811 PASSED
+[01:03.838] app: DEBUG request id=9b1d9da326 status=200 ms=65
+[01:03.894] pytest: tests/test_auth.py::test_sorts_long_descriptions_812 PASSED
+[01:03.935] pytest: tests/test_catalog.py::test_handles_zero_quantity_813 PASSED
+[01:03.937] pytest: tests/test_search.py::test_merges_negative_totals_814 PASSED
+[01:03.993] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:04.039] app: DEBUG request id=ff57f375ba status=200 ms=4
+[01:04.066] pytest: tests/test_cart.py::test_accepts_long_descriptions_815 PASSED
+[01:04.069] app: DEBUG request id=296a4f99be status=200 ms=2
+[01:04.102] pytest: tests/test_ledger.py::test_merges_large_batch_816 PASSED
+[01:04.167] app: DEBUG request id=45738a4411 status=200 ms=52
+[01:04.185] pytest: tests/test_notify.py::test_handles_timezone_offsets_817 PASSED
+[01:04.210] pytest: tests/test_export.py::test_splits_missing_fields_818 PASSED
+[01:04.233] pytest: tests/test_report.py::test_handles_empty_input_819 PASSED
+[01:04.279] app: DEBUG request id=a9e48c78f2 status=200 ms=41
+[01:04.342] pytest: tests/test_invoice.py::test_accepts_missing_fields_820 PASSED
+[01:04.371] app: DEBUG request id=5d10d573a5 status=200 ms=35
+[01:04.433] pytest: tests/test_shipping.py::test_rejects_missing_fields_821 PASSED
+[01:04.484] pytest: tests/test_auth.py::test_rejects_timezone_offsets_822 PASSED
+[01:04.548] app: DEBUG request id=0761e518f5 status=200 ms=80
+[01:04.591] pytest: tests/test_catalog.py::test_formats_missing_fields_823 PASSED
+[01:04.668] pytest: tests/test_search.py::test_retries_unicode_names_824 PASSED
+[01:04.686] app: DEBUG request id=682d5f40fd status=200 ms=29
+[01:04.697] pytest: tests/test_cart.py::test_formats_timezone_offsets_825 PASSED
+[01:04.757] app: DEBUG request id=1bae6365f7 status=200 ms=10
+[01:04.779] pytest: tests/test_ledger.py::test_retries_timezone_offsets_826 PASSED
+[01:04.799] app: DEBUG request id=3c3f4de98b status=200 ms=30
+[01:04.869] pytest: tests/test_notify.py::test_rejects_duplicate_ids_827 PASSED
+[01:04.924] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:04.978] app: DEBUG request id=f50f972c37 status=200 ms=60
+[01:05.055] pytest: tests/test_export.py::test_handles_long_descriptions_828 PASSED
+[01:05.080] app: DEBUG request id=746d41b391 status=200 ms=67
+[01:05.092] pytest: tests/test_report.py::test_rejects_timezone_offsets_829 PASSED
+[01:05.156] app: DEBUG request id=8dba938e63 status=200 ms=22
+[01:05.218] pytest: tests/test_invoice.py::test_formats_stale_cache_830 PASSED
+[01:05.273] pytest: tests/test_shipping.py::test_handles_stale_cache_831 PASSED
+[01:05.294] app: DEBUG request id=4b2eef3795 status=200 ms=44
+[01:05.326] pytest: tests/test_auth.py::test_caches_stale_cache_832 PASSED
+[01:05.389] pytest: tests/test_catalog.py::test_retries_zero_quantity_833 PASSED
+[01:05.413] app: DEBUG request id=79ec6d3e56 status=200 ms=54
+[01:05.465] pytest: tests/test_search.py::test_accepts_zero_quantity_834 PASSED
+[01:05.471] pytest: tests/test_cart.py::test_formats_long_descriptions_835 PASSED
+[01:05.549] app: DEBUG request id=6532504f88 status=200 ms=37
+[01:05.565] pytest: tests/test_ledger.py::test_splits_large_batch_836 PASSED
+[01:05.600] app: DEBUG request id=1065b429c4 status=200 ms=73
+[01:05.627] pytest: tests/test_notify.py::test_sorts_stale_cache_837 PASSED
+[01:05.672] pytest: tests/test_export.py::test_handles_missing_fields_838 PASSED
+[01:05.708] pytest: tests/test_report.py::test_sorts_negative_totals_839 PASSED
+[01:05.766] app: DEBUG request id=489023f33f status=200 ms=57
+[01:05.817] pytest: tests/test_invoice.py::test_accepts_negative_totals_840 PASSED
+[01:05.831] app: DEBUG request id=a9fe4fe878 status=200 ms=87
+[01:05.911] pytest: tests/test_shipping.py::test_merges_zero_quantity_841 PASSED
+[01:05.938] app: DEBUG request id=0a173bfae4 status=200 ms=76
+[01:05.952] pytest: tests/test_auth.py::test_retries_zero_quantity_842 PASSED
+[01:06.000] pytest: tests/test_catalog.py::test_rejects_duplicate_ids_843 PASSED
+[01:06.036] pytest: tests/test_search.py::test_merges_long_descriptions_844 PASSED
+[01:06.067] pytest: tests/test_cart.py::test_sorts_large_batch_845 PASSED
+[01:06.130] pytest: tests/test_ledger.py::test_caches_timezone_offsets_846 PASSED
+[01:06.196] pytest: tests/test_notify.py::test_merges_zero_quantity_847 PASSED
+[01:06.234] app: DEBUG request id=ebfa825c1f status=200 ms=30
+[01:06.312] pytest: tests/test_export.py::test_formats_negative_totals_848 PASSED
+[01:06.332] app: DEBUG request id=8330de2742 status=200 ms=36
+[01:06.412] pytest: tests/test_report.py::test_splits_timezone_offsets_849 PASSED
+[01:06.456] pytest: tests/test_invoice.py::test_handles_stale_cache_850 PASSED
+[01:06.496] pytest: tests/test_shipping.py::test_handles_large_batch_851 PASSED
+[01:06.570] pytest: tests/test_auth.py::test_handles_stale_cache_852 PASSED
+[01:06.642] pytest: tests/test_catalog.py::test_handles_long_descriptions_853 PASSED
+[01:06.657] app: DEBUG request id=45f5b76df9 status=200 ms=31
+[01:06.676] pytest: tests/test_search.py::test_sorts_negative_totals_854 PASSED
+[01:06.694] pytest: tests/test_cart.py::test_sorts_unicode_names_855 PASSED
+[01:06.761] app: DEBUG request id=7e3fa88a85 status=200 ms=18
+[01:06.795] pytest: tests/test_ledger.py::test_accepts_unicode_names_856 PASSED
+[01:06.815] app: DEBUG request id=b70bb5d6e2 status=200 ms=4
+[01:06.886] pytest: tests/test_notify.py::test_rejects_large_batch_857 PASSED
+[01:06.946] app: DEBUG request id=d1df23e37f status=200 ms=9
+[01:07.000] pytest: tests/test_export.py::test_formats_zero_quantity_858 PASSED
+[01:07.033] pytest: tests/test_report.py::test_formats_missing_fields_859 PASSED
+[01:07.067] pytest: tests/test_invoice.py::test_rejects_timezone_offsets_860 PASSED
+[01:07.106] pytest: tests/test_shipping.py::test_handles_unicode_names_861 PASSED
+[01:07.132] pytest: tests/test_auth.py::test_splits_empty_input_862 PASSED
+[01:07.194] app: DEBUG request id=30809a96f7 status=200 ms=25
+[01:07.235] pytest: tests/test_catalog.py::test_caches_unicode_names_863 PASSED
+[01:07.274] app: DEBUG request id=bdf5f17351 status=200 ms=62
+[01:07.298] pytest: tests/test_search.py::test_splits_negative_totals_864 PASSED
+[01:07.328] pytest:   log: retry budget 3, nothing retried so far
+[01:07.343] pytest: tests/test_cart.py::test_handles_large_batch_865 PASSED
+[01:07.389] pytest: tests/test_ledger.py::test_parses_zero_quantity_866 PASSED
+[01:07.448] pytest:   log: retry budget 3, nothing retried so far
+[01:07.467] app: DEBUG request id=d71c5b1d3f status=200 ms=25
+[01:07.545] pytest: tests/test_notify.py::test_accepts_empty_input_867 PASSED
+[01:07.582] pytest: tests/test_export.py::test_handles_timezone_offsets_868 PASSED
+[01:07.583] pytest: tests/test_report.py::test_merges_timezone_offsets_869 PASSED
+[01:07.661] pytest: tests/test_invoice.py::test_retries_stale_cache_870 PASSED
+[01:07.707] pytest: tests/test_shipping.py::test_retries_long_descriptions_871 PASSED
+[01:07.730] app: DEBUG request id=efb31f3eb9 status=200 ms=41
+[01:07.782] pytest: tests/test_auth.py::test_merges_duplicate_ids_872 PASSED
+[01:07.829] pytest: tests/test_catalog.py::test_sorts_long_descriptions_873 PASSED
+[01:07.858] app: DEBUG request id=0a2522b1e3 status=200 ms=81
+[01:07.872] pytest: tests/test_search.py::test_accepts_timezone_offsets_874 PASSED
+[01:07.893] pytest: tests/test_cart.py::test_parses_long_descriptions_875 PASSED
+[01:07.932] pytest: tests/test_ledger.py::test_sorts_unicode_names_876 PASSED
+[01:07.975] app: DEBUG request id=2fbcbd4d98 status=200 ms=23
+[01:07.992] pytest: tests/test_notify.py::test_accepts_missing_fields_877 PASSED
+[01:08.016] app: DEBUG request id=8e8d3468ed status=200 ms=74
+[01:08.069] pytest: tests/test_export.py::test_caches_duplicate_ids_878 PASSED
+[01:08.090] pytest: tests/test_report.py::test_accepts_stale_cache_879 PASSED
+[01:08.117] app: DEBUG request id=a010a58951 status=200 ms=41
+[01:08.172] pytest: tests/test_invoice.py::test_splits_empty_input_880 PASSED
+[01:08.246] pytest: tests/test_shipping.py::test_retries_empty_input_881 PASSED
+[01:08.280] app: DEBUG request id=5d71625b54 status=200 ms=62
+[01:08.312] pytest: tests/test_auth.py::test_handles_empty_input_882 PASSED
+[01:08.382] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:08.435] app: DEBUG request id=a9633bfbe8 status=200 ms=10
+[01:08.485] pytest: tests/test_catalog.py::test_formats_zero_quantity_883 PASSED
+[01:08.508] app: DEBUG request id=56bf89e5b6 status=200 ms=9
+[01:08.543] pytest: tests/test_search.py::test_formats_missing_fields_884 PASSED
+[01:08.565] app: DEBUG request id=95c2e0474e status=200 ms=23
+[01:08.603] pytest: tests/test_cart.py::test_handles_empty_input_885 PASSED
+[01:08.677] pytest: tests/test_ledger.py::test_accepts_empty_input_886 PASSED
+[01:08.688] pytest: tests/test_notify.py::test_parses_missing_fields_887 PASSED
+[01:08.709] pytest:   log: retry budget 3, nothing retried so far
+[01:08.732] pytest: tests/test_export.py::test_formats_unicode_names_888 PASSED
+[01:08.777] app: DEBUG request id=d9c42208ff status=200 ms=61
+[01:08.852] pytest: tests/test_report.py::test_caches_missing_fields_889 PASSED
+[01:08.898] app: DEBUG request id=e6e5cfdcb7 status=200 ms=88
+[01:08.931] pytest: tests/test_invoice.py::test_accepts_negative_totals_890 PASSED
+[01:08.992] pytest: tests/test_shipping.py::test_handles_timezone_offsets_891 PASSED
+[01:09.053] app: DEBUG request id=6af539be2c status=200 ms=89
+[01:09.096] pytest: tests/test_auth.py::test_accepts_stale_cache_892 PASSED
+[01:09.164] pytest: tests/test_catalog.py::test_parses_large_batch_893 PASSED
+[01:09.198] pytest: tests/test_search.py::test_splits_timezone_offsets_894 PASSED
+[01:09.244] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:09.262] pytest: tests/test_cart.py::test_handles_empty_input_895 PASSED
+[01:09.306] pytest: tests/test_ledger.py::test_sorts_timezone_offsets_896 PASSED
+[01:09.349] pytest: tests/test_notify.py::test_parses_large_batch_897 PASSED
+[01:09.361] pytest:   log: retry budget 3, nothing retried so far
+[01:09.366] app: DEBUG request id=21dfe0a100 status=200 ms=71
+[01:09.390] pytest: tests/test_export.py::test_handles_stale_cache_898 PASSED
+[01:09.450] pytest: tests/test_report.py::test_rejects_zero_quantity_899 PASSED
+[01:09.467] app: DEBUG request id=949dd4c365 status=200 ms=83
+[01:09.519] pytest: tests/test_invoice.py::test_splits_long_descriptions_900 PASSED
+[01:09.595] app: DEBUG request id=888132b087 status=200 ms=60
+[01:09.668] pytest: tests/test_shipping.py::test_parses_zero_quantity_901 PASSED
+[01:09.727] app: DEBUG request id=6d5d4f3dba status=200 ms=12
+[01:09.740] pytest: tests/test_auth.py::test_rejects_unicode_names_902 PASSED
+[01:09.814] pytest: tests/test_catalog.py::test_handles_unicode_names_903 PASSED
+[01:09.845] app: DEBUG request id=63b6fb6dc8 status=200 ms=17
+[01:09.866] pytest: tests/test_search.py::test_retries_duplicate_ids_904 PASSED
+[01:09.868] pytest: tests/test_cart.py::test_formats_timezone_offsets_905 PASSED
+[01:09.906] app: DEBUG request id=302bdfba5c status=200 ms=35
+[01:09.966] pytest: tests/test_ledger.py::test_merges_zero_quantity_906 PASSED
+[01:10.030] pytest: tests/test_notify.py::test_parses_duplicate_ids_907 PASSED
+[01:10.064] pytest: tests/test_export.py::test_parses_zero_quantity_908 PASSED
+[01:10.140] pytest: tests/test_report.py::test_accepts_stale_cache_909 PASSED
+[01:10.179] pytest: tests/test_invoice.py::test_merges_long_descriptions_910 PASSED
+[01:10.240] app: DEBUG request id=6ee0ca62bd status=200 ms=87
+[01:10.311] pytest: tests/test_shipping.py::test_retries_large_batch_911 PASSED
+[01:10.385] app: DEBUG request id=c825880460 status=200 ms=89
+[01:10.460] pytest: tests/test_auth.py::test_parses_negative_totals_912 PASSED
+[01:10.464] app: DEBUG request id=a8cf97fae3 status=200 ms=10
+[01:10.466] pytest: tests/test_catalog.py::test_sorts_negative_totals_913 PASSED
+[01:10.482] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:10.547] app: DEBUG request id=2001b5482d status=200 ms=8
+[01:10.622] pytest: tests/test_search.py::test_accepts_large_batch_914 PASSED
+[01:10.652] app: DEBUG request id=2f456d475e status=200 ms=8
+[01:10.665] pytest: tests/test_cart.py::test_parses_timezone_offsets_915 PASSED
+[01:10.742] app: DEBUG request id=f957554290 status=200 ms=14
+[01:10.758] pytest: tests/test_ledger.py::test_parses_large_batch_916 PASSED
+[01:10.815] pytest: tests/test_notify.py::test_splits_unicode_names_917 PASSED
+[01:10.850] app: DEBUG request id=0797033611 status=200 ms=8
+[01:10.875] pytest: tests/test_export.py::test_merges_timezone_offsets_918 PASSED
+[01:10.885] app: DEBUG request id=0003d7489b status=200 ms=8
+[01:10.887] pytest: tests/test_report.py::test_parses_timezone_offsets_919 PASSED
+[01:10.939] app: DEBUG request id=0be8e66cc9 status=200 ms=89
+[01:10.944] pytest: tests/test_invoice.py::test_formats_duplicate_ids_920 PASSED
+[01:11.014] app: DEBUG request id=4a97c524f6 status=200 ms=49
+[01:11.058] pytest: tests/test_shipping.py::test_splits_unicode_names_921 PASSED
+[01:11.099] app: DEBUG request id=c8cc24aba7 status=200 ms=69
+[01:11.116] pytest: tests/test_auth.py::test_retries_duplicate_ids_922 PASSED
+[01:11.174] app: DEBUG request id=1812206f0e status=200 ms=50
+[01:11.246] pytest: tests/test_catalog.py::test_caches_zero_quantity_923 PASSED
+[01:11.288] app: DEBUG request id=fbb28b52e4 status=200 ms=39
+[01:11.350] pytest: tests/test_search.py::test_sorts_large_batch_924 PASSED
+[01:11.364] app: DEBUG request id=c4434fa43d status=200 ms=40
+[01:11.437] pytest: tests/test_cart.py::test_splits_missing_fields_925 PASSED
+[01:11.507] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:11.583] app: DEBUG request id=fc61f10641 status=200 ms=84
+[01:11.610] pytest: tests/test_ledger.py::test_handles_empty_input_926 PASSED
+[01:11.633] pytest:   log: retry budget 3, nothing retried so far
+[01:11.713] app: DEBUG request id=462c29fe02 status=200 ms=68
+[01:11.772] pytest: tests/test_notify.py::test_retries_unicode_names_927 PASSED
+[01:11.816] pytest: tests/test_export.py::test_retries_missing_fields_928 PASSED
+[01:11.884] pytest: tests/test_report.py::test_merges_negative_totals_929 PASSED
+[01:11.937] app: DEBUG request id=754804cc4b status=200 ms=56
+[01:11.949] pytest: tests/test_invoice.py::test_handles_stale_cache_930 PASSED
+[01:12.005] pytest:   log: retry budget 3, nothing retried so far
+[01:12.066] app: DEBUG request id=ef8ca63296 status=200 ms=57
+[01:12.115] pytest: tests/test_shipping.py::test_retries_timezone_offsets_931 PASSED
+[01:12.169] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:12.213] app: DEBUG request id=6ba66b5119 status=200 ms=50
+[01:12.288] pytest: tests/test_auth.py::test_parses_duplicate_ids_932 PASSED
+[01:12.296] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:12.328] app: DEBUG request id=ffeecbd559 status=200 ms=8
+[01:12.388] pytest: tests/test_catalog.py::test_caches_long_descriptions_933 PASSED
+[01:12.427] app: DEBUG request id=4c69d727db status=200 ms=68
+[01:12.492] pytest: tests/test_search.py::test_caches_negative_totals_934 PASSED
+[01:12.537] app: DEBUG request id=18c05a1ef4 status=200 ms=39
+[01:12.608] pytest: tests/test_cart.py::test_rejects_long_descriptions_935 PASSED
+[01:12.613] pytest: tests/test_ledger.py::test_parses_zero_quantity_936 PASSED
+[01:12.617] pytest: tests/test_notify.py::test_caches_missing_fields_937 PASSED
+[01:12.657] app: DEBUG request id=f7c51de6ab status=200 ms=22
+[01:12.721] pytest: tests/test_export.py::test_accepts_large_batch_938 PASSED
+[01:12.753] app: DEBUG request id=8bc94f4059 status=200 ms=68
+[01:12.796] pytest: tests/test_report.py::test_splits_duplicate_ids_939 PASSED
+[01:12.863] app: DEBUG request id=621748504b status=200 ms=23
+[01:12.899] pytest: tests/test_invoice.py::test_sorts_large_batch_940 PASSED
+[01:12.903] app: DEBUG request id=277ed445c7 status=200 ms=46
+[01:12.925] pytest: tests/test_shipping.py::test_parses_duplicate_ids_941 PASSED
+[01:12.957] app: DEBUG request id=9c6cbedb30 status=200 ms=60
+[01:12.972] pytest: tests/test_auth.py::test_formats_unicode_names_942 PASSED
+[01:12.997] app: DEBUG request id=f78c5b53b7 status=200 ms=42
+[01:13.062] pytest: tests/test_catalog.py::test_rejects_timezone_offsets_943 PASSED
+[01:13.098] app: DEBUG request id=90889613e1 status=200 ms=52
+[01:13.147] pytest: tests/test_search.py::test_parses_stale_cache_944 PASSED
+[01:13.180] app: DEBUG request id=d2393d6b0d status=200 ms=80
+[01:13.203] pytest: tests/test_cart.py::test_splits_negative_totals_945 PASSED
+[01:13.215] pytest: tests/test_ledger.py::test_merges_duplicate_ids_946 PASSED
+[01:13.286] pytest: tests/test_notify.py::test_caches_stale_cache_947 PASSED
+[01:13.347] pytest: tests/test_export.py::test_sorts_duplicate_ids_948 PASSED
+[01:13.426] app: DEBUG request id=3939fc5f1a status=200 ms=58
+[01:13.458] pytest: tests/test_report.py::test_retries_negative_totals_949 PASSED
+[01:13.523] pytest: tests/test_invoice.py::test_rejects_stale_cache_950 PASSED
+[01:13.553] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:13.626] pytest: tests/test_shipping.py::test_retries_negative_totals_951 PASSED
+[01:13.683] app: DEBUG request id=f1d302dc74 status=200 ms=75
+[01:13.700] pytest: tests/test_auth.py::test_accepts_zero_quantity_952 PASSED
+[01:13.749] app: DEBUG request id=01a3466503 status=200 ms=63
+[01:13.756] pytest: tests/test_catalog.py::test_rejects_empty_input_953 PASSED
+[01:13.783] app: DEBUG request id=1fd4c33da4 status=200 ms=5
+[01:13.793] pytest: tests/test_search.py::test_handles_stale_cache_954 PASSED
+[01:13.812] app: DEBUG request id=b2d32d9e1d status=200 ms=69
+[01:13.843] pytest: tests/test_cart.py::test_rejects_empty_input_955 PASSED
+[01:13.877] pytest: tests/test_ledger.py::test_caches_empty_input_956 PASSED
+[01:13.907] app: DEBUG request id=c5422d9d70 status=200 ms=27
+[01:13.983] pytest: tests/test_notify.py::test_merges_duplicate_ids_957 PASSED
+[01:14.028] pytest: tests/test_export.py::test_sorts_long_descriptions_958 PASSED
+[01:14.076] app: DEBUG request id=295f6cc548 status=200 ms=11
+[01:14.110] pytest: tests/test_report.py::test_caches_large_batch_959 PASSED
+[01:14.124] app: DEBUG request id=48333f43c0 status=200 ms=33
+[01:14.181] pytest: tests/test_invoice.py::test_sorts_duplicate_ids_960 PASSED
+[01:14.258] pytest: tests/test_shipping.py::test_parses_empty_input_961 PASSED
+[01:14.298] pytest: tests/test_auth.py::test_caches_unicode_names_962 PASSED
+[01:14.318] pytest: tests/test_catalog.py::test_retries_duplicate_ids_963 PASSED
+[01:14.336] app: DEBUG request id=e916033d11 status=200 ms=59
+[01:14.411] pytest: tests/test_search.py::test_merges_unicode_names_964 PASSED
+[01:14.442] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:14.461] pytest: tests/test_cart.py::test_rejects_zero_quantity_965 PASSED
+[01:14.530] app: DEBUG request id=19abf8cfce status=200 ms=62
+[01:14.546] pytest: tests/test_ledger.py::test_rejects_long_descriptions_966 PASSED
+[01:14.592] app: DEBUG request id=4b1d7e9198 status=200 ms=74
+[01:14.660] pytest: tests/test_notify.py::test_rejects_empty_input_967 PASSED
+[01:14.737] app: DEBUG request id=c074c0729a status=200 ms=57
+[01:14.799] pytest: tests/test_export.py::test_retries_long_descriptions_968 PASSED
+[01:14.802] app: DEBUG request id=3cd565217c status=200 ms=90
+[01:14.843] pytest: tests/test_report.py::test_rejects_missing_fields_969 PASSED
+[01:14.890] app: DEBUG request id=dc4e69929d status=200 ms=56
+[01:14.933] pytest: tests/test_invoice.py::test_merges_zero_quantity_970 PASSED
+[01:15.002] app: DEBUG request id=6c6522b0ee status=200 ms=83
+[01:15.015] pytest: tests/test_shipping.py::test_accepts_long_descriptions_971 PASSED
+[01:15.066] app: DEBUG request id=44f09b960d status=200 ms=8
+[01:15.091] pytest: tests/test_auth.py::test_handles_missing_fields_972 PASSED
+[01:15.147] app: DEBUG request id=12c89c9e66 status=200 ms=48
+[01:15.156] pytest: tests/test_catalog.py::test_retries_large_batch_973 PASSED
+[01:15.215] app: DEBUG request id=175a30786a status=200 ms=48
+[01:15.249] pytest: tests/test_search.py::test_parses_large_batch_974 PASSED
+[01:15.328] pytest:   log: retry budget 3, nothing retried so far
+[01:15.347] pytest: tests/test_cart.py::test_parses_long_descriptions_975 PASSED
+[01:15.388] pytest: tests/test_ledger.py::test_handles_large_batch_976 PASSED
+[01:15.423] pytest: tests/test_notify.py::test_sorts_timezone_offsets_977 PASSED
+[01:15.487] pytest: tests/test_export.py::test_caches_negative_totals_978 PASSED
+[01:15.494] pytest: tests/test_report.py::test_merges_negative_totals_979 PASSED
+[01:15.516] app: DEBUG request id=e11d142c51 status=200 ms=58
+[01:15.587] pytest: tests/test_invoice.py::test_handles_zero_quantity_980 PASSED
+[01:15.657] app: DEBUG request id=f31f0c0e69 status=200 ms=21
+[01:15.737] pytest: tests/test_shipping.py::test_retries_large_batch_981 PASSED
+[01:15.761] pytest: tests/test_auth.py::test_caches_large_batch_982 PASSED
+[01:15.775] pytest: tests/test_catalog.py::test_accepts_duplicate_ids_983 PASSED
+[01:15.843] app: DEBUG request id=6d0ad82149 status=200 ms=43
+[01:15.891] pytest: tests/test_search.py::test_handles_duplicate_ids_984 PASSED
+[01:15.947] app: DEBUG request id=8875a01ed9 status=200 ms=13
+[01:16.024] pytest: tests/test_cart.py::test_retries_unicode_names_985 PASSED
+[01:16.095] app: DEBUG request id=fcb2c02741 status=200 ms=18
+[01:16.129] pytest: tests/test_ledger.py::test_rejects_stale_cache_986 PASSED
+[01:16.196] app: DEBUG request id=e320eb536c status=200 ms=83
+[01:16.259] pytest: tests/test_notify.py::test_accepts_missing_fields_987 PASSED
+[01:16.325] pytest: tests/test_export.py::test_merges_large_batch_988 PASSED
+[01:16.355] app: DEBUG request id=81c18c6bc3 status=200 ms=78
+[01:16.397] pytest: tests/test_report.py::test_caches_long_descriptions_989 PASSED
+[01:16.404] app: DEBUG request id=11290fc2d8 status=200 ms=63
+[01:16.438] pytest: tests/test_invoice.py::test_accepts_unicode_names_990 PASSED
+[01:16.462] app: DEBUG request id=00e1941a5b status=200 ms=22
+[01:16.514] pytest: tests/test_shipping.py::test_handles_stale_cache_991 PASSED
+[01:16.526] app: DEBUG request id=d1d8d681c2 status=200 ms=4
+[01:16.589] pytest: tests/test_auth.py::test_caches_timezone_offsets_992 PASSED
+[01:16.619] app: DEBUG request id=a00d34d446 status=200 ms=78
+[01:16.698] pytest: tests/test_catalog.py::test_accepts_duplicate_ids_993 PASSED
+[01:16.707] app: DEBUG request id=be06723856 status=200 ms=67
+[01:16.729] pytest: tests/test_search.py::test_accepts_unicode_names_994 PASSED
+[01:16.761] app: DEBUG request id=5cb63c6140 status=200 ms=73
+[01:16.825] pytest: tests/test_cart.py::test_rejects_empty_input_995 PASSED
+[01:16.840] pytest: tests/test_ledger.py::test_merges_stale_cache_996 PASSED
+[01:16.880] app: DEBUG request id=5be39f3e4d status=200 ms=13
+[01:16.894] pytest: tests/test_notify.py::test_parses_long_descriptions_997 PASSED
+[01:16.972] app: DEBUG request id=06c2772928 status=200 ms=55
+[01:16.992] pytest: tests/test_export.py::test_formats_duplicate_ids_998 PASSED
+[01:17.051] pytest: tests/test_report.py::test_splits_duplicate_ids_999 PASSED
+[01:17.101] app: DEBUG request id=46dee17ea9 status=200 ms=72
+[01:17.120] pytest: tests/test_invoice.py::test_caches_zero_quantity_1000 PASSED
+[01:17.185] pytest: tests/test_shipping.py::test_splits_negative_totals_1001 PASSED
+[01:17.218] pytest: tests/test_auth.py::test_caches_duplicate_ids_1002 PASSED
+[01:17.278] app: DEBUG request id=25f5ddae95 status=200 ms=21
+[01:17.284] pytest: tests/test_catalog.py::test_caches_duplicate_ids_1003 PASSED
+[01:17.317] pytest: tests/test_search.py::test_parses_timezone_offsets_1004 PASSED
+[01:17.373] app: DEBUG request id=81a628b5e3 status=200 ms=2
+[01:17.393] pytest: tests/test_cart.py::test_parses_missing_fields_1005 PASSED
+[01:17.434] app: DEBUG request id=cf32064949 status=200 ms=80
+[01:17.448] pytest: tests/test_ledger.py::test_caches_unicode_names_1006 PASSED
+[01:17.500] pytest: tests/test_notify.py::test_handles_empty_input_1007 PASSED
+[01:17.556] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:17.579] pytest: tests/test_export.py::test_retries_timezone_offsets_1008 PASSED
+[01:17.598] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:17.627] app: DEBUG request id=3d50247638 status=200 ms=24
+[01:17.672] pytest: tests/test_report.py::test_splits_timezone_offsets_1009 PASSED
+[01:17.701] pytest: tests/test_invoice.py::test_accepts_stale_cache_1010 PASSED
+[01:17.730] pytest: tests/test_shipping.py::test_parses_missing_fields_1011 PASSED
+[01:17.800] app: DEBUG request id=8de6911876 status=200 ms=67
+[01:17.864] pytest: tests/test_auth.py::test_parses_large_batch_1012 PASSED
+[01:17.887] app: DEBUG request id=55b1fcd8b2 status=200 ms=30
+[01:17.931] pytest: tests/test_catalog.py::test_accepts_timezone_offsets_1013 PASSED
+[01:18.009] app: DEBUG request id=9befb3ee64 status=200 ms=44
+[01:18.074] pytest: tests/test_search.py::test_rejects_empty_input_1014 PASSED
+[01:18.109] app: DEBUG request id=58b4e700eb status=200 ms=81
+[01:18.159] pytest: tests/test_cart.py::test_rejects_timezone_offsets_1015 PASSED
+[01:18.172] app: DEBUG request id=9d250df28f status=200 ms=60
+[01:18.193] pytest: tests/test_ledger.py::test_handles_zero_quantity_1016 PASSED
+[01:18.251] pytest: tests/test_notify.py::test_formats_stale_cache_1017 PASSED
+[01:18.300] app: DEBUG request id=dc86427018 status=200 ms=82
+[01:18.365] pytest: tests/test_export.py::test_splits_missing_fields_1018 PASSED
+[01:18.396] pytest: tests/test_report.py::test_splits_negative_totals_1019 PASSED
+[01:18.411] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:18.490] app: DEBUG request id=401fc5c1a9 status=200 ms=81
+[01:18.493] pytest: tests/test_invoice.py::test_retries_zero_quantity_1020 PASSED
+[01:18.553] app: DEBUG request id=f5bb84a89e status=200 ms=19
+[01:18.554] pytest: tests/test_shipping.py::test_merges_zero_quantity_1021 PASSED
+[01:18.608] app: DEBUG request id=82929aa96e status=200 ms=75
+[01:18.682] pytest: tests/test_auth.py::test_retries_zero_quantity_1022 PASSED
+[01:18.693] pytest: tests/test_catalog.py::test_parses_unicode_names_1023 PASSED
+[01:18.742] app: DEBUG request id=dde4f0b341 status=200 ms=85
+[01:18.774] pytest: tests/test_search.py::test_merges_zero_quantity_1024 PASSED
+[01:18.804] pytest: tests/test_cart.py::test_sorts_empty_input_1025 PASSED
+[01:18.832] pytest: tests/test_ledger.py::test_splits_stale_cache_1026 PASSED
+[01:18.861] pytest: tests/test_notify.py::test_merges_negative_totals_1027 PASSED
+[01:18.888] pytest: tests/test_export.py::test_formats_empty_input_1028 PASSED
+[01:18.967] pytest: tests/test_report.py::test_sorts_timezone_offsets_1029 PASSED
+[01:18.985] pytest: tests/test_invoice.py::test_handles_negative_totals_1030 PASSED
+[01:19.007] pytest: tests/test_shipping.py::test_retries_missing_fields_1031 PASSED
+[01:19.087] app: DEBUG request id=6d494792ef status=200 ms=9
+[01:19.095] pytest: tests/test_auth.py::test_retries_long_descriptions_1032 PASSED
+[01:19.126] app: DEBUG request id=75b57e0929 status=200 ms=79
+[01:19.129] pytest: tests/test_catalog.py::test_splits_stale_cache_1033 PASSED
+[01:19.189] pytest: tests/test_search.py::test_sorts_duplicate_ids_1034 PASSED
+[01:19.268] pytest: tests/test_cart.py::test_merges_missing_fields_1035 PASSED
+[01:19.276] app: DEBUG request id=ce59a03c1c status=200 ms=33
+[01:19.320] pytest: tests/test_ledger.py::test_retries_unicode_names_1036 PASSED
+[01:19.338] app: DEBUG request id=ad1b2d45bf status=200 ms=4
+[01:19.366] pytest: tests/test_notify.py::test_caches_stale_cache_1037 PASSED
+[01:19.415] pytest:   log: retry budget 3, nothing retried so far
+[01:19.419] app: DEBUG request id=73cc59e095 status=200 ms=85
+[01:19.420] pytest: tests/test_export.py::test_handles_zero_quantity_1038 PASSED
+[01:19.492] pytest:   log: retry budget 3, nothing retried so far
+[01:19.533] app: DEBUG request id=02d55348aa status=200 ms=14
+[01:19.585] pytest: tests/test_report.py::test_handles_timezone_offsets_1039 PASSED
+[01:19.616] pytest: tests/test_invoice.py::test_splits_empty_input_1040 PASSED
+[01:19.645] app: DEBUG request id=466925d2fc status=200 ms=6
+[01:19.715] pytest: tests/test_shipping.py::test_merges_empty_input_1041 PASSED
+[01:19.746] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:19.769] app: DEBUG request id=9f65c0dae8 status=200 ms=79
+[01:19.832] pytest: tests/test_auth.py::test_caches_long_descriptions_1042 PASSED
+[01:19.907] app: DEBUG request id=ae9bf4e73a status=200 ms=1
+[01:19.939] pytest: tests/test_catalog.py::test_sorts_timezone_offsets_1043 PASSED
+[01:19.961] app: DEBUG request id=2ac9c66966 status=200 ms=78
+[01:19.991] pytest: tests/test_search.py::test_sorts_large_batch_1044 PASSED
+[01:20.006] pytest: tests/test_cart.py::test_caches_stale_cache_1045 PASSED
+[01:20.017] app: DEBUG request id=864b0a1c38 status=200 ms=61
+[01:20.051] pytest: tests/test_ledger.py::test_rejects_unicode_names_1046 PASSED
+[01:20.081] app: DEBUG request id=391a4d8746 status=200 ms=59
+[01:20.131] pytest: tests/test_notify.py::test_retries_stale_cache_1047 PASSED
+[01:20.163] pytest: tests/test_export.py::test_retries_negative_totals_1048 PASSED
+[01:20.211] app: DEBUG request id=05aaf59ecb status=200 ms=69
+[01:20.255] pytest: tests/test_report.py::test_splits_zero_quantity_1049 PASSED
+[01:20.297] pytest: tests/test_invoice.py::test_merges_negative_totals_1050 PASSED
+[01:20.311] pytest: tests/test_shipping.py::test_caches_missing_fields_1051 PASSED
+[01:20.360] app: DEBUG request id=74d06fd408 status=200 ms=63
+[01:20.418] pytest: tests/test_auth.py::test_parses_empty_input_1052 PASSED
+[01:20.440] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:20.477] app: DEBUG request id=cd303f8367 status=200 ms=2
+[01:20.515] pytest: tests/test_catalog.py::test_splits_unicode_names_1053 PASSED
+[01:20.519] pytest: tests/test_search.py::test_caches_stale_cache_1054 PASSED
+[01:20.539] app: DEBUG request id=ff0c6f8744 status=200 ms=14
+[01:20.594] pytest: tests/test_cart.py::test_accepts_unicode_names_1055 PASSED
+[01:20.673] app: DEBUG request id=d66d7ca1d4 status=200 ms=42
+[01:20.724] pytest: tests/test_ledger.py::test_caches_timezone_offsets_1056 PASSED
+[01:20.773] pytest: tests/test_notify.py::test_caches_long_descriptions_1057 PASSED
+[01:20.819] pytest: tests/test_export.py::test_retries_negative_totals_1058 PASSED
+[01:20.826] pytest: tests/test_report.py::test_rejects_large_batch_1059 PASSED
+[01:20.855] app: DEBUG request id=010c32c3f1 status=200 ms=3
+[01:20.864] pytest: tests/test_invoice.py::test_caches_empty_input_1060 PASSED
+[01:20.878] app: DEBUG request id=ed3aca5d40 status=200 ms=78
+[01:20.884] pytest: tests/test_shipping.py::test_sorts_empty_input_1061 PASSED
+[01:20.904] app: DEBUG request id=8cde53e2f9 status=200 ms=10
+[01:20.918] pytest: tests/test_auth.py::test_retries_stale_cache_1062 PASSED
+[01:20.946] app: DEBUG request id=cb79f297c1 status=200 ms=55
+[01:21.004] pytest: tests/test_catalog.py::test_formats_missing_fields_1063 PASSED
+[01:21.066] app: DEBUG request id=629d825295 status=200 ms=83
+[01:21.113] pytest: tests/test_search.py::test_caches_unicode_names_1064 PASSED
+[01:21.143] pytest: tests/test_cart.py::test_merges_large_batch_1065 PASSED
+[01:21.163] app: DEBUG request id=ce0c7f14f0 status=200 ms=9
+[01:21.167] pytest: tests/test_ledger.py::test_merges_negative_totals_1066 PASSED
+[01:21.233] pytest: tests/test_notify.py::test_formats_unicode_names_1067 PASSED
+[01:21.260] pytest: tests/test_export.py::test_sorts_negative_totals_1068 PASSED
+[01:21.308] pytest: tests/test_report.py::test_splits_missing_fields_1069 PASSED
+[01:21.352] pytest: tests/test_invoice.py::test_retries_zero_quantity_1070 PASSED
+[01:21.404] app: DEBUG request id=b322605c15 status=200 ms=56
+[01:21.417] pytest: tests/test_shipping.py::test_splits_empty_input_1071 PASSED
+[01:21.436] app: DEBUG request id=6d7ac885b7 status=200 ms=14
+[01:21.462] pytest: tests/test_auth.py::test_caches_large_batch_1072 PASSED
+[01:21.480] app: DEBUG request id=a7fbd0f57b status=200 ms=42
+[01:21.522] pytest: tests/test_catalog.py::test_caches_large_batch_1073 PASSED
+[01:21.570] pytest: tests/test_search.py::test_splits_long_descriptions_1074 PASSED
+[01:21.620] pytest: tests/test_cart.py::test_rejects_zero_quantity_1075 PASSED
+[01:21.675] app: DEBUG request id=292b5672fc status=200 ms=17
+[01:21.745] pytest: tests/test_ledger.py::test_splits_negative_totals_1076 PASSED
+[01:21.817] pytest:   log: retry budget 3, nothing retried so far
+[01:21.862] pytest: tests/test_notify.py::test_caches_long_descriptions_1077 PASSED
+[01:21.927] app: DEBUG request id=880415cc6f status=200 ms=25
+[01:21.949] pytest: tests/test_export.py::test_caches_large_batch_1078 PASSED
+[01:21.969] app: DEBUG request id=c016099f3e status=200 ms=12
+[01:21.989] pytest: tests/test_report.py::test_merges_zero_quantity_1079 PASSED
+[01:22.045] app: DEBUG request id=231b6399d0 status=200 ms=15
+[01:22.088] pytest: tests/test_invoice.py::test_parses_negative_totals_1080 PASSED
+[01:22.122] pytest: tests/test_shipping.py::test_retries_unicode_names_1081 PASSED
+[01:22.179] app: DEBUG request id=95660430a8 status=200 ms=58
+[01:22.240] pytest: tests/test_auth.py::test_caches_empty_input_1082 PASSED
+[01:22.309] app: DEBUG request id=433a0b1d4f status=200 ms=52
+[01:22.354] pytest: tests/test_catalog.py::test_merges_empty_input_1083 PASSED
+[01:22.364] app: DEBUG request id=98a2ef1a72 status=200 ms=25
+[01:22.380] pytest: tests/test_search.py::test_sorts_negative_totals_1084 PASSED
+[01:22.389] app: DEBUG request id=1ab45c8f22 status=200 ms=58
+[01:22.453] pytest: tests/test_cart.py::test_splits_negative_totals_1085 PASSED
+[01:22.502] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:22.576] pytest: tests/test_ledger.py::test_parses_timezone_offsets_1086 PASSED
+[01:22.628] pytest: tests/test_notify.py::test_splits_large_batch_1087 PASSED
+[01:22.656] app: DEBUG request id=7d7279adb7 status=200 ms=47
+[01:22.700] pytest: tests/test_export.py::test_merges_large_batch_1088 PASSED
+[01:22.729] pytest: tests/test_report.py::test_parses_negative_totals_1089 PASSED
+[01:22.783] pytest: tests/test_invoice.py::test_formats_empty_input_1090 PASSED
+[01:22.831] pytest: tests/test_shipping.py::test_sorts_stale_cache_1091 PASSED
+[01:22.868] app: DEBUG request id=9194bbcf1a status=200 ms=18
+[01:22.925] pytest: tests/test_auth.py::test_caches_unicode_names_1092 PASSED
+[01:22.961] pytest: tests/test_catalog.py::test_sorts_zero_quantity_1093 PASSED
+[01:23.034] app: DEBUG request id=f8a007b300 status=200 ms=64
+[01:23.080] pytest: tests/test_search.py::test_parses_stale_cache_1094 PASSED
+[01:23.100] app: DEBUG request id=3cbe6d8ab6 status=200 ms=49
+[01:23.136] pytest: tests/test_cart.py::test_rejects_empty_input_1095 PASSED
+[01:23.152] pytest: tests/test_ledger.py::test_rejects_duplicate_ids_1096 PASSED
+[01:23.213] app: DEBUG request id=c43d0a0dbf status=200 ms=88
+[01:23.267] pytest: tests/test_notify.py::test_accepts_large_batch_1097 PASSED
+[01:23.330] pytest: tests/test_export.py::test_accepts_unicode_names_1098 PASSED
+[01:23.371] pytest: tests/test_report.py::test_accepts_unicode_names_1099 PASSED
+[01:23.401] app: DEBUG request id=00983b9c17 status=200 ms=38
+[01:23.421] pytest: tests/test_invoice.py::test_parses_large_batch_1100 PASSED
+[01:23.476] app: DEBUG request id=2853da2014 status=200 ms=23
+[01:23.488] pytest: tests/test_shipping.py::test_caches_negative_totals_1101 PASSED
+[01:23.499] app: DEBUG request id=f3655c3242 status=200 ms=28
+[01:23.529] pytest: tests/test_auth.py::test_handles_large_batch_1102 PASSED
+[01:23.570] pytest: tests/test_catalog.py::test_caches_unicode_names_1103 PASSED
+[01:23.577] app: DEBUG request id=0b2326ba56 status=200 ms=56
+[01:23.656] pytest: tests/test_search.py::test_handles_empty_input_1104 PASSED
+[01:23.732] pytest: tests/test_auth.py::test_token_refresh_race FAILED
+[01:23.769] pytest: tests/test_ledger.py::test_parses_missing_fields_1106 PASSED
+[01:23.779] pytest: tests/test_notify.py::test_sorts_timezone_offsets_1107 PASSED
+[01:23.828] pytest: tests/test_export.py::test_rejects_timezone_offsets_1108 PASSED
+[01:23.836] pytest: tests/test_report.py::test_caches_timezone_offsets_1109 PASSED
+[01:23.906] app: DEBUG request id=05aca330cf status=200 ms=15
+[01:23.977] pytest: tests/test_invoice.py::test_sorts_long_descriptions_1110 PASSED
+[01:24.013] pytest: tests/test_shipping.py::test_merges_large_batch_1111 PASSED
+[01:24.078] pytest: tests/test_auth.py::test_splits_large_batch_1112 PASSED
+[01:24.158] pytest: tests/test_catalog.py::test_splits_zero_quantity_1113 PASSED
+[01:24.197] app: DEBUG request id=e01418dc61 status=200 ms=76
+[01:24.244] pytest: tests/test_search.py::test_retries_unicode_names_1114 PASSED
+[01:24.283] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:24.356] pytest: tests/test_cart.py::test_formats_empty_input_1115 PASSED
+[01:24.383] app: DEBUG request id=0185702c02 status=200 ms=20
+[01:24.449] pytest: tests/test_ledger.py::test_retries_missing_fields_1116 PASSED
+[01:24.512] app: DEBUG request id=38e6440849 status=200 ms=50
+[01:24.560] pytest: tests/test_notify.py::test_merges_stale_cache_1117 PASSED
+[01:24.636] app: DEBUG request id=a86032bbd4 status=200 ms=86
+[01:24.662] pytest: tests/test_export.py::test_sorts_empty_input_1118 PASSED
+[01:24.727] pytest: tests/test_report.py::test_rejects_missing_fields_1119 PASSED
+[01:24.749] pytest: tests/test_invoice.py::test_sorts_empty_input_1120 PASSED
+[01:24.782] app: DEBUG request id=df1c73994f status=200 ms=4
+[01:24.836] pytest: tests/test_shipping.py::test_sorts_duplicate_ids_1121 PASSED
+[01:24.882] pytest: tests/test_auth.py::test_retries_missing_fields_1122 PASSED
+[01:24.945] app: DEBUG request id=4d0fe1f2aa status=200 ms=38
+[01:24.981] pytest: tests/test_catalog.py::test_merges_zero_quantity_1123 PASSED
+[01:25.002] app: DEBUG request id=cbb0b596c4 status=200 ms=65
+[01:25.016] pytest: tests/test_search.py::test_caches_zero_quantity_1124 PASSED
+[01:25.049] app: DEBUG request id=5cb3d3eea9 status=200 ms=45
+[01:25.105] pytest: tests/test_cart.py::test_caches_large_batch_1125 PASSED
+[01:25.178] app: DEBUG request id=9ac0573ea5 status=200 ms=78
+[01:25.184] pytest: tests/test_ledger.py::test_retries_long_descriptions_1126 PASSED
+[01:25.259] pytest: tests/test_notify.py::test_merges_long_descriptions_1127 PASSED
+[01:25.288] app: DEBUG request id=948ce915ec status=200 ms=26
+[01:25.368] pytest: tests/test_export.py::test_handles_unicode_names_1128 PASSED
+[01:25.377] app: DEBUG request id=dace90ea74 status=200 ms=17
+[01:25.399] pytest: tests/test_report.py::test_formats_zero_quantity_1129 PASSED
+[01:25.464] pytest: tests/test_invoice.py::test_caches_duplicate_ids_1130 PASSED
+[01:25.480] app: DEBUG request id=9cad4e9fc2 status=200 ms=64
+[01:25.543] pytest: tests/test_shipping.py::test_caches_long_descriptions_1131 PASSED
+[01:25.606] pytest: tests/test_auth.py::test_handles_unicode_names_1132 PASSED
+[01:25.638] pytest: tests/test_catalog.py::test_retries_zero_quantity_1133 PASSED
+[01:25.660] app: DEBUG request id=f0b31c4479 status=200 ms=7
+[01:25.690] pytest: tests/test_search.py::test_caches_zero_quantity_1134 PASSED
+[01:25.741] pytest: tests/test_cart.py::test_rejects_unicode_names_1135 PASSED
+[01:25.797] pytest: tests/test_ledger.py::test_retries_missing_fields_1136 PASSED
+[01:25.869] app: DEBUG request id=16d850ab8a status=200 ms=27
+[01:25.895] pytest: tests/test_notify.py::test_handles_long_descriptions_1137 PASSED
+[01:25.907] app: DEBUG request id=0e6b6e3bc0 status=200 ms=18
+[01:25.931] pytest: tests/test_export.py::test_formats_duplicate_ids_1138 PASSED
+[01:25.968] app: DEBUG request id=1ca3ccab26 status=200 ms=40
+[01:25.994] pytest: tests/test_report.py::test_caches_large_batch_1139 PASSED
+[01:26.005] app: DEBUG request id=1efe786f75 status=200 ms=12
+[01:26.071] pytest: tests/test_invoice.py::test_accepts_stale_cache_1140 PASSED
+[01:26.123] app: DEBUG request id=f4c4458baa status=200 ms=36
+[01:26.192] pytest: tests/test_shipping.py::test_sorts_timezone_offsets_1141 PASSED
+[01:26.195] app: DEBUG request id=31ac5a7347 status=200 ms=54
+[01:26.197] pytest: tests/test_auth.py::test_retries_duplicate_ids_1142 PASSED
+[01:26.208] app: DEBUG request id=fbe8af926b status=200 ms=49
+[01:26.273] pytest: tests/test_catalog.py::test_caches_missing_fields_1143 PASSED
+[01:26.338] pytest: tests/test_search.py::test_caches_long_descriptions_1144 PASSED
+[01:26.356] pytest: tests/test_cart.py::test_caches_stale_cache_1145 PASSED
+[01:26.364] pytest: tests/test_ledger.py::test_accepts_missing_fields_1146 PASSED
+[01:26.387] app: DEBUG request id=c138c76bf3 status=200 ms=75
+[01:26.423] pytest: tests/test_notify.py::test_accepts_negative_totals_1147 PASSED
+[01:26.451] app: DEBUG request id=efe606307e status=200 ms=79
+[01:26.457] pytest: tests/test_export.py::test_caches_timezone_offsets_1148 PASSED
+[01:26.494] app: DEBUG request id=c4baa01bc8 status=200 ms=35
+[01:26.560] pytest: tests/test_report.py::test_sorts_duplicate_ids_1149 PASSED
+[01:26.591] app: DEBUG request id=d2f9cdc107 status=200 ms=77
+[01:26.654] pytest: tests/test_invoice.py::test_rejects_empty_input_1150 PASSED
+[01:26.695] pytest: tests/test_shipping.py::test_splits_unicode_names_1151 PASSED
+[01:26.723] pytest: tests/test_auth.py::test_sorts_zero_quantity_1152 PASSED
+[01:26.783] pytest: tests/test_catalog.py::test_splits_unicode_names_1153 PASSED
+[01:26.859] app: DEBUG request id=ce5add079c status=200 ms=49
+[01:26.907] pytest: tests/test_search.py::test_splits_timezone_offsets_1154 PASSED
+[01:26.957] app: DEBUG request id=781ab238e8 status=200 ms=59
+[01:26.970] pytest: tests/test_cart.py::test_handles_missing_fields_1155 PASSED
+[01:27.048] app: DEBUG request id=9558456b4c status=200 ms=24
+[01:27.081] pytest: tests/test_ledger.py::test_rejects_missing_fields_1156 PASSED
+[01:27.142] app: DEBUG request id=f97fb0adb9 status=200 ms=89
+[01:27.173] pytest: tests/test_notify.py::test_handles_long_descriptions_1157 PASSED
+[01:27.187] app: DEBUG request id=37a83661cf status=200 ms=87
+[01:27.219] pytest: tests/test_export.py::test_parses_stale_cache_1158 PASSED
+[01:27.251] app: DEBUG request id=66bc616d26 status=200 ms=25
+[01:27.320] pytest: tests/test_report.py::test_formats_timezone_offsets_1159 PASSED
+[01:27.327] app: DEBUG request id=a07779e413 status=200 ms=81
+[01:27.330] pytest: tests/test_invoice.py::test_caches_zero_quantity_1160 PASSED
+[01:27.384] app: DEBUG request id=fa916b49c7 status=200 ms=55
+[01:27.439] pytest: tests/test_shipping.py::test_parses_empty_input_1161 PASSED
+[01:27.443] app: DEBUG request id=cd8d97317c status=200 ms=33
+[01:27.518] pytest: tests/test_auth.py::test_retries_duplicate_ids_1162 PASSED
+[01:27.543] pytest: tests/test_catalog.py::test_accepts_large_batch_1163 PASSED
+[01:27.549] app: DEBUG request id=97f526027f status=200 ms=85
+[01:27.603] pytest: tests/test_search.py::test_accepts_timezone_offsets_1164 PASSED
+[01:27.640] pytest: tests/test_cart.py::test_formats_empty_input_1165 PASSED
+[01:27.681] pytest: tests/test_ledger.py::test_merges_unicode_names_1166 PASSED
+[01:27.706] app: DEBUG request id=eba8c51222 status=200 ms=86
+[01:27.770] pytest: tests/test_notify.py::test_merges_missing_fields_1167 PASSED
+[01:27.801] pytest: tests/test_export.py::test_sorts_negative_totals_1168 PASSED
+[01:27.832] app: DEBUG request id=1fa22a14a5 status=200 ms=32
+[01:27.858] pytest: tests/test_report.py::test_retries_negative_totals_1169 PASSED
+[01:27.872] app: DEBUG request id=1d43c69ac9 status=200 ms=46
+[01:27.927] pytest: tests/test_invoice.py::test_formats_zero_quantity_1170 PASSED
+[01:27.930] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:27.959] app: DEBUG request id=bb3822afa2 status=200 ms=4
+[01:27.996] pytest: tests/test_shipping.py::test_merges_unicode_names_1171 PASSED
+[01:28.024] pytest: tests/test_auth.py::test_handles_empty_input_1172 PASSED
+[01:28.073] pytest: tests/test_catalog.py::test_retries_timezone_offsets_1173 PASSED
+[01:28.085] app: DEBUG request id=c2c3ebd059 status=200 ms=33
+[01:28.159] pytest: tests/test_search.py::test_merges_long_descriptions_1174 PASSED
+[01:28.210] app: DEBUG request id=b09f00625b status=200 ms=86
+[01:28.236] pytest: tests/test_cart.py::test_formats_long_descriptions_1175 PASSED
+[01:28.284] app: DEBUG request id=14e958f315 status=200 ms=46
+[01:28.320] pytest: tests/test_ledger.py::test_splits_long_descriptions_1176 PASSED
+[01:28.375] app: DEBUG request id=0ab7f89078 status=200 ms=66
+[01:28.428] pytest: tests/test_notify.py::test_retries_long_descriptions_1177 PASSED
+[01:28.431] app: DEBUG request id=98201caf54 status=200 ms=59
+[01:28.501] pytest: tests/test_export.py::test_handles_unicode_names_1178 PASSED
+[01:28.537] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:28.557] app: DEBUG request id=ae13271237 status=200 ms=51
+[01:28.621] pytest: tests/test_report.py::test_caches_large_batch_1179 PASSED
+[01:28.653] pytest: tests/test_invoice.py::test_formats_long_descriptions_1180 PASSED
+[01:28.708] app: DEBUG request id=6f224ccd8d status=200 ms=61
+[01:28.743] pytest: tests/test_shipping.py::test_caches_missing_fields_1181 PASSED
+[01:28.771] pytest: tests/test_auth.py::test_formats_timezone_offsets_1182 PASSED
+[01:28.814] pytest: tests/test_catalog.py::test_splits_zero_quantity_1183 PASSED
+[01:28.894] pytest: tests/test_search.py::test_handles_unicode_names_1184 PASSED
+[01:28.940] pytest: tests/test_cart.py::test_sorts_empty_input_1185 PASSED
+[01:29.002] pytest: tests/test_ledger.py::test_retries_long_descriptions_1186 PASSED
+[01:29.042] pytest: tests/test_notify.py::test_handles_unicode_names_1187 PASSED
+[01:29.064] app: DEBUG request id=65bd8bb921 status=200 ms=76
+[01:29.113] pytest: tests/test_export.py::test_retries_large_batch_1188 PASSED
+[01:29.155] app: DEBUG request id=1fe520361c status=200 ms=50
+[01:29.226] pytest: tests/test_report.py::test_formats_timezone_offsets_1189 PASSED
+[01:29.286] pytest: tests/test_invoice.py::test_rejects_stale_cache_1190 PASSED
+[01:29.324] app: DEBUG request id=01d5ce8535 status=200 ms=74
+[01:29.341] pytest: tests/test_shipping.py::test_rejects_duplicate_ids_1191 PASSED
+[01:29.396] pytest: tests/test_auth.py::test_handles_missing_fields_1192 PASSED
+[01:29.438] app: DEBUG request id=a77f625ce8 status=200 ms=25
+[01:29.470] pytest: tests/test_catalog.py::test_caches_timezone_offsets_1193 PASSED
+[01:29.496] app: DEBUG request id=ac8ff1b781 status=200 ms=28
+[01:29.553] pytest: tests/test_search.py::test_splits_zero_quantity_1194 PASSED
+[01:29.563] pytest: tests/test_cart.py::test_merges_long_descriptions_1195 PASSED
+[01:29.604] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:29.670] pytest: tests/test_ledger.py::test_rejects_negative_totals_1196 PASSED
+[01:29.719] app: DEBUG request id=6d285e8173 status=200 ms=2
+[01:29.753] pytest: tests/test_notify.py::test_sorts_zero_quantity_1197 PASSED
+[01:29.755] pytest: tests/test_export.py::test_caches_unicode_names_1198 PASSED
+[01:29.798] app: DEBUG request id=20310ae028 status=200 ms=87
+[01:29.818] pytest: tests/test_report.py::test_formats_empty_input_1199 PASSED
+[01:29.870] app: DEBUG request id=0654e74cf3 status=200 ms=65
+[01:29.929] pytest: tests/test_invoice.py::test_caches_zero_quantity_1200 PASSED
+[01:29.941] app: DEBUG request id=9b1084e6ec status=200 ms=60
+[01:29.998] pytest: tests/test_shipping.py::test_rejects_unicode_names_1201 PASSED
+[01:30.055] app: DEBUG request id=147ebacbe6 status=200 ms=82
+[01:30.073] pytest: tests/test_auth.py::test_retries_long_descriptions_1202 PASSED
+[01:30.139] app: DEBUG request id=7b967f97f4 status=200 ms=53
+[01:30.143] pytest: tests/test_catalog.py::test_accepts_missing_fields_1203 PASSED
+[01:30.195] pytest: tests/test_search.py::test_handles_negative_totals_1204 PASSED
+[01:30.264] pytest: tests/test_cart.py::test_parses_large_batch_1205 PASSED
+[01:30.275] pytest: tests/test_ledger.py::test_splits_zero_quantity_1206 PASSED
+[01:30.343] app: DEBUG request id=b657ce3e52 status=200 ms=40
+[01:30.395] pytest: tests/test_notify.py::test_formats_long_descriptions_1207 PASSED
+[01:30.438] app: DEBUG request id=2e7a5f4aee status=200 ms=68
+[01:30.464] pytest: tests/test_export.py::test_retries_missing_fields_1208 PASSED
+[01:30.534] app: DEBUG request id=f7b4745320 status=200 ms=76
+[01:30.559] pytest: tests/test_report.py::test_rejects_empty_input_1209 PASSED
+[01:30.590] app: DEBUG request id=bb61437678 status=200 ms=47
+[01:30.624] pytest: tests/test_invoice.py::test_formats_large_batch_1210 PASSED
+[01:30.642] app: DEBUG request id=0c17bfc244 status=200 ms=63
+[01:30.670] pytest: tests/test_shipping.py::test_formats_stale_cache_1211 PASSED
+[01:30.693] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:30.734] pytest: tests/test_auth.py::test_accepts_timezone_offsets_1212 PASSED
+[01:30.748] pytest: tests/test_catalog.py::test_splits_long_descriptions_1213 PASSED
+[01:30.811] pytest: tests/test_search.py::test_splits_timezone_offsets_1214 PASSED
+[01:30.834] pytest: tests/test_cart.py::test_splits_duplicate_ids_1215 PASSED
+[01:30.837] pytest:   DeprecationWarning: utcnow() is deprecated; use now(timezone.utc)
+[01:30.855] app: DEBUG request id=8aa5575b67 status=200 ms=12
+[01:30.894] pytest: tests/test_ledger.py::test_merges_unicode_names_1216 PASSED
+[01:30.970] app: DEBUG request id=181faf9d9a status=200 ms=73
+[01:31.032] pytest: tests/test_notify.py::test_sorts_missing_fields_1217 PASSED
+[01:31.096] pytest: tests/test_export.py::test_rejects_unicode_names_1218 PASSED
+[01:31.099] app: DEBUG request id=e645fd60b1 status=200 ms=39
+[01:31.171] pytest: tests/test_report.py::test_merges_empty_input_1219 PASSED
+[01:31.198] app: DEBUG request id=9efad3e132 status=200 ms=28
+[01:31.251] pytest: tests/test_invoice.py::test_merges_zero_quantity_1220 PASSED
+[01:31.328] pytest: tests/test_shipping.py::test_rejects_negative_totals_1221 PASSED
+[01:31.378] app: DEBUG request id=75839974aa status=200 ms=54
+[01:31.440] pytest: tests/test_auth.py::test_formats_missing_fields_1222 PASSED
+[01:31.507] pytest:   log: retry budget 3, nothing retried so far
+[01:31.535] pytest: tests/test_catalog.py::test_splits_missing_fields_1223 PASSED
+[01:31.600] pytest: tests/test_search.py::test_sorts_unicode_names_1224 PASSED
+[01:31.601] pytest: tests/test_cart.py::test_splits_negative_totals_1225 PASSED
+[01:31.648] pytest: tests/test_ledger.py::test_formats_long_descriptions_1226 PASSED
+[01:31.683] pytest: tests/test_notify.py::test_accepts_large_batch_1227 PASSED
+[01:31.712] app: DEBUG request id=b53e3e8c6d status=200 ms=74
+[01:31.753] pytest: tests/test_export.py::test_retries_long_descriptions_1228 PASSED
+[01:31.820] app: DEBUG request id=027ea18698 status=200 ms=80
+[01:31.844] pytest: tests/test_report.py::test_merges_empty_input_1229 PASSED
+[01:31.902] pytest: tests/test_invoice.py::test_splits_timezone_offsets_1230 PASSED
+[01:31.925] app: DEBUG request id=a28694749e status=200 ms=33
+[01:31.953] pytest: tests/test_shipping.py::test_parses_unicode_names_1231 PASSED
+[01:32.028] app: DEBUG request id=e766dc4487 status=200 ms=48
+[01:32.094] pytest: tests/test_auth.py::test_sorts_long_descriptions_1232 PASSED
+[01:32.142] pytest: tests/test_catalog.py::test_accepts_long_descriptions_1233 PASSED
+[01:32.146] pytest: tests/test_search.py::test_parses_unicode_names_1234 PASSED
+[01:32.159] app: DEBUG request id=769f19bff4 status=200 ms=67
+[01:32.161] pytest: tests/test_cart.py::test_sorts_empty_input_1235 PASSED
+[01:32.166] pytest: tests/test_ledger.py::test_handles_timezone_offsets_1236 PASSED
+[01:32.238] pytest:   log: retry budget 3, nothing retried so far
+[01:32.286] pytest: tests/test_notify.py::test_caches_empty_input_1237 PASSED
+[01:32.310] pytest: tests/test_export.py::test_formats_negative_totals_1238 PASSED
+[01:32.330] pytest: tests/test_report.py::test_caches_empty_input_1239 PASSED
+[01:32.350] app: DEBUG request id=047a1439f8 status=200 ms=38
+[01:32.356] pytest: tests/test_invoice.py::test_sorts_stale_cache_1240 PASSED
+[01:32.380] app: DEBUG request id=7720ec7d3f status=200 ms=55
+[01:32.382] pytest: tests/test_shipping.py::test_handles_negative_totals_1241 PASSED
+[01:32.404] pytest: =================================== FAILURES ===================================
+[01:32.439] pytest: ____________________________ test_rounding_half_even ____________________________
+[01:32.495] pytest: src/shipping/core.py:642: in retries_0
+[01:32.530] pytest: src/report/core.py:705: in caches_1
+[01:32.549] pytest: src/search/core.py:686: in accepts_2
+[01:32.551] pytest: src/export/core.py:861: in retries_3
+[01:32.556] pytest: src/invoice/core.py:561: in accepts_4
+[01:32.581] pytest: src/invoice/core.py:891: in formats_5
+[01:32.639] pytest: src/export/core.py:601: in merges_6
+[01:32.687] pytest: src/invoice/core.py:209: in retries_7
+[01:32.702] pytest: src/report/core.py:310: in sorts_8
+[01:32.731] pytest: src/invoice/core.py:647: in rejects_9
+[01:32.770] pytest:     assert round_money(Decimal('2.675')) == Decimal('2.68')
+[01:32.833] pytest: E   AssertionError: assert Decimal('2.67') == Decimal('2.68')
+[01:32.856] pytest: ____________________________ test_zone_lookup_unknown ____________________________
+[01:32.903] pytest: src/cart/core.py:557: in caches_0
+[01:32.921] pytest: src/invoice/core.py:426: in rejects_1
+[01:32.979] pytest: src/cart/core.py:704: in accepts_2
+[01:33.051] pytest: src/search/core.py:502: in retries_3
+[01:33.078] pytest: src/catalog/core.py:619: in formats_4
+[01:33.120] pytest: src/shipping/core.py:838: in merges_5
+[01:33.160] pytest: src/search/core.py:488: in parses_6
+[01:33.176] pytest: src/notify/core.py:715: in merges_7
+[01:33.220] pytest: src/catalog/core.py:217: in formats_8
+[01:33.258] pytest: src/notify/core.py:325: in splits_9
+[01:33.329] pytest: src/catalog/core.py:57: in sorts_10
+[01:33.382] pytest: src/invoice/core.py:598: in sorts_11
+[01:33.410] pytest:     zone = zones.lookup('ZZ-999')
+[01:33.429] pytest: E   KeyError: 'ZZ-999'
+[01:33.500] pytest: ____________________________ test_token_refresh_race ____________________________
+[01:33.548] pytest: src/export/core.py:393: in splits_0
+[01:33.627] pytest: src/invoice/core.py:436: in accepts_1
+[01:33.651] pytest: src/notify/core.py:618: in formats_2
+[01:33.718] pytest: src/shipping/core.py:508: in handles_3
+[01:33.736] pytest: src/search/core.py:456: in accepts_4
+[01:33.801] pytest: src/report/core.py:610: in retries_5
+[01:33.857] pytest: src/cart/core.py:479: in merges_6
+[01:33.878] pytest: src/report/core.py:119: in parses_7
+[01:33.943] pytest: src/auth/core.py:783: in sorts_8
+[01:33.998] pytest: src/notify/core.py:416: in parses_9
+[01:34.002] pytest: src/shipping/core.py:155: in accepts_10
+[01:34.009] pytest: src/export/core.py:378: in handles_11
+[01:34.067] pytest: src/cart/core.py:249: in sorts_12
+[01:34.099] pytest: src/catalog/core.py:272: in retries_13
+[01:34.153] pytest:     assert session.token != old_token
+[01:34.192] pytest: E   AssertionError: token was not rotated after concurrent refresh
+[01:34.198] pytest: ========== 3 failed, 1239 passed, 61 warnings in 94.20s ==========
+[01:34.202] runner: job 'unit-tests' finished with exit code 1

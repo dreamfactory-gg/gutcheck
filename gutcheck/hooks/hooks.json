@@ -1,0 +1,170 @@
+{
+  "description": "gutcheck: pre-run Bash check, pasted-key blocker, session health line, long-run stop check",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreToolUse",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreToolUse",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreToolUse",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PrePush",
+            "timeout": 30,
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreToolUse",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreToolUse",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PostToolUse",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PostToolUse",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" UserPromptSubmit",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" SessionStart",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" Stop",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreCompact",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" SubagentStop",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PostToolUseFailure",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" SubagentStart",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

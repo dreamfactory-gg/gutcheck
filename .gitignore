@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.results.json
+.ruff_cache/
+.DS_Store
+
+# Maintainer-local files, never committed. private/ is a separate repo; these paths are symlinks into it.
+/private/
+/*.md
+!/README.md
+/*.py
+/release.sh
+/ref
+/evals/*
+!/evals/tokens/
+/evals/tokens/ceilings.json
