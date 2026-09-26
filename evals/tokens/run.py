@@ -6,16 +6,20 @@ gutcheck's state, config, plugin data and ~/.claude reads pointed at temp dirs. 
 median of each metric is compared with a ceiling file (default evals/tokens/ceilings.json). The maintainers'
 ceilings are measured on their machine and kept out of this repo; build your own baseline with `run.py bootstrap`.
 
-Metrics (summed over every model the run used, from the result JSON's modelUsage):
-  input       input_tokens + cache_creation_input_tokens   (uncached prompt tokens, cache writes included)
-  cache_read  cache_read_input_tokens
-  output      output_tokens (thinking included)
+Usage (summed over every model the run used, from the result JSON's modelUsage):
+  input        input_tokens
+  cache_write  cache_creation_input_tokens
+  cache_read   cache_read_input_tokens
+  output       output_tokens (thinking included)
+  cost         input + cache_write * 1.25 + cache_read * 0.1 + output * 5   (cost-equivalent tokens)
+Only cost is gated: a Claude Code release can turn cache writes into reads, which moves the raw counts in opposite
+directions while the price goes the other way.
 
   run.py measure  --plugin DIR [--runs N] [--tasks a,b] [--out FILE]   run the suite, write results
-  run.py gate     --results FILE [--ceilings FILE]                     table; exit 1 on a failed check or ceiling
+  run.py gate     --results FILE [--ceilings FILE]                     table; exit 1 on a failed check or cost ceiling
   run.py lower    --results FILE --ceilings FILE --sha SHA             ceiling = min(old, median * (1 + tol))
   run.py raise    --results FILE --ceilings FILE --sha SHA --task T --reason TEXT   (maintainers, via the release script)
-  run.py bootstrap --results FILE [--results FILE ...] --ceilings FILE --sha SHA [--spread-results FILE ...] [--tolerance auto|in,cr,out]
+  run.py bootstrap --results FILE [--results FILE ...] --ceilings FILE --sha SHA [--spread-results FILE ...] [--tolerance auto|X]
   run.py spread   --results FILE [--results FILE ...]                 run-to-run spread, for choosing the tolerance
   run.py summary  --results FILE                                      one line: runs, time, cost
 """
@@ -37,7 +41,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 FIX = HERE / "fixtures"
 CEILINGS = HERE / "ceilings.json"
-METRICS = ("input", "cache_read", "output")
+WEIGHTS = {"input": 1, "cache_write": 1.25, "cache_read": 0.1, "output": 5}
+FIELDS = (*WEIGHTS, "cost")
+METRICS = ("cost",)   # gated
 MODEL = "sonnet"     # an alias, never a version
 EFFORT = "low"
 MAX_TURNS = "30"
@@ -194,10 +200,10 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     rec["seconds"] = round(time.monotonic() - t0, 1)
     mu = out.get("modelUsage") or {}
     rec["models"] = sorted(mu)
-    rec["usage"] = {
-        "input": sum((m.get("inputTokens") or 0) + (m.get("cacheCreationInputTokens") or 0) for m in mu.values()),
-        "cache_read": sum(m.get("cacheReadInputTokens") or 0 for m in mu.values()),
-        "output": sum(m.get("outputTokens") or 0 for m in mu.values())}
+    u = {f: sum(m.get(key) or 0 for m in mu.values()) for f, key in (
+        ("input", "inputTokens"), ("cache_write", "cacheCreationInputTokens"),
+        ("cache_read", "cacheReadInputTokens"), ("output", "outputTokens"))}
+    rec["usage"] = u | {"cost": int(sum(u[f] * w for f, w in WEIGHTS.items()))}
     rec["cost_usd"] = out.get("total_cost_usd")
     rec["turns"] = out.get("num_turns")
     res = out.get("result") or ""
@@ -264,7 +270,8 @@ def measure(a):
                     runs.append(r)
                     if not a.quiet:
                         u = r["usage"]
-                        print(f"    {r['task']:<14} run {i + 1}: in {u['input']:>7,}  cache_read {u['cache_read']:>8,}  "
+                        print(f"    {r['task']:<14} run {i + 1}: cost {u['cost']:>7,}  in {u['input']:>6,}  "
+                              f"cache_write {u['cache_write']:>6,}  cache_read {u['cache_read']:>8,}  "
                               f"out {u['output']:>6,}  {r['seconds']:>5.0f}s  {'ok' if r['ok'] else 'FAIL ' + r['why']}",
                               flush=True)
     finally:
@@ -286,7 +293,7 @@ def medians(runs):
     by = {}
     for r in runs:
         by.setdefault(r["task"], []).append(r)
-    return {t: {m: int(statistics.median(x["usage"][m] for x in rs)) for m in METRICS}
+    return {t: {m: int(statistics.median(x["usage"][m] for x in rs)) for m in FIELDS}
             | {"checks": f"{sum(x['ok'] for x in rs)}/{len(rs)}", "ok": all(x["ok"] for x in rs)}
             for t, rs in by.items()}
 
@@ -308,7 +315,7 @@ def gate(a):
     res, ceil = load(a.results), load(a.ceilings)
     med = res["medians"]
     fail = []
-    print(f"  {'task':<14} {'input (median/ceiling)':>24} {'cache_read':>18} {'output':>14}  checks  result")
+    print(f"  {'task':<14} {'cost (median/ceiling)':>22}  {'in':>6} {'c_write':>7} {'c_read':>7} {'out':>6}  checks  result")
     for t in sorted(set(med) | set(ceil["tasks"])):
         m, c = med.get(t), ceil["tasks"].get(t)
         if m is None:
@@ -322,8 +329,9 @@ def gate(a):
             why.append("no ceiling")
         if bad:
             why.append("over: " + ",".join(bad))
-        cells = [f"{k(m[x])}/{k(c[x]) if c else '-'}" + ("!" if x in bad else "") for x in METRICS]
-        print(f"  {t:<14} {cells[0]:>24} {cells[1]:>18} {cells[2]:>14}  {m['checks']:>6}  "
+        cost = f"{k(m['cost'])}/{k(c['cost']) if c else '-'}" + ("!" if bad else "")
+        raw = " ".join(f"{k(m[f]):>{w}}" for f, w in (("input", 6), ("cache_write", 7), ("cache_read", 7), ("output", 6)))
+        print(f"  {t:<14} {cost:>22}  {raw}  {m['checks']:>6}  "
               f"{'pass' if not why else 'FAIL (' + '; '.join(why) + ')'}")
         if why:
             fail.append(t)
@@ -337,9 +345,9 @@ def gate(a):
     got_models = sorted({x for r in res["results"] for x in r["models"]})
     if mw.get("models") and got_models and mw["models"] != got_models:
         notes.append(f"models {mw['models']} -> {got_models}")
-    if notes and fail:
-        print("  note: ceilings were measured with a different setup (" + "; ".join(notes) + "); if the base "
-              "prompt grew, re-baseline with the release script's --raise-ceiling TASK --reason ...")
+    if notes:
+        print("  re-baseline: ceilings were measured with a different setup (" + "; ".join(notes) + "); run.py "
+              "bootstrap on this setup, or the release script's --raise-ceiling TASK --reason ...")
     return 1 if fail else 0
 
 
@@ -347,7 +355,7 @@ def tol_for(ceil, task, metric):
     """Tolerance for one task and metric: {task: {metric: x}}, else a per-metric default {metric: x}."""
     t = ceil["tolerance"]
     per = t.get(task)
-    return per.get(metric, 0.1) if isinstance(per, dict) else t.get(metric, 0.1)
+    return per.get(metric, FLOOR[metric]) if isinstance(per, dict) else t.get(metric, FLOOR[metric])
 
 
 def _hist(ceil, sha, task, metric, old, new, why):
@@ -420,10 +428,9 @@ def false_fail_rate(values, tol, n=3, releases=20, trials=2000, seed=1):
     return fails / trials
 
 
-# Lowest tolerance per metric. Runs measured in one sitting agree more than runs hours apart: the first release
-# after bootstrap saw one task's output median at 243 where 12 bootstrap runs had all been 358-365 (thinking length
-# flips between two modes), so output never gets less than +50%.
-FLOOR = {"input": 0.1, "cache_read": 0.1, "output": 0.5}
+# Lowest cost tolerance. Runs in one sitting agree more than runs hours apart, and some tasks flip between two modes
+# a sitting may not show (log_triage takes one extra turn in some sittings, ~+15% cost; output length flips too).
+FLOOR = {"cost": 0.2}
 
 
 def choose_tolerance(values, n=3, target=0.05, floor=0.0):
@@ -461,14 +468,14 @@ def bootstrap(a):
         tol = {t: {x: choose_tolerance(rel[(t, x)], n=RELEASE_RUNS, floor=FLOOR[x]) for x in METRICS}
                for t in sorted(by)}
     else:
-        tol = dict(zip(METRICS, (float(x) for x in a.tolerance.split(","))))
-    ceil = {"about": "Per-task token ceilings for gutcheck releases (see evals/tokens/run.py). Medians must stay "
-                     "at or below these; a release lowers them to min(old, median * (1 + tolerance)). Only the "
-                     "maintainer raises them (release script: --raise-ceiling TASK --reason ...). Tolerances come from the "
-                     "run-to-run spread measured at bootstrap (under 5% chance of any false failure in 20 "
-                     "releases of an unchanged plugin, then one step up; at least +10% for input and cache_read and "
-                     "+50% for output).",
-            "tolerance": tol, "measured_with": setup_of(first), "tasks": {}, "history": []}
+        tol = {"cost": float(a.tolerance)}
+    old = load(a.ceilings) if Path(a.ceilings).exists() else {}
+    ceil = {"about": "Per-task cost ceilings (cost-equivalent tokens, see evals/tokens/run.py) for gutcheck releases. "
+                     "Medians must stay at or below these; a release lowers them to min(old, median * (1 + "
+                     "tolerance)). Only the maintainer raises them (release script: --raise-ceiling TASK --reason ...). "
+                     "Tolerances come from the run-to-run spread measured at bootstrap (under 5% chance of any false "
+                     f"failure in 20 releases of an unchanged plugin, then one step up; at least +{FLOOR['cost']:.0%}).",
+            "tolerance": tol, "measured_with": setup_of(first), "tasks": {}, "history": old.get("history", [])}
     for t, m in sorted(med.items()):
         ceil["tasks"][t] = {x: int(m[x] * (1 + tol_for(ceil, t, x))) for x in METRICS}
         for x in METRICS:
@@ -484,17 +491,17 @@ def spread(a):
     by = {}
     for r in runs:
         by.setdefault(r["task"], []).append(r)
-    worst = {x: 0.0 for x in METRICS}
+    worst = {x: 0.0 for x in FIELDS}
     for t, rs in sorted(by.items()):
         line = [f"  {t:<14} n={len(rs):<2}"]
-        for x in METRICS:
+        for x in FIELDS:
             v = [r["usage"][x] for r in rs]
             med3 = [statistics.median(c) for c in itertools.combinations(v, 3)] if len(v) >= 3 else v
             ratio = max(med3) / max(1, min(med3)) - 1       # worst lucky-low vs unlucky-high median of 3
             worst[x] = max(worst[x], ratio)
             line.append(f"{x} {min(v):,}..{max(v):,} (med3 range +{ratio:.0%})")
         print("  ".join(line) + f"  checks {sum(r['ok'] for r in rs)}/{len(rs)}")
-    print("  worst median-of-3 range: " + ", ".join(f"{x} +{worst[x]:.0%}" for x in METRICS))
+    print("  worst median-of-3 range: " + ", ".join(f"{x} +{worst[x]:.0%}" for x in FIELDS))
     return 0
 
 
@@ -523,7 +530,7 @@ def main():
         p.add_argument("--sha", default="?")
         p.add_argument("--task")
         p.add_argument("--reason")
-        p.add_argument("--tolerance", default="auto", help="auto (from the measured spread) or in,cr,out")
+        p.add_argument("--tolerance", default="auto", help="auto (from the measured spread) or a fraction")
         p.add_argument("--spread-results", action="append", help="bootstrap: more sittings, for the spread only")
     a = ap.parse_args()
     if a.cmd == "measure":
