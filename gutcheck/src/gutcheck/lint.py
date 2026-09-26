@@ -20,14 +20,15 @@ ESLINT = ["eslint.config.js", "eslint.config.mjs", "eslint.config.cjs", "eslint.
           ".eslintrc.cjs", ".eslintrc.json", ".eslintrc.yml", ".eslintrc.yaml"]
 RUFF = ["ruff.toml", ".ruff.toml", ("pyproject.toml", "[tool.ruff")]
 # extensions -> (tool, project signals: file names or (file, text it contains), None = always; command (the file is
-# appended); finding pattern (line, message), None = a formatter that fails as a whole; skipped when these tools ran)
+# appended); finding pattern (line, message), None = a formatter whose diff gives the first changed line; skipped when
+# these tools ran)
 CHECKERS = {
     (".lua", ".luau"): [
         ("stylua", ["stylua.toml", ".stylua.toml"], ["stylua", "--check"], None, ()),
         ("selene", ["selene.toml"], ["selene", "--display-style=quiet"], LINE, ())],
     (".py",): [
         ("ruff", RUFF, ["ruff", "check", "--quiet", "--output-format=concise"], LINE, ()),
-        ("ruff format", RUFF, ["ruff", "format", "--check", "--quiet"], None, ()),
+        ("ruff format", RUFF, ["ruff", "format", "--diff", "--quiet"], None, ()),
         ("py_compile", None, ["python3", "-m", "py_compile"], r"line (\d+)[\s\S]*?^(\w+Error: .+)", ("ruff",))],
     (".rb", ".rake"): [
         ("rubocop", [".rubocop.yml", ("Gemfile", "rubocop")], ["rubocop", "--server", "-f", "emacs"], LINE, ()),
@@ -40,7 +41,7 @@ CHECKERS = {
         ("prettier", PRETTIER, ["prettier", "--check"], None, ("biome",)),
         ("oxfmt", [".oxfmtrc.json", ".oxfmtrc.jsonc"], ["oxfmt", "--check"], None, ("biome",))],
     (".go",): [("gofmt", ["go.mod"], ["gofmt", "-d", "-e"], None, ())],
-    (".rs",): [("rustfmt", ["Cargo.toml"], ["rustfmt", "--check", "--edition", "2021"], None, ())],
+    (".rs",): [("rustfmt", ["Cargo.toml"], ["rustfmt", "--check", "--color=never", "--edition", "2021"], None, ())],
 }
 BY_EXT = {e: rows for exts, rows in CHECKERS.items() for e in exts}
 SIGNALS = sorted({s if isinstance(s, str) else s[0] for rows in CHECKERS.values() for r in rows for s in r[1] or ()})
@@ -88,7 +89,16 @@ def _run(cmd, path, root, pattern):
                        timeout=BUDGET - (time.monotonic() - _T0))
     out = p.stdout + p.stderr
     hits = [(int(m[1]), m[2].strip()) for m in re.finditer(pattern or LINE, out, re.MULTILINE)]
-    return hits or ([(1, "not formatted")] if p.returncode and not pattern else [])
+    return hits or ([(_first_change(out), "not formatted")] if p.returncode and not pattern else [])
+
+
+def _first_change(out):
+    """stylua's numbered rows; else a unified (gofmt, ruff) or rustfmt hunk start plus its leading context lines;
+    else 1 (prettier and oxfmt print no diff)."""
+    if m := re.search(r"^\s*(\d+)\s+(?:\d+\s+)?\|[-+]", out, re.MULTILINE):
+        return int(m[1])
+    m = re.search(r"^(?:@@ -|Diff in .*:)(\d+)\D.*\n((?: .*\n|\n)*)", out, re.MULTILINE)
+    return int(m[1]) + m[2].count("\n") if m else 1
 
 
 def _dups(text, chunks):
