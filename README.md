@@ -62,6 +62,7 @@ Start Claude Code. `gutcheck init` does the rest: it sets up its Python environm
 **Optional extras:**
 - `ast-outline` and `ast-grep`: Claude can read a map of a big file before reading any of it.
 - The Codex CLI, for the background code review and explainer pages (`gutcheck review`, `gutcheck explain`).
+- Node (`npx`) or a `jscpd` binary, for the review's duplicate check on changed lines (no model; lizard, for complexity, comes with gutcheck's Python environment).
 - zsh long-run mode. Clone this repo and add `source <clone>/gutcheck/shell/long-run.zsh` to `~/.zshrc`. After that, `claude` starts sessions with an instruction to keep working until the job is done, and `short` starts a plain session.
 
 ## What runs by itself, and what Claude reaches for

@@ -31,8 +31,13 @@ DEF_RE = re.compile(r"^\s*(?:export\s+)?(?:async\s+)?(?:def|function|class|fn|fu
                     r"local\s+function|pub\s+fn|const|let|var)\s+([A-Za-z_][\w.:]*)")
 
 
+EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+VENDORED = re.compile(r"(^|/)(node_modules|site-packages|dist-packages|vendor|\.?venv[^/]*)/")
+
+
 def git(repo, *args, check=True):
-    r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, errors="replace")
+    r = subprocess.run(["git", "-C", str(repo), "-c", "core.quotePath=false", *args], capture_output=True, text=True,
+                       errors="replace")
     if check and r.returncode:
         raise RuntimeError(f"git {' '.join(args)}: {r.stderr.strip()[:300]}")
     return r.stdout
@@ -50,6 +55,8 @@ def resolve_scope(repo, commit=None, base=None):
     if base:
         mb = git(repo, "merge-base", base, "HEAD").strip()
         return f"{base}...HEAD (+ working tree)", ["diff", "--no-color", mb]
+    if not git(repo, "rev-parse", "-q", "--verify", "HEAD", check=False).strip():
+        return "working tree (no commits yet)", ["diff", "--no-color", EMPTY_TREE]
     if git(repo, "status", "--porcelain", "--untracked-files=no").strip():
         return "working tree vs HEAD", ["diff", "--no-color", "HEAD"]
     sha = git(repo, "rev-parse", "--short", "HEAD").strip()
@@ -60,7 +67,7 @@ def untracked_as_diff(repo, max_bytes=60_000):
     out = []
     for p in git(repo, "ls-files", "--others", "--exclude-standard").splitlines():
         f = Path(repo) / p
-        if secretscan.is_secret_file(p) or not f.is_file() or f.stat().st_size > max_bytes:
+        if secretscan.is_secret_file(p) or VENDORED.search(p) or not f.is_file() or f.stat().st_size > max_bytes:
             continue
         try:
             lines = f.read_text(errors="replace").splitlines()

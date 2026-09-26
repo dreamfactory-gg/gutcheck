@@ -4,10 +4,11 @@
   gutcheck review --wait "FOCUS" ...                                              same, in the foreground
   gutcheck review --status [ID]                                                   recent jobs and their result files
 
-One relevance pass (relevance.py) feeds all three checks:
+One relevance pass (relevance.py) feeds all four checks:
   review.md      adversarial cross-model review by Codex (its config's default model/effort), through the Codex
                  plugin's companion script when installed, else `codex exec --sandbox read-only`
   test-gap.md    changed functions no test mentions (deterministic, from the relevance pass)
+  dup-complexity.md  jscpd clones and lizard over-limit functions (CCN 15) touching lines the change added (no model)
   docs-drift.md  doc paragraphs that mention changed names and may now be stale (code for old numbers, Jev for the rest)
   SUMMARY.md     one line per check with paths
 """
@@ -18,12 +19,14 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 from . import config, jev, jobs, relevance, secretscan
 
 LOG = config.STATE_DIR / "reviews.jsonl"
+CHECKS = ("review", "test-gap", "dup-complexity", "docs-drift")
 
 
 # ---- adversarial review (Codex) ------------------------------------------------------------------
@@ -47,14 +50,13 @@ def adversarial(rel, rel_md_path, focus, commit, base, out):
     repo = rel["repo"]
     text = _focus_text(focus, rel, rel_md_path)
     node, comp = shutil.which("node"), companion()
-    head = relevance.git(repo, "rev-parse", "HEAD").strip()
-    target_is_head = commit and relevance.git(repo, "rev-parse", commit).strip() == head
+    target_is_head = commit and len(set(relevance.git(repo, "rev-parse", commit, "HEAD").split())) == 1
     if node and comp and (not commit or target_is_head):
         cmd = [node, comp, "adversarial-review", "--wait"]
         if base:
             cmd += ["--base", base]
         elif target_is_head:
-            cmd += ["--base", f"{head}~1"]
+            cmd += ["--base", f"{commit}~1"]
         cmd.append(text)
         via = "codex-companion adversarial-review"
         r = subprocess.run(cmd, cwd=repo, capture_output=True, text=True, errors="replace")
@@ -165,6 +167,107 @@ def docs_drift(rel, out, commit, base, deadline=None):
     return f"{len(real)} paragraph(s) may be stale" if real else "nothing looks stale"
 
 
+# ---- duplication + complexity (jscpd, lizard; no model) --------------------------------------------
+MAX_ROWS = 40  # per kind, largest first
+LIMITS = (("CCN", "cyclomatic_complexity", 15), ("NLOC", "nloc", 1000), ("args", "parameter_count", 100))  # lizard -w -C 15
+
+
+def _scannable(p, exts):
+    return Path(p).suffix in exts and not relevance.VENDORED.search(p) and not secretscan.is_secret_file(p)
+
+
+def _added_lines(diff, exts):
+    out = {}
+    for f in relevance.parse_diff(diff):
+        if f["deleted"] or f["binary"] or not _scannable(f["path"], exts):
+            continue
+        s = out.setdefault(f["path"], set())
+        for h in f["hunks"]:
+            n = h["new_start"]
+            for line in h["lines"]:
+                if line.startswith("+"):
+                    s.add(n)
+                if line.startswith(("+", " ")):
+                    n += 1
+    return {p: s for p, s in out.items() if s}
+
+
+def _tree(repo, scope, exts, tree):
+    """Copy the diff's new side (the commit, through a throwaway index, else the working tree) of files in exts to tree."""
+    tree.mkdir()
+    if scope.startswith("commit "):
+        sha = scope.split()[1]
+        files = [p for p in relevance.git(repo, "ls-tree", "-r", "--name-only", sha).splitlines() if _scannable(p, exts)]
+        env = dict(os.environ, GIT_INDEX_FILE=str(tree.parent / "index"))
+        subprocess.run(["git", "-C", str(repo), "read-tree", sha], env=env, check=True)
+        subprocess.run(["git", "-C", str(repo), "checkout-index", "-z", "--stdin", f"--prefix={tree}/"],
+                       input="\0".join(files), text=True, env=env, check=True)
+        return files
+    files = [p for p in dict.fromkeys(relevance.git(repo, "ls-files", "--cached", "--others", "--exclude-standard")
+                                      .splitlines()) if _scannable(p, exts) and (repo / p).is_file()]
+    for p in files:
+        (tree / p).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(repo / p, tree / p)
+    return files
+
+
+def _hits(lines, start, end):
+    return any(start <= n <= end for n in lines)
+
+
+def dup_complexity(rel, out, commit, base):
+    import lizard
+    from lizard_languages import languages
+    repo = Path(rel["repo"])
+    source = {".luau", *(f".{e}" for lang in languages() for e in lang.ext)}
+    changed = _added_lines(relevance.get_diff(repo, commit, base)[1], source)
+    if not rel["scope"].startswith("commit "):  # untracked files over the diff's size cap are new too
+        for p in relevance.git(repo, "ls-files", "--others", "--exclude-standard").splitlines():
+            if p not in changed and _scannable(p, source) and (repo / p).is_file():
+                changed[p] = set(range(1, len((repo / p).read_bytes().splitlines()) + 1))
+    dups, cx = [], []
+    with tempfile.TemporaryDirectory() as tmp:
+        exts = sorted({Path(p).suffix for p in changed})
+        root = Path(tmp) / "tree"
+        files = _tree(repo, rel["scope"], exts, root)
+        jscpd = [shutil.which("jscpd")] if shutil.which("jscpd") else ["npx", "-y", "jscpd@5"]
+        r = subprocess.run([*jscpd, "-s", "-r", "json", "-o", tmp, "--formats-exts", "lua:lua,luau", "."],
+                           cwd=root, capture_output=True, text=True) if files else None
+        report = Path(tmp) / "jscpd-report.json"
+        if r and not report.exists():
+            raise RuntimeError(f"jscpd exit {r.returncode}: {(r.stderr or r.stdout).strip()[-200:]}")
+        for d in json.loads(report.read_text())["duplicates"] if r else []:
+            a, b = ({"path": os.path.normpath(x["name"]), "start": x["start"], "end": x["end"]}
+                    for x in (d["firstFile"], d["secondFile"]))
+            if not _hits(changed.get(a["path"], ()), a["start"], a["end"]):
+                a, b = b, a
+            if _hits(changed.get(a["path"], ()), a["start"], a["end"]):
+                dups.append((d["tokens"], (f"- {a['path']}:{a['start']}-{a['end']} duplicates {b['path']}:{b['start']}-"
+                                           f"{b['end']} ({d['lines']} lines, {d['tokens']} tokens)")))
+        for p, lines in changed.items():
+            f = root / p
+            if not f.is_file():
+                continue
+            text = f.read_text(errors="replace")
+            # lizard reads Luau with its Lua reader; its names drop Lua's `:method`, so show the source line
+            info = lizard.analyze_file.analyze_source_code(re.sub(r"\.luau$", ".lua", p), text)
+            src = text.splitlines()
+            for fn in info.function_list:
+                over = [f"{k} {getattr(fn, a)} > {n}" for k, a, n in LIMITS if getattr(fn, a) > n]
+                if over and _hits(lines, fn.start_line, fn.end_line):
+                    cx.append((fn.cyclomatic_complexity, (f"- {p}:{fn.start_line}-{fn.end_line} "
+                                                          f"`{src[fn.start_line - 1].strip()[:80]}`: {', '.join(over)}")))
+    head = ["# Duplication and complexity", "",
+            (f"Scope: {rel['scope']}. Only findings that touch lines added in this change: jscpd clones with a side on "
+             f"a changed line ({len(files)} {'/'.join(exts)} file(s) scanned), and changed functions over lizard's "
+             f"limits (CCN 15, 1000 NLOC, 100 args)."), ""]
+    body = [line for rows in (dups, cx) for _, line in sorted(rows, reverse=True)[:MAX_ROWS]]
+    body += [f"- ({n} smaller finding(s) not listed)" for n in [len(dups) + len(cx) - len(body)] if n]
+    out.write_text("\n".join(head + (body or ["- nothing on changed lines"])) + "\n")
+    return f"{len(dups)} duplicate(s), {len(cx)} over-complex function(s) on changed lines" if body \
+        else "no duplication or complexity on changed lines"
+
+
 # ---- job ------------------------------------------------------------------------------------------
 def run_job(d):
     st = jobs.read_status(d)
@@ -172,6 +275,8 @@ def run_job(d):
     d = Path(d)
     results = {}
     for name, fn in (("test-gap", lambda: test_gap(rel, d / "test-gap.md")),
+                     ("dup-complexity", lambda: dup_complexity(rel, d / "dup-complexity.md", st.get("commit"),
+                                                               st.get("base"))),
                      ("docs-drift", lambda: docs_drift(rel, d / "docs-drift.md", st.get("commit"), st.get("base"))),
                      ("review", lambda: adversarial(rel, st["relevance_md"], st["focus"], st.get("commit"),
                                                     st.get("base"), d / "review.md")[0])):
@@ -189,11 +294,10 @@ def run_job(d):
 
 
 def _summary(d, rel, st, results):
-    files = {"review": "review.md", "test-gap": "test-gap.md", "docs-drift": "docs-drift.md"}
     lines = [f"# Background review: {Path(rel['repo']).name} ({rel['scope']})", f"Focus: {st['focus']}",
              f"Relevance pass: {st['relevance_md']}", ""]
-    for k in ("review", "test-gap", "docs-drift"):
-        lines.append(f"- {k}: {results.get(k, 'running')} — {d / files[k]}")
+    for k in CHECKS:
+        lines.append(f"- {k}: {results.get(k, 'running')} — {d / f'{k}.md'}")
     (d / "SUMMARY.md").write_text("\n".join(lines) + "\n")
 
 

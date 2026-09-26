@@ -1,6 +1,6 @@
 ---
 name: build-units
-description: Plan, parallelise and finish units of build work. Concrete done bars in TASKS.md, parallel builders in worktrees that state their files first, and when a unit is done, background checks that only read (Codex review, test-gap, docs-drift), an independent grader, evidence checks on reports, and an explainer page. Use when splitting work across builders or when a unit is finished.
+description: Plan, parallelise and finish units of build work. Concrete done bars in TASKS.md, parallel builders in worktrees that state their files first, and when a unit is done, background checks that only read (Codex review, test-gap, duplication/complexity, docs-drift), an independent grader, evidence checks on reports, and an explainer page. Use when splitting work across builders or when a unit is finished.
 ---
 
 # Build units: done bars, parallel builders, background checks
@@ -24,11 +24,11 @@ Not a bar: "works", "clean", "fast", "robust". If the right measure isn't obviou
 ## When a reviewable unit is done
 Everything here only reads, runs in the background, and never gates. Start it, keep working, read the results when they land.
 
-1. **Background review** (Codex, adversarial; plus test-gap and docs-drift from the same relevance pass):
+1. **Background review** (Codex, adversarial; plus test-gap, dup-complexity and docs-drift from the same relevance pass):
    ```
    gutcheck review --wait "<what to attack: the risky part, the invariant that must hold>" [--commit SHA | --base REF]
    ```
-   Run that with Bash `run_in_background: true` so you're notified when it lands, or use `--background`, which detaches and prints the job dir. Results: `<job>/SUMMARY.md` (one line per check) → `review.md`, `test-gap.md`, `docs-drift.md`. `gutcheck review --status` lists recent jobs. Treat findings as leads: verify each against the code before acting.
+   Run that with Bash `run_in_background: true` so you're notified when it lands, or use `--background`, which detaches and prints the job dir. Results: `<job>/SUMMARY.md` (one line per check) → `review.md`, `test-gap.md`, `dup-complexity.md` (jscpd clones and lizard CCN > 15 functions on lines the unit added; no model), `docs-drift.md`. `gutcheck review --status` lists recent jobs. Treat findings as leads: verify each against the code before acting.
 2. **Shared relevance pass.** `gutcheck relevance [--commit SHA]` selects the changed symbols and the callers, tests and docs that matter, once, with Jev, and saves it (`~/.local/state/gutcheck/relevance/`). Review, test-gap, docs-drift and the explainer all reuse it; hand the `.md` path to any subagent that needs context for the change instead of letting it explore.
 3. **Independent grader.** Spawn the `grader` agent (fresh context; never the builder, never yourself for your own build) with: the done bar, where the real output is, and how to run it. It tries to prove the unit fails and reports PASS/FAIL with reproductions. It doesn't fix anything; fixes go back to a builder.
 4. **Evidence in reports.** The SubagentStop hook checks each claim in a subagent's report that cites `path:line` or a command it ran, and gives the subagent one line if a citation doesn't back its claim. For Codex output or any other report: `gutcheck evidence REPORT.md --cwd REPO [--transcript JSONL]`. Flags are leads, not verdicts: read the cited lines before rejecting a claim.

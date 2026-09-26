@@ -13,7 +13,7 @@
   gutcheck studio sync|path|check           experimental local script mirror (off unless [studio] mirror = true)
   gutcheck soldier-note [AGENT_TYPE] [--path] [--dir D]   a retired subagent's handoff note for this project
   gutcheck relevance [--repo D] [--commit SHA|--base REF] [--focus T]   shared relevance pass for a change
-  gutcheck review --background|--wait "FOCUS" [--repo D] [--commit SHA|--base REF]   Codex review + test-gap + docs-drift
+  gutcheck review --background|--wait "FOCUS" [--repo D] [--commit SHA|--base REF]   Codex review + test-gap + dup-complexity + docs-drift
   gutcheck review --status [ID]             where background review results are
   gutcheck evidence REPORT_FILE|- [--cwd D] [--transcript JSONL]   check a report's cited evidence
   gutcheck explain [--repo D] [--commit SHA|--base REF] [--slug S] [--background]   Codex-written explainer page
