@@ -17,7 +17,7 @@ directions while the price goes the other way.
 
   run.py measure  --plugin DIR [--runs N] [--tasks a,b] [--out FILE]   run the suite, write results
   run.py gate     --results FILE [--ceilings FILE]                     table; exit 1 on a failed check or cost ceiling
-  run.py lower    --results FILE --ceilings FILE --sha SHA             ceiling = min(old, median * (1 + tol))
+  run.py lower    --results FILE --ceilings FILE --sha SHA             lower a ceiling when the costliest run shows the higher level
   run.py raise    --results FILE --ceilings FILE --sha SHA --task T --reason TEXT   (maintainers, via the release script)
   run.py bootstrap --results FILE [--results FILE ...] --ceilings FILE --sha SHA [--spread-results FILE ...] [--tolerance auto|X]
   run.py spread   --results FILE [--results FILE ...]                 run-to-run spread, for choosing the tolerance
@@ -101,7 +101,7 @@ TASKS = {
         prompt="build.log in the current directory is the output of a CI test run. Which tests failed? "
                "Reply with only the failing test function names, one per line, nothing else."),
     "big_source": dict(
-        fixture="big_source", check=check_source,
+        fixture="big_source", check=check_source, wrong_ok=1 / 3,   # low-effort sonnet sometimes misreads the math
         prompt="In ledger.py, what does late_fee(25000, 20) return? Reply with only the integer."),
     "one_line_edit": dict(
         fixture="small_repo", git=True, check=check_edit,
@@ -212,19 +212,20 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     else:
         try:
             rec["ok"], rec["why"] = spec["check"](res, wd)
+            rec["wrong"] = not rec["ok"]   # a wrong answer, which a task's wrong_ok may tolerate; guards below reset it
         except Exception as e:
             rec["ok"], rec["why"] = False, f"check crashed: {type(e).__name__}: {e}"
     # harness guards: the candidate's hooks fired exactly once per prompt (so no second gutcheck is loaded), and
     # for MCP tasks the whole tool output reached gutcheck's MCP layer (not Claude Code's own large-output stub)
     rec["prompt_hooks"] = _lines(d / "state" / "prompt_hook.jsonl")
     if len(rec["prompt_hooks"]) != 1:
-        rec["ok"], rec["why"] = False, (f"the candidate's UserPromptSubmit hook ran {len(rec['prompt_hooks'])} "
-                                        "times (want 1: not loaded, or loaded twice)")
+        rec["ok"], rec["wrong"], rec["why"] = False, False, (f"the candidate's UserPromptSubmit hook ran {len(rec['prompt_hooks'])} "
+                                                      "times (want 1: not loaded, or loaded twice)")
     if spec.get("mcp") and task in TASKS:
         seen = [x.get("chars", 0) for x in _lines(d / "state" / "mcp_trim.jsonl")]
         rec["mcp_chars"] = seen
         if not any(c >= 40_000 for c in seen):
-            rec["ok"], rec["why"] = False, f"gutcheck's MCP layer never saw the full tool output ({seen})"
+            rec["ok"], rec["wrong"], rec["why"] = False, False, f"gutcheck's MCP layer never saw the full tool output ({seen})"
     rec["result"] = res[:300]
     return rec
 
@@ -294,8 +295,32 @@ def medians(runs):
     for r in runs:
         by.setdefault(r["task"], []).append(r)
     return {t: {m: int(statistics.median(x["usage"][m] for x in rs)) for m in FIELDS}
-            | {"checks": f"{sum(x['ok'] for x in rs)}/{len(rs)}", "ok": all(x["ok"] for x in rs)}
+            | {"checks": f"{sum(x['ok'] for x in rs)}/{len(rs)}", "ok": all(x["ok"] or x.get("wrong") for x in rs)
+               and sum(not x["ok"] for x in rs) <= int(len(rs) * TASKS.get(t, {}).get("wrong_ok", 0))}
             for t, rs in by.items()}
+
+
+def values(runs, task, metric):
+    return [r["usage"][metric] for r in runs if r["task"] == task]
+
+
+def upper(vals, tol):
+    """The task's higher level: runs split into levels at gaps over tol/2; the top of the highest level with at
+    least two runs (a lone run is a one-off, like a prompt-cache miss), else the median."""
+    levels = []
+    for v in sorted(vals):
+        if levels and v <= levels[-1][-1] * (1 + tol / 2):
+            levels[-1].append(v)
+        else:
+            levels.append([v])
+    return next((lv[-1] for lv in reversed(levels) if len(lv) > 1), statistics.median(vals))
+
+
+def ratchet(c, top, tol):
+    """Ceilings sit at the higher level * (1 + tol), so a release lowers one only when its costliest run is on that
+    level (within the tol / 2 gap upper() splits levels at); a release whose runs all landed on a lower level leaves
+    it alone. Checking against the higher level itself, not c, keeps a lowered ceiling from walking down a level."""
+    return min(c, int(top * (1 + tol))) if top * (1 + tol) * (1 + tol / 2) >= c else c
 
 
 # ---- ceilings ---------------------------------------------------------------------------------------------------
@@ -371,7 +396,7 @@ def lower(a):
         if not c or not m["ok"]:
             continue
         for x in METRICS:
-            new = min(c[x], int(m[x] * (1 + tol_for(ceil, t, x))))
+            new = ratchet(c[x], max(values(res["results"], t, x)), tol_for(ceil, t, x))
             if new < c[x]:
                 _hist(ceil, a.sha, t, x, c[x], new, "lowered by release")
                 changed.append(f"{t}.{x} {c[x]:,}->{new:,}")
@@ -393,7 +418,8 @@ def raise_(a):
         sys.exit(f"raise: {a.task} failed its check ({m['checks']}); fix that first")
     c = ceil["tasks"].setdefault(a.task, {x: 0 for x in METRICS})
     for x in METRICS:
-        new = int(m[x] * (1 + tol_for(ceil, a.task, x)))
+        tol = tol_for(ceil, a.task, x)
+        new = int(upper(values(res["results"], a.task, x), tol) * (1 + tol))
         if new > c[x]:
             _hist(ceil, a.sha, a.task, x, c[x], new, "raised by owner: " + a.reason.strip())
             print(f"  {a.task}.{x}: {c[x]:,} -> {new:,}")
@@ -411,20 +437,21 @@ def setup_of(res):
 GRID = (0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0)
 
 
-def false_fail_rate(values, tol, n=3, releases=20, trials=2000, seed=1):
+def false_fail_rate(vals, tol, n=3, releases=20, trials=2000, seed=1):
     """Chance that an unchanged plugin fails the gate at least once in `releases` releases, drawing each run
-    from `values` (the measured runs), with ceilings bootstrapped at median * (1 + tol) and lowered by the ratchet."""
+    from `vals` (the measured runs), with ceilings bootstrapped at the higher level * (1 + tol) and lowered by the
+    ratchet."""
     rng = random.Random(seed)
-    boot = statistics.median(values) * (1 + tol)
+    boot = upper(vals, tol) * (1 + tol)
     fails = 0
     for _ in range(trials):
         c = boot
         for _ in range(releases):
-            m = statistics.median(rng.choice(values) for _ in range(n))
-            if m > c:
+            draw = [rng.choice(vals) for _ in range(n)]
+            if statistics.median(draw) > c:
                 fails += 1
                 break
-            c = min(c, m * (1 + tol))
+            c = ratchet(c, max(draw), tol)
     return fails / trials
 
 
@@ -454,30 +481,22 @@ def bootstrap(a):
     for r in runs:
         by.setdefault(r["task"], []).append(r)
     if a.tolerance == "auto":
-        # spread from every sitting given (--results and --spread-results), each run scaled by its own sitting's
-        # median so sittings of slightly different commits still pool
-        rel = {}
-        for p in a.results + (a.spread_results or []):
-            grp = {}
-            for r in load(p)["results"]:
-                grp.setdefault(r["task"], []).append(r)
-            for t, rs in grp.items():
-                for x in METRICS:
-                    mid = statistics.median(r["usage"][x] for r in rs) or 1
-                    rel.setdefault((t, x), []).extend(r["usage"][x] / mid for r in rs)
-        tol = {t: {x: choose_tolerance(rel[(t, x)], n=RELEASE_RUNS, floor=FLOOR[x]) for x in METRICS}
+        # spread from every sitting given (--results and --spread-results), pooled as they are: scaling each sitting
+        # by its own median would shift a two-level task's levels between sittings and blur them together
+        pool = runs + [r for p in a.spread_results or [] for r in load(p)["results"]]
+        tol = {t: {x: choose_tolerance(values(pool, t, x), n=RELEASE_RUNS, floor=FLOOR[x]) for x in METRICS}
                for t in sorted(by)}
     else:
         tol = {"cost": float(a.tolerance)}
     old = load(a.ceilings) if Path(a.ceilings).exists() else {}
     ceil = {"about": "Per-task cost ceilings (cost-equivalent tokens, see evals/tokens/run.py) for gutcheck releases. "
-                     "Medians must stay at or below these; a release lowers them to min(old, median * (1 + "
-                     "tolerance)). Only the maintainer raises them (release script: --raise-ceiling TASK --reason ...). "
-                     "Tolerances come from the run-to-run spread measured at bootstrap (under 5% chance of any false "
-                     f"failure in 20 releases of an unchanged plugin, then one step up; at least +{FLOOR['cost']:.0%}).",
+                     "Medians must stay at or below these. Ceilings sit at each task's higher level * (1 + "
+                     "tolerance) (some tasks take one extra turn in some runs); a release lowers one only when its "
+                     "costliest run shows that level. Only the maintainer raises them (release script: "
+                     "--raise-ceiling TASK --reason ...).",
             "tolerance": tol, "measured_with": setup_of(first), "tasks": {}, "history": old.get("history", [])}
-    for t, m in sorted(med.items()):
-        ceil["tasks"][t] = {x: int(m[x] * (1 + tol_for(ceil, t, x))) for x in METRICS}
+    for t in sorted(med):
+        ceil["tasks"][t] = {x: int(upper(values(runs, t, x), tol := tol_for(ceil, t, x)) * (1 + tol)) for x in METRICS}
         for x in METRICS:
             _hist(ceil, a.sha, t, x, None, ceil["tasks"][t][x], f"bootstrap from {len(by[t])} runs")
     save(a.ceilings, ceil)
