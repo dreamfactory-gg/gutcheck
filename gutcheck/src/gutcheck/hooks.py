@@ -516,7 +516,11 @@ HANDLERS = {"PreCompact": compact_log, "PreToolUse:Bash": pre_bash, "PreToolUse:
  "UserPromptSubmit": prompt_submit,
             "SessionStart": session_start, "Stop": stop,
             "SubagentStop": subagent_stop, "SubagentStart": subagent_start, "PreToolUse:SendMessage": pre_send,
-            "PrePush": lambda i: __import__("gutcheck.pushcheck", fromlist=["hook"]).hook(i)}
+            "PrePush": lambda i: __import__("gutcheck.pushcheck", fromlist=["hook"]).hook(i),
+            **dict.fromkeys(("PostToolUse:Edit", "PostToolUse:Write", "PostToolUse:MultiEdit"),
+                            lambda i: __import__("gutcheck.lint", fromlist=["hook"]).hook(i)),
+            **dict.fromkeys(("PreToolUse:Edit", "PreToolUse:Write", "PreToolUse:MultiEdit"),
+                            lambda i: __import__("gutcheck.lint", fromlist=["pre"]).pre(i))}
 
 
 def main(args):

@@ -91,7 +91,9 @@ def test_gap(rel, out):
              f"{', '.join(rel['tests']) or 'none found'}.", ""]
     untested = rel.get("untested_symbols") or []
     if untested:
-        lines.append("Changed functions/classes that no test file mentions (by name; check before writing tests):")
+        lines.append("Changed functions/classes that no test file mentions (by name). Don't write unit tests for these by "
+                     "default: cover them with lint/type checks and the unit's end-to-end run; add a unit test only for a "
+                     "small, crucial piece whose failure the end-to-end run wouldn't show.")
         by_file = {}
         for c in code:
             for s in c["symbols"]:

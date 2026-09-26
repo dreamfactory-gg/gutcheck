@@ -154,6 +154,9 @@ def main(argv=None):
         elif cmd == "report":
             from . import report
             report.main(args)
+        elif cmd == "savings":
+            from . import savings
+            savings.main(args)
         elif cmd in ("init", "refresh"):
             from . import init
             init.main(cmd, args)

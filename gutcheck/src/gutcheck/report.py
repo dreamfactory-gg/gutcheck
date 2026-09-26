@@ -101,9 +101,18 @@ def main(args):
         if inj:
             print(f"  re-injected after compaction: {sum(1 for d in inj if d.get('found'))} of {len(inj)}")
     mcp_report(since, days)
+    try:
+        from . import savings
+        print("\n".join(savings.lines(savings.compute(days))))
+    except Exception as e:  # noqa: BLE001
+        print(f"Savings: unavailable ({type(e).__name__}: {e})")
     nud = _read("loop_nudge", since)
     if nud:
         print(f"Loop nudges (hand tool-heavy loops to a subagent): {len(nud)}")
+    li = _read("lint", since)
+    if li:
+        print(f"Edit check: {len(li)} runs, {len({d['file'] for d in li if d.get('findings')})} files with findings; "
+              f"by tool {dict(sum((Counter(d.get('by_tool')) for d in li), Counter()))}")
     errs = _read("hook_errors", since)
     if errs:
         print(f"Hook errors: {len(errs)}; latest: {errs[-1]['event']}: {errs[-1]['error'][:120]}")

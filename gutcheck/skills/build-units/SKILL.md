@@ -17,7 +17,8 @@ Not a bar: "works", "clean", "fast", "robust". If the right measure isn't obviou
 - Give each parallel builder its own worktree by default (`isolation: "worktree"` on the Agent call). Share one checkout only for read-only agents.
 - The brief asks the builder to **state the files it will write before it starts**, as its first line of output. Compare the lists across builders; if two overlap, serialise those two or split the file's ownership explicitly.
 - A builder that finds it needs an unlisted file says so before touching it.
-- Merge worktrees one at a time; run the tests after each merge.
+- Merge worktrees one at a time; run the linters and type checkers after each merge.
+- Testing: unit tests only for small, crucial pieces (a green unit suite often hides code that doesn't work). A unit's done bar is something an end-to-end run on the real thing shows (real app, real Studio, real server, real logs); prove it that way and report what the run showed, not a test count.
 
 ## When a reviewable unit is done
 Everything here only reads, runs in the background, and never gates. Start it, keep working, read the results when they land.
