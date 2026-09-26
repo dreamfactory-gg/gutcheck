@@ -2,6 +2,7 @@
 name: grader
 description: Independent grader for a finished unit of work. Give it the unit's done bar (from TASKS.md), where the output is, and how to run it; it checks the real output and tries to prove the unit fails. Never use the agent that built the unit, and never let the grader fix what it finds.
 model: opus
+effort: high
 disallowedTools: Edit, Write, NotebookEdit
 ---
 

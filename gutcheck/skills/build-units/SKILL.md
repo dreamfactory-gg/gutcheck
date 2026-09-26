@@ -6,6 +6,7 @@ description: Plan, parallelise and finish units of build work. Concrete done bar
 # Build units: done bars, parallel builders, background checks
 
 ## A concrete done bar for every goal (TASKS.md)
+If the spec is thin, interview the owner for the missing details before writing the bar.
 Each open item carries a bar that a stranger could check without asking you: a command and its expected result, a measurement and its threshold, or an observable behaviour.
 ```
 - [ ] CSV export — done when: `pytest tests/test_export.py` passes and a 10k-row export takes < 2 s
