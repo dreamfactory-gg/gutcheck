@@ -48,6 +48,7 @@ DEFAULTS = {
     # oof's eval (soldier reuse vs fresh helper) sets the real values.
     "soldier": {"mode": "on", "max_context_tokens": 250_000, "agents": {}},  # idle limit follows the cache TTL
     "lint": {"mode": "on", "off": []},  # per-edit check (lint.py); off: project roots it stays silent in
+    "transitions": {"mode": "on"},  # Now-block backup, ticked-item move, /clear and restart pickup (transitions.py)
 }
 
 

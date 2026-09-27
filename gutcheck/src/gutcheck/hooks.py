@@ -422,9 +422,7 @@ def _safe(name, fn, *args):
 # ---- SessionStart ------------------------------------------------------------------------------
 def session_start(inp):
     from . import health
-    parts = []
-    if inp.get("source") == "compact":
-        parts.append(compact_reinject(inp))
+    parts = [reinject(inp)]
     try:
         parts.append(health.session_start(inp))
     except Exception as e:
@@ -434,17 +432,19 @@ def session_start(inp):
         emit({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}})
 
 
-def compact_reinject(inp):
-    """After a compaction: the checkpoint PreCompact wrote, so standing rules, open items and running work survive."""
-    from . import checkpoint
+def reinject(inp):
+    """After a compaction, a /clear or a restart: the checkpoint written at the transition (transitions.py), so the
+    Now block, open items, standing rules and running work survive."""
+    from . import checkpoint, transitions
     try:
-        text = checkpoint.for_session_start(inp)
+        text = transitions.on_start(inp)
     except Exception as e:
-        log("hook_errors", {"event": "SessionStart:compact", "error": f"{type(e).__name__}: {e}",
+        log("hook_errors", {"event": f"SessionStart:{inp.get('source')}", "error": f"{type(e).__name__}: {e}",
                             "trace": traceback.format_exc()[-1500:]})
         return None
-    log("checkpoint_inject", {"session": inp.get("session_id"), "found": bool(text),
-                              "tokens": checkpoint.est_tokens(text) if text else 0})
+    if text or inp.get("source") == "compact":
+        log("checkpoint_inject", {"session": inp.get("session_id"), "source": inp.get("source"), "found": bool(text),
+                                  "tokens": checkpoint.est_tokens(text) if text else 0})
     return text
 
 
@@ -512,6 +512,7 @@ HANDLERS = {"PreCompact": compact_log, "PreToolUse:Bash": pre_bash, "PreToolUse:
             "PreToolUse:Read": pre_read, "PreToolUse:Grep": pre_read,
  "UserPromptSubmit": prompt_submit,
             "SessionStart": session_start, "Stop": stop,
+            "SessionEnd": lambda i: __import__("gutcheck.transitions", fromlist=["on_end"]).on_end(i),
             "SubagentStop": subagent_stop, "SubagentStart": subagent_start, "PreToolUse:SendMessage": pre_send,
             "PrePush": lambda i: __import__("gutcheck.pushcheck", fromlist=["hook"]).hook(i),
             **dict.fromkeys(("PostToolUse:Edit", "PostToolUse:Write", "PostToolUse:MultiEdit"),

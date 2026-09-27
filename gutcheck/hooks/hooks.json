@@ -1,5 +1,5 @@
 {
-  "description": "gutcheck: pre-run Bash check, pasted-key blocker, session health line, long-run stop check",
+  "description": "gutcheck: pre-run Bash check, pasted-key blocker, session health line, long-run stop check, durable transitions",
   "hooks": {
     "PreToolUse": [
       {
@@ -147,6 +147,17 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreCompact",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" SessionEnd",
             "timeout": 60
           }
         ]

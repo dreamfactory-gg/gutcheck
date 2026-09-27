@@ -308,13 +308,16 @@ def _parse_relations(text, n):
     return out
 
 
-def _claude(prompt, model, effort=None, timeout=45):
-    cmd = ["claude", "-p", "--model", model, "--tools", "", "--no-session-persistence", "--setting-sources", "",
-           "--settings", '{"disableAllHooks": true}', "--strict-mcp-config", "--disable-slash-commands",
-           "--system-prompt", MODEL_SYSTEM, "--output-format", "json"]
+def _claude(prompt, model, effort=None, timeout=45, system=MODEL_SYSTEM):
+    """One tool-less `claude -p` turn (transitions.py uses it too) -> (reply text, cost meta)."""
+    cmd = ["claude", "-p", "--model", model, "--tools", "", "--max-turns", "1", "--no-session-persistence",
+           "--setting-sources", "", "--settings", '{"disableAllHooks": true}', "--strict-mcp-config",
+           "--disable-slash-commands", "--system-prompt", system, "--output-format", "json"]
     if effort:
         cmd += ["--effort", effort]
-    r = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=timeout, cwd=str(config.STATE_DIR))
+    config.STATE_DIR.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=timeout, cwd=str(config.STATE_DIR),
+                       env=dict(os.environ, GUTCHECK_NESTED="1"))
     j = json.loads(r.stdout[:r.stdout.rindex("}") + 1])
     if j.get("is_error"):
         raise RuntimeError(str(j.get("result"))[:200])

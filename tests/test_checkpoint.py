@@ -12,7 +12,9 @@ os.environ["GUTCHECK_STATE_DIR"] = str(tmp / "state")
 os.environ["GUTCHECK_CONFIG_DIR"] = str(tmp / "cfg")
 os.environ["CLAUDE_PLUGIN_DATA"] = str(tmp / "plugin-data")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
-from gutcheck import checkpoint as C, hooks, jev  # noqa: E402
+from gutcheck import checkpoint as C, evidence, hooks, jev  # noqa: E402
+
+evidence._claude = lambda *a, **k: ("- Goal: ship the parser\n- In progress: parser", {"cost_usd": 0})
 
 RULE_WORDS = ("never", "always", "don't", "only", "ask me before")
 

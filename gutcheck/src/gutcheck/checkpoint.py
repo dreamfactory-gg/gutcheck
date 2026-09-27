@@ -1,7 +1,8 @@
 """Durable compaction: a checkpoint written before compaction (PreCompact) and re-injected after it
-(SessionStart, source "compact").
+(SessionStart, source "compact"); transitions.py also writes it at SessionEnd for a /clear or a restart.
 
-Built from the transcript with local code plus Jev only (no Claude tokens):
+It opens with "WHERE WE ARE" and the TASKS.md Now block (transitions.prepare; its backup is the one Claude call),
+then is built from the transcript with local code plus Jev only:
   - the owner's standing instructions and the lead's instructions to a teammate, verbatim, from the per-session
     rules store (rules.py), which captures them as they are stated and is caught up here;
   - TASKS.md open items and their done bars, plus the session's open todo list;
@@ -62,6 +63,11 @@ def paths_for(session):
     return d / f"{safe}.md", d / f"{safe}.full.md", d / f"{safe}.json"
 
 
+def session_name(s):
+    t = s["titles"]
+    return t.get("custom-title") or t.get("agent-name") or t.get("ai-title")
+
+
 def est_tokens(text):
     return int(len(text) / CHARS_PER_TOKEN) + 1
 
@@ -120,7 +126,7 @@ def scan(path, until_line=None):
     """Read a transcript (up to `until_line`, exclusive) into the facts a checkpoint needs."""
     s = {"owner": [], "asks": [], "agent_text": [], "bg": OrderedDict(), "files": OrderedDict(), "branches": [],
          "docs": OrderedDict(), "tasks_files": OrderedDict(), "todos": None, "cwd": None, "git_branch": None,
-         "session": None, "last_ts": None, "lead_heard": {}}
+         "session": None, "last_ts": None, "lead_heard": {}, "titles": {}}
     uses, pend_stop = {}, {}
     try:
         fh = open(path, encoding="utf-8", errors="replace")
@@ -159,6 +165,8 @@ def scan(path, until_line=None):
                         if src:
                             s["owner"].append({"ts": d.get("timestamp"), "src": src, "text": _clean(txt)})
                 continue
+            if t in ("custom-title", "agent-name", "ai-title"):
+                s["titles"][t] = d.get("customTitle") or d.get("agentName") or d.get("aiTitle")
             if t not in ("user", "assistant"):
                 continue
             ts = d.get("timestamp")
@@ -420,17 +428,17 @@ def _cache_merge(path, new):
 
 
 # ---- TASKS.md ------------------------------------------------------------------------------------------
+def git_root(cwd):
+    try:
+        return subprocess.run(["git", "-C", cwd, "rev-parse", "--show-toplevel"], capture_output=True,
+                              text=True, timeout=3).stdout.strip() or None
+    except Exception:
+        return None
+
+
 def find_tasks_files(s, cwd):
     cands = list(reversed(s["tasks_files"].keys()))
-    roots = [cwd] if cwd else []
-    if cwd:
-        try:
-            top = subprocess.run(["git", "-C", cwd, "rev-parse", "--show-toplevel"], capture_output=True,
-                                 text=True, timeout=3).stdout.strip()
-            if top:
-                roots.append(top)
-        except Exception:
-            pass
+    roots = [r for r in (cwd, cwd and git_root(cwd)) if r]
     for r in roots:
         for name in ("TASKS.md", "tasks.md"):
             cands.append(os.path.join(r, name))
@@ -490,10 +498,11 @@ def _short(t, n):
 
 
 def build(transcript_path, session=None, cwd=None, trigger=None, custom_instructions=None, until_line=None,
-          now_ts=None, deadline=JEV_DEADLINE, cap_tokens=CAP_TOKENS):
-    """Returns (capped_markdown, full_markdown, meta)."""
+          now_ts=None, deadline=JEV_DEADLINE, cap_tokens=CAP_TOKENS, s=None, now=None, source=None):
+    """Returns (capped_markdown, full_markdown, meta). `now`: the Now block, put first; `source`: what the
+    checkpoint is for (default: compaction)."""
     t0 = time.monotonic()
-    s = scan(transcript_path, until_line=until_line)
+    s = s or scan(transcript_path, until_line=until_line)
     session = session or s["session"]
     cwd = cwd or s["cwd"]
 
@@ -536,12 +545,14 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
 
     # --- sections (each: title, lines) ---
     kind = {"manual": "manual ", "auto": "automatic "}.get(trigger, "")
-    head = [f"# gutcheck checkpoint (before {kind}compaction, {_fmt_ts(now_ts or s['last_ts'])} UTC)",
-            "Written from the transcript by gutcheck. The standing instructions are the owner's own words and still "
-            "apply. For anything not here, run `gutcheck recall \"<question>\"` (past sessions, memory, git) or "
-            f"read the full checkpoint: {full_path}"]
+    head = [f"# WHERE WE ARE (from {source or kind + 'compaction'}, {_fmt_ts(now_ts or s['last_ts'])} UTC)"]
     if custom_instructions:
         head.append(f"Owner's note for this compaction: {custom_instructions.strip()}")
+    if now:
+        head.append("\n" + now.strip())
+    foot = ["", "Written from the transcript by gutcheck. The standing instructions are the owner's own words and still "
+            "apply. For anything not here, run `gutcheck recall \"<question>\"` (past sessions, memory, git) or "
+            f"read the full checkpoint: {full_path}"]
 
     open_lines = []
     for p, items in tasks:
@@ -586,13 +597,13 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
 
     def render(parts, with_rules=True):
         out = list(head)
-        if with_rules:
-            out.append("\n" + rules_block)
-        for title, lines in parts:
+        for i, (title, lines) in enumerate(parts):
             if lines:
                 out.append(f"\n## {title}")
                 out.extend(lines)
-        return "\n".join(out) + "\n"
+            if i == 0 and with_rules:  # after the open items
+                out.append("\n" + rules_block)
+        return "\n".join(out + foot) + "\n"
 
     full_parts = [("Open items", open_lines), ("Running background work", run_lines),
                   ("Key decisions", dec_lines), ("Files and branches", ctx_lines)]
@@ -601,6 +612,7 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
     # --- capped version. The standing rules sit outside the cap (their own budget, never truncated); the cap
     # applies to everything else: open items and running work stay (terse), decisions and files become pointers.
     budget = cap_tokens
+    room = budget - est_tokens(now or "")  # the Now block sits in the head, which the later renders count
 
     def fit(lines, cap, pointer):
         if est_tokens("\n".join(lines)) <= cap:
@@ -610,9 +622,9 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
             out.pop()
         return out + [pointer]
 
-    ol = fit(open_lines, int(budget * 0.45),
+    ol = fit(open_lines, int(room * 0.45),
              f"- (list cut to fit; the rest is in {', '.join(p for p, _ in tasks) or full_path})")
-    rn = fit(run_lines, int(budget * 0.25), f"- (more running work in the full checkpoint: {full_path})")
+    rn = fit(run_lines, int(room * 0.25), f"- (more running work in the full checkpoint: {full_path})")
     parts = [("Open items", ol), ("Running background work", rn)]
     for title, lines in (("Key decisions", dec_lines), ("Files and branches", ctx_lines)):
         if not lines:
@@ -629,7 +641,8 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
     capped = render(parts)
     rest_tokens = est_tokens(render(parts, False))
 
-    meta = {"session": session, "rules": rules_meta.get("owner_rules", 0) + rules_meta.get("lead_rules", 0),
+    meta = {"session": session, "name": session_name(s),
+            "now": bool(now), "rules": rules_meta.get("owner_rules", 0) + rules_meta.get("lead_rules", 0),
             **rules_meta, "rules_sync": sync_st, "rule_how": "jev" if not rules_meta.get("pending") else "partial",
             "decision_how": dec_how, "decisions": len(decisions), "open_items":
                 sum(len(i) for _, i in tasks) + len(todos), "tasks_files": tasks_files, "running": len(run_lines),
@@ -638,13 +651,15 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
     return capped, full, meta
 
 
-def write(inp, deadline=JEV_DEADLINE):
-    """PreCompact: build and write the checkpoint. Returns meta (for the compaction log)."""
-    from . import secretscan
-    session = inp.get("session_id")
-    capped, full, meta = build(inp.get("transcript_path") or "", session=session, cwd=inp.get("cwd"),
-                               trigger=inp.get("trigger"), custom_instructions=inp.get("custom_instructions"),
-                               now_ts=time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()), deadline=deadline)
+def write(inp, deadline=JEV_DEADLINE, source=None, s=None):
+    """PreCompact and SessionEnd: build and write the checkpoint, Now block first (transitions.py). Returns meta."""
+    from . import secretscan, transitions
+    session, tp = inp.get("session_id"), inp.get("transcript_path") or ""
+    s = s or scan(tp)
+    capped, full, meta = build(tp, session=session, cwd=inp.get("cwd"), trigger=inp.get("trigger"),
+                               custom_instructions=inp.get("custom_instructions"),
+                               now_ts=time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()), deadline=deadline, s=s,
+                               now=transitions.prepare(inp, s), source=source)
     md, fullp, metap = paths_for(session)
     md.parent.mkdir(parents=True, exist_ok=True)
     for p, text in ((md, capped), (fullp, full)):

@@ -72,7 +72,7 @@ Start Claude Code. `gutcheck init` does the rest: it sets up its Python environm
 - **Secret files.** `.env`, private keys and credential files can't be read into the chat. Templates like `.env.example` stay readable.
 - **Bash check.** Before a command runs, gutcheck looks for destructive, secret-printing or hidden (decoded-then-run) commands and makes Claude ask you. It starts in logging mode and switches itself on once its own logs show it's fast and quiet enough.
 - **MCP output.** Large tool answers become a compact view plus a saved file, per tool, based on what Claude actually used from that tool before. Screenshots are never touched.
-- **Durable compaction.** Before a compaction, gutcheck writes a checkpoint: your standing instructions word for word, open tasks, running jobs, files and branches. After compaction, it goes back in.
+- **Durable transitions.** Before a compaction, a `/clear` or the end of a session, gutcheck writes a checkpoint that starts with "WHERE WE ARE": the `## Now` block from TASKS.md (goal, item in progress, next step, your latest ask, running jobs), then open tasks, your standing instructions word for word, running jobs, files and branches. It goes back in after the compaction or `/clear`, and into a new session in the same project if the last one ended under 6 hours ago and no other session is running there (`--resume` and `--continue` get nothing extra). If the session didn't keep the Now block current (TASKS.md unchanged since your last prompt), gutcheck writes one from the transcript (one `claude -p` turn, Opus at low effort; on exit only when the session keeps a TASKS.md). Ticked items move from TASKS.md to REPORT.md at each transition; open items are never touched. Interactive sessions only: headless `claude -p` runs are skipped. `/gutcheck:handoff` has Claude tidy TASKS.md before a planned restart.
 - **Seen this before.** When a command fails, gutcheck adds one line on how the same error was fixed earlier, but only when it's confident. It does the same when Claude starts a task that was already done.
 - **Nudges.** When a long tool loop runs in a large session, gutcheck suggests handing it to a fresh helper agent. A forked agent that would copy more than about 50k tokens of context is refused, with the same suggestion (`[fork_guard] max_context_tokens`).
 - **Skill hints.** When a prompt clearly matches an installed skill, Claude gets a one-line pointer to it.
@@ -83,7 +83,7 @@ Start Claude Code. `gutcheck init` does the rest: it sets up its Python environm
 - `gutcheck recall "question"`: search your past sessions, memory files, Codex runs and git history.
 - `gutcheck mcp`: what each of your MCP servers adds to every request just by being connected, and how many recent sessions used it. `gutcheck mcp off NAME...` keeps a server off in every project (Claude Code only disables servers per project; gutcheck applies the list to each new project once, so turning one back on with `/mcp` sticks). `gutcheck init` measures it (one short `claude -p` turn per server, about $0.10 each) and asks.
 - `gutcheck withsecret SERVICE ENV -- command`: run a command with a secret in its environment, without the value ever being printed.
-- Skills: `gutcheck:jev`, `gutcheck:build-units` (plan and check parallel work), `gutcheck:soldiers` (reuse or retire helper agents).
+- Skills: `gutcheck:jev`, `gutcheck:build-units` (plan and check parallel work), `gutcheck:soldiers` (reuse or retire helper agents), `gutcheck:handoff` (tidy TASKS.md before a restart or `/clear`).
 - Agents: `gutcheck:explorer` (answers "where is X?" with file and line citations only) and `gutcheck:grader` (an independent check of finished work).
 - Slash commands that cost nothing until you type them: `/gutcheck:report [days]`, `/gutcheck:recall QUESTION`, `/gutcheck:init`.
 
@@ -93,7 +93,7 @@ Start Claude Code. `gutcheck init` does the rest: it sets up its Python environm
 - **It fails open.** If Jev is slow or down, or gutcheck itself errors, your session carries on as if gutcheck weren't there. A hook never blocks Claude Code on its own failure.
 - **Keys stay out of the chat.** Pasted keys are blocked, secret files can't be read, and commands that would print a secret need your OK. `withsecret` hands a key to a command without showing it.
 - **You get the last word.** If the key blocker is wrong, send the exact same prompt again within 60 seconds and it goes through.
-- **What leaves your machine.** Text gutcheck judges goes to TypeSafe's Jev API: things like the command under review, log lines you filter, your prompts (to spot standing instructions) and excerpts for recall. gutcheck redacts known key formats from command lines, reports, excerpts and its history index before sending or storing them. The evidence check sends a subagent's report and its cited lines to Claude (`claude -p`, Sonnet at low effort), which uses a little of your Claude usage. Everything else, including the history index, stays in `~/.local/state/gutcheck`.
+- **What leaves your machine.** Text gutcheck judges goes to TypeSafe's Jev API: things like the command under review, log lines you filter, your prompts (to spot standing instructions) and excerpts for recall. gutcheck redacts known key formats from command lines, reports, excerpts and its history index before sending or storing them. The evidence check sends a subagent's report and its cited lines to Claude (`claude -p`, Sonnet at low effort), which uses a little of your Claude usage. So does the Now-block backup at a transition (the transcript's tail, Opus at low effort), only when the session didn't keep the block current. Everything else, including the history index, stays in `~/.local/state/gutcheck`.
 
 ## Settings and off switches
 
@@ -110,6 +110,7 @@ Everything lives in `~/.config/gutcheck/config.toml`. `gutcheck init` writes it,
 | `[house_rules] mode` | checks the diff against your CLAUDE.md rules before `git push` | `log` |
 | `[skill_router] mode` | skill hints | `on` |
 | `[loop_nudge] mode`, `[soldier] mode` | helper-agent nudges | `on` |
+| `[transitions] mode` | Now-block backup, ticked-item move, re-inject after `/clear` and restart (`off`: compaction checkpoint only) | `on` |
 | `[recall] seen_error`, `[recall] dedup` | "seen this before" hints | `on` |
 | `[mcp_servers] default_off` | MCP servers kept off in every project (`gutcheck mcp off NAME`, `on NAME`) | empty |
 | `[recall] git_roots` | folders searched for git repos to index | `~/projects`, `~/code`, `~/src` and similar |
@@ -135,7 +136,7 @@ If you turned on Roblox Studio tool preloading, ask Claude to run `gutcheck stud
 - **Jev is a judgment model, not a reader.** It's fast and cheap, but weak at counting, arithmetic and dates. gutcheck keeps numbers in code and tells Claude to double-check what Jev flags.
 - **The evidence check is young.** It has high precision on a small labelled set and catches about half of unsupported claims.
 - **Roblox Studio** has its own adapter. Studio output passes through untouched by default, and the local script mirror is an experiment that stays off unless you turn it on.
-- **Durable compaction has no separate off switch yet.** Disabling the plugin turns it off.
+- **The compaction checkpoint has no separate off switch yet.** `[transitions] mode = "off"` turns off the rest; disabling the plugin turns off everything.
 
 ## Contributing
 
