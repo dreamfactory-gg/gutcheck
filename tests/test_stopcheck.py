@@ -64,10 +64,8 @@ os.environ.pop("CLAUDE_LONG_RUN", None)
 assert stop() is None
 os.environ["CLAUDE_LONG_RUN"] = "1"
 
-# running background work doesn't excuse a stop while other items are open: it reports back on its own
-out = stop(background_tasks=[{"id": "b1", "type": "shell", "status": "running", "description": "tests"}])
-assert out["decision"] == "block" and "reports back on its own" in out["reason"]
-S.save_state("s1", {})
+# running background work -> allow, not a stall
+assert stop(background_tasks=[{"id": "b1", "type": "shell", "status": "running", "description": "tests"}]) is None
 assert stop(background_tasks=[{"id": "b1", "type": "shell", "status": "completed"}])["decision"] == "block"
 
 # an idle teammate isn't running work; an active one (from the transcript, when background_tasks lists none) is
