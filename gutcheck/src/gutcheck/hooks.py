@@ -141,8 +141,8 @@ def studio_nudge(inp):
 
 
 def loop_nudge(inp):
-    """Tool-heavy loop in a large main context: suggest handing the loop to a fresh subagent (once per streak).
-    Every call re-sends the whole context, so a 20-call debug loop at 300k costs far more in the main session."""
+    """Tool-heavy loop in a very large main context: mention that a self-contained side task could go to a subagent
+    (once per streak). Worded so it never reads as a reason to stop or hand off the main work."""
     if inp.get("agent_id"):  # already inside a subagent
         return None
     cfg = config.load().get("loop_nudge", {})
@@ -150,20 +150,17 @@ def loop_nudge(inp):
         return None
     path = inp.get("transcript_path") or ""
     n_ctx = context_tokens(path)
-    if not n_ctx or n_ctx < cfg.get("min_context_tokens", 150_000):
+    if not n_ctx or n_ctx < cfg.get("min_context_tokens", 400_000):
         return None
     calls, nudged = _calls_since_prompt(path)
     if calls < cfg.get("min_calls", 8) or nudged:
         return None
     log("loop_nudge", {"session": inp.get("session_id"), "context_tokens": n_ctx, "calls": calls})
-    return (f"gutcheck: this is call {calls + 1} since the owner's last message and the context is ~{n_ctx // 1000}k "
-            f"tokens, so every call re-sends all of it. If more tool calls are needed for this loop, hand the rest to "
-            f"a fresh subagent with a short brief (goal, paths, ids, what you've ruled out) and take back only its "
-            f"conclusion. If a subagent you already have is on this area and warm, reuse it via SendMessage instead "
-            f"(skill `gutcheck:soldiers`).")
+    return (f"gutcheck: long tool loop at ~{n_ctx // 1000}k tokens. If the rest is a self-contained side task, a "
+            f"subagent can take it (skill `gutcheck:soldiers`); otherwise carry on.")
 
 
-def _calls_since_prompt(path, max_bytes=1_500_000, mark="gutcheck: this is call"):
+def _calls_since_prompt(path, max_bytes=1_500_000, mark="gutcheck: long tool loop"):
     """(tool calls in the main thread since the owner's last prompt, whether a nudge was already given)."""
     try:
         size = os.path.getsize(path)

@@ -46,7 +46,7 @@ DEFAULTS = {
     # Persistent soldiers (soldier.py, skill `soldiers`): past these, resuming a subagent via SendMessage gets a
     # one-line retirement suggestion. Per agent name or type: [soldier.agents.<name>]. Conservative placeholders;
     # oof's eval (soldier reuse vs fresh helper) sets the real values.
-    "soldier": {"mode": "on", "max_context_tokens": 80_000, "agents": {}},  # idle limit follows the cache TTL
+    "soldier": {"mode": "on", "max_context_tokens": 250_000, "agents": {}},  # idle limit follows the cache TTL
     "lint": {"mode": "on", "off": []},  # per-edit check (lint.py); off: project roots it stays silent in
 }
 

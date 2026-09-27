@@ -71,7 +71,7 @@ def policy(name=None, agent_type=None):
 
 def thresholds(name=None, agent_type=None):
     cfg = config.load().get("soldier", {})
-    t = {"max_context_tokens": cfg.get("max_context_tokens", 80_000),
+    t = {"max_context_tokens": cfg.get("max_context_tokens", 250_000),
          "max_idle_minutes": cfg.get("max_idle_minutes", default_idle_minutes())}
     pol = policy(name, agent_type)  # adapter policies (e.g. Studio) set their own thresholds
     t.update({k: pol[k] for k in t if pol.get(k) is not None})

@@ -11,7 +11,7 @@ A soldier is a subagent you keep for a stretch of related work so its context (w
 
 **Reuse** it with SendMessage (`to` = its name) while all three hold:
 - the work stays in the same area (same scripts, feature or bug);
-- it's warm: it answered recently (its prompt cache lasts minutes, then a resume re-sends its whole context at full price);
+- it's warm: it answered within the last hour (the subagent prompt cache TTL; past it a resume re-reads its whole context at full price);
 - its context is still small.
 
 **Retire** it when its context is large, the topic changes or it has gone cold. SendMessage it:

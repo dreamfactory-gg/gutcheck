@@ -418,14 +418,15 @@ def write_stalled(where, open_items, message, history):
         return None
 
 
-def nudge_text(label, open_items, escalate=False):
+def nudge_text(label, open_items, escalate=False, running=False):
     if escalate:
         item = open_items[0] if open_items else "the item you are stuck on"
         return (f"{MARK} Several nudges in a row have produced no progress. Write what's blocking \"{item}\" under a "
                 "BLOCKED heading in TASKS.md, then continue with any open item that doesn't depend on it.")
     if open_items:
         shown = "; ".join(open_items[:6]) + (f"; and {len(open_items) - 6} more" if len(open_items) > 6 else "")
-        return (f"{MARK} Your task list still has open items: {shown}. Continue with them. "
+        wait = "Background work reports back on its own, so don't wait for it. " if running else ""
+        return (f"{MARK} {wait}Your task list still has open items: {shown}. Continue with them. "
                 "If one is blocked, say what is blocking it.")
     return f"{MARK} {NUDGE.get(label, NUDGE['milestone'])} If something is blocked, say what is blocking it."
 
@@ -450,17 +451,18 @@ def on_stop(inp):
         log(rec)
         return out if act else None
 
-    run, crons = running_work(inp)
-    if run:
-        return finish("allow-running", running=[{"type": t.get("type"), "status": t.get("status"),
-                                                 "description": str(t.get("description") or "")[:80]}
-                                                for t in run[:8]])
     message = inp.get("last_assistant_message") or (_last_text(path) if path else "")
     if not message.strip():
         return finish("allow-no-message")
 
     tasks, unowned = find_tasks(cwd, path)
     open_items, ticked = task_items(tasks)
+    run, crons = running_work(inp)
+    # running work excuses a stop only when nothing else is open: it reports back on its own
+    if run and not open_items:
+        return finish("allow-running", running=[{"type": t.get("type"), "status": t.get("status"),
+                                                 "description": str(t.get("description") or "")[:80]}
+                                                for t in run[:8]])
     via = "tasks" if tasks else "jev"      # the guide's primary method; Jev only without a task list
     act = mode == "on" and (via == "tasks" or sc.get("jev_fallback", "log") == "on")
     st = load_state(session) if mode == "on" else {}
@@ -508,7 +510,7 @@ def on_stop(inp):
     escalated = st.get("escalated", False) and not progressed
     common = {"ticked": ticked, "items_hash": _hash(open_items), "offset": size}
     if stalls < cap:
-        reason = nudge_text(c["label"], open_items)
+        reason = nudge_text(c["label"], open_items, running=bool(run))
         hist[-1]["action"] = "block"
         if act:
             save_state(session, {**common, "stalls": stalls, "history": hist[-20:]})
