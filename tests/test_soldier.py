@@ -89,13 +89,13 @@ def _send(tp, to, msg="also check the shop script"):
 def test_retirement_suggested_past_thresholds_never_blocks():
     warm = _session("studio", "studio", 20_000, 1)
     assert _run_hook("PreToolUse", _send(warm, "studio")) is None
-    big = _session("studio", "studio", 150_000, 1)
+    big = _session("studio", "studio", 300_000, 1)
     r = _run_hook("PreToolUse", _send(big, "studio"))["hookSpecificOutput"]
-    assert "permissionDecision" not in r and "~150k" in r["additionalContext"] and "retire" in r["additionalContext"]
+    assert "permissionDecision" not in r and "~300k" in r["additionalContext"] and "retire" in r["additionalContext"]
     assert soldier.NOTE_MARK in r["additionalContext"]
-    cold = _session("studio", "studio", 20_000, 45)
+    cold = _session("studio", "studio", 20_000, 75)
     r = _run_hook("PreToolUse", _send(cold, "abc123"))["hookSpecificOutput"]  # addressed by id prefix
-    assert "idle 45 min" in r["additionalContext"]
+    assert "idle 75 min" in r["additionalContext"]
     assert _run_hook("PreToolUse", _send(big, "studio", soldier.RETIRE_MSG)) is None  # the retirement itself
     assert _run_hook("PreToolUse", _send(big, "someone-else")) is None
     assert _run_hook("PreToolUse", {**_send(big, "studio"), "agent_id": "x"}) is None  # main session only
