@@ -26,7 +26,7 @@ ast-grep -p 'PATTERN' -l LANG PATH   # structural search (calls, definitions), e
 5. **Codex runs and subagent reports.** Filter long run logs before reading them.
 6. **Exploration across many files:** hand it to the `explorer` agent, which returns `path:line-range` citations only, then read just those ranges.
 7. **Past work: `gutcheck recall "QUESTION"`** (what did we decide, how did we fix or approach X) searches past sessions, memory (including `memory/archive/`), Codex runs and git history, and prints short excerpts with `path:line` pointers. `gutcheck recall --at PATH:LINE` shows the indexed excerpt at a pointer (don't open the whole transcript); `gutcheck recall --error "ERROR LINE"` finds how an error was handled before. (Measured on 34 real questions: the right source among the results for 94%, the answer visible in the excerpt for 85%.)
-8. **Screenshots:** crop to the region that matters before looking (`sips -c H W --cropOffset Y X in.png --out crop.png`, or the browser tool's region/zoom). Crops are read more accurately than full screens and cost less.
+8. **Screenshots:** read them whole. Crop or zoom (`sips -c H W --cropOffset Y X in.png --out crop.png`, or the browser tool's region/zoom) only for dense detail such as small text or technical drawings.
 
 ## Writing questions (Jev reads literally)
 - One exact, self-contained condition per question. Name the thing; put boundary cases in the question ("not a warning").
