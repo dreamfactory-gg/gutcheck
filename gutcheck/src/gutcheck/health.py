@@ -23,6 +23,8 @@ def _stamp(name):
 
 
 def session_start(inp):
+    if os.environ.get("GUTCHECK_NESTED"):  # gutcheck's own `claude -p` probes (mcpload)
+        return None
     from . import jev
     if not jev.have_key():
         from . import secrets
@@ -35,5 +37,7 @@ def session_start(inp):
         _bg(["refresh", "--quiet"])
     if config.CONFIG_PATH.exists() and time.time() - _stamp("mcpwaste") > 86400:
         _bg([], module="gutcheck.mcpwaste")  # MCP waste tracking + adapter agent profiles
-    from . import report
+    from . import mcpload, report
+    if mcpload.pending(inp.get("cwd")):
+        _bg(["mcp", "apply", inp["cwd"]])
     return report.attention_line()

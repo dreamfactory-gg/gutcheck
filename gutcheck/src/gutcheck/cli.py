@@ -18,6 +18,7 @@
   gutcheck evidence REPORT_FILE|- [--cwd D] [--transcript JSONL]   check a report's cited evidence
   gutcheck explain [--repo D] [--commit SHA|--base REF] [--slug S] [--background]   Codex-written explainer page
   gutcheck house-rules [--repo D]           check the unpushed diff against the project's CLAUDE.md rules
+  gutcheck mcp [--measure] | off|on NAME...   what each MCP server costs per request; default-off list
   gutcheck init | refresh
 
 Inside a Claude session the owner can also type /gutcheck:report [days], /gutcheck:recall QUESTION and
@@ -160,6 +161,9 @@ def main(argv=None):
         elif cmd in ("init", "refresh"):
             from . import init
             init.main(cmd, args)
+        elif cmd == "mcp":
+            from . import mcpload
+            mcpload.main(args)
         elif cmd == "studio":
             from .adapters import roblox_studio
             roblox_studio.cli(args)

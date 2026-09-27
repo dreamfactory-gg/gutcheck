@@ -81,6 +81,7 @@ Start Claude Code. `gutcheck init` does the rest: it sets up its Python environm
 **On demand:**
 - `gutcheck jev filter | pick | ask`: triage long text without reading all of it. The `gutcheck:jev` skill teaches Claude when to use it.
 - `gutcheck recall "question"`: search your past sessions, memory files, Codex runs and git history.
+- `gutcheck mcp`: what each of your MCP servers adds to every request just by being connected, and how many recent sessions used it. `gutcheck mcp off NAME...` keeps a server off in every project (Claude Code only disables servers per project; gutcheck applies the list to each new project once, so turning one back on with `/mcp` sticks). `gutcheck init` measures it (one short `claude -p` turn per server, about $0.10 each) and asks.
 - `gutcheck withsecret SERVICE ENV -- command`: run a command with a secret in its environment, without the value ever being printed.
 - Skills: `gutcheck:jev`, `gutcheck:build-units` (plan and check parallel work), `gutcheck:soldiers` (reuse or retire helper agents).
 - Agents: `gutcheck:explorer` (answers "where is X?" with file and line citations only) and `gutcheck:grader` (an independent check of finished work).
@@ -110,6 +111,7 @@ Everything lives in `~/.config/gutcheck/config.toml`. `gutcheck init` writes it,
 | `[skill_router] mode` | skill hints | `on` |
 | `[loop_nudge] mode`, `[soldier] mode` | helper-agent nudges | `on` |
 | `[recall] seen_error`, `[recall] dedup` | "seen this before" hints | `on` |
+| `[mcp_servers] default_off` | MCP servers kept off in every project (`gutcheck mcp off NAME`, `on NAME`) | empty |
 | `[recall] git_roots` | folders searched for git repos to index | `~/projects`, `~/code`, `~/src` and similar |
 
 To turn off the whole MCP output layer for one session, run `GUTCHECK_MCP=off claude`. For one project, add it under `[mcp] off_projects`. To turn everything off, run `claude plugin disable gutcheck@gutcheck`.

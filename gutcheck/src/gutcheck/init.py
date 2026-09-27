@@ -161,6 +161,17 @@ def _maybe_promote_context(user, days=3, min_runs=30):
     return None
 
 
+def _measure_mcp(kind):
+    """Per-request cost of each MCP server: at init, and at refresh when the configured servers changed."""
+    from . import mcpload
+    servers = set(mcpload.user_servers())   # empty on a failed read of ~/.claude.json: don't re-measure then
+    if servers and (kind == "init" or set(mcpload._read(mcpload.LOAD, {}).get("servers", {})) != servers):
+        try:
+            mcpload.measure()
+        except Exception as e:
+            (config.STATE_DIR / "background.log").open("a").write(f"{kind}: MCP load measure failed: {e}\n")
+
+
 def run(kind, quiet=False):
     from . import jev
     user = config.user_config()
@@ -213,6 +224,7 @@ def run(kind, quiet=False):
     new_skills, ctx_files = _index_context()
     hist, hist_s = _index_history()
     _touch("refresh")
+    _measure_mcp(kind)
     if not quiet:
         print(f"gutcheck {kind}: scanned {stats['commands']} Bash commands")
         print(f"  key: {'found' if jev.have_key() else 'MISSING - ' + secrets.store_hint('typesafe')}")
@@ -228,6 +240,8 @@ def run(kind, quiet=False):
             print(f"  recall index: re-read {hist['claude']} transcripts, {hist['memory']} memory files, "
                   f"{hist['codex']} Codex runs, checked {hist['git']} git repos ({hist_s:.0f}s)")
         print(f"  config: {config.CONFIG_PATH}")
+        from . import mcpload
+        mcpload.main([])   # table only; the probes ran above
 
 
 def main(kind, args):

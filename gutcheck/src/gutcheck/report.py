@@ -43,6 +43,13 @@ def attention_line():
             return note
     except Exception:
         pass
+    try:
+        from . import mcpload
+        note = mcpload.notice()
+        if note:
+            return note
+    except Exception:
+        pass
     week = time.time() - 7 * 86400
     s = bash_stats(week)
     if s["live_asks"] >= 10 and s["approved"] / s["live_asks"] > 0.5:
