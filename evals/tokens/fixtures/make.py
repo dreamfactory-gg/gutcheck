@@ -104,13 +104,13 @@ def ledger():
         a, b = r.randint(2, 97), r.randint(2, 97)
         name = f"{kind}_{['entries', 'rows', 'amounts', 'credits', 'debits', 'totals'][r.randint(0, 5)]}_{i}"
         body = {
-            "sum": [f"    total = 0", f"    for x in values:", f"        if x % {a} != 0:", f"            total += x",
+            "sum": ["    total = 0", "    for x in values:", f"        if x % {a} != 0:", "            total += x",
                     f"    return total + {b}"],
-            "clamp": [f"    lo, hi = {a}, {a + b}", f"    return [min(hi, max(lo, x)) for x in values]"],
-            "scale": [f"    factor = {a} / {b}", f"    return [round(x * factor, 2) for x in values]"],
-            "bucket": [f"    out = {{}}", f"    for x in values:", f"        out.setdefault(x // {a}, []).append(x)",
-                       f"    return out"],
-            "normalise": [f"    peak = max(values) if values else 1", f"    return [x / (peak or 1) * {b} for x in values]"],
+            "clamp": [f"    lo, hi = {a}, {a + b}", "    return [min(hi, max(lo, x)) for x in values]"],
+            "scale": [f"    factor = {a} / {b}", "    return [round(x * factor, 2) for x in values]"],
+            "bucket": ["    out = {}", "    for x in values:", f"        out.setdefault(x // {a}, []).append(x)",
+                       "    return out"],
+            "normalise": ["    peak = max(values) if values else 1", f"    return [x / (peak or 1) * {b} for x in values]"],
             "diff": [f"    return [b - a for a, b in zip(values, values[{1 + a % 3}:])]"],
         }[kind]
         parts.append(f"def {name}(values):")
@@ -120,8 +120,8 @@ def ledger():
             parts.append(f"    # note {k}: {r.choice(['kept for audit', 'see billing runbook', 'rounding per policy', 'legacy path', 'checked nightly'])}")
         parts += ["", ""]
         if i % 20 == 19:
-            parts += [f"@dataclass", f"class Batch{i}:", f"    id: int", f"    amount_cents: int = {a * b}",
-                      f"    currency: str = 'EUR'", "", ""]
+            parts += ["@dataclass", f"class Batch{i}:", "    id: int", f"    amount_cents: int = {a * b}",
+                      "    currency: str = 'EUR'", "", ""]
     (HERE / "big_source" / "ledger.py").write_text("\n".join(parts).rstrip() + "\n")
 
 
@@ -140,6 +140,53 @@ def freeze(n=760, folder="freeze"):
     (HERE / folder / "freeze.txt").write_text("\n".join(lines) + "\n")
 
 
+LONG_LOOP_FACTS = ("VERMILION-HARE-31", "48213", "c0ffee9a1d")   # run.py's check_long_loop asks for these
+
+
+def long_loop(n=13):
+    """A long multi-stage session: init.py prints three facts once and deletes itself, then modules under the
+    Read gate's 30k chars are read in full, each followed by small check.py calls."""
+    r = random.Random(77)
+    d = HERE / "long_loop"
+    (d / "modules").mkdir(parents=True, exist_ok=True)
+    verbs = ["sync", "load", "merge", "flush", "probe", "index", "prune", "stage"]
+    nouns = ["orders", "queues", "shards", "tokens", "leases", "routes", "blobs", "tenants"]
+    for m in range(1, n + 1):
+        parts = [f'"""Module m{m:02d} of a made-up storage service (fixture for the gutcheck token eval)."""',
+                 "RETRY_BASE = 2", "", ""]
+        i = 0
+        while len("\n".join(parts)) < 24_000:
+            name = f"{r.choice(verbs)}_{r.choice(nouns)}_{m:02d}{i:02d}"
+            a, b = r.randint(2, 9), r.randint(10, 99)
+            parts += [f"def {name}(items, retries={a}):",
+                      f'    """{name.split("_")[0].capitalize()} step {i} of m{m:02d}: at most {a} retries, batch {b}."""',
+                      "    done = []", f"    for start in range(0, len(items), {b}):",
+                      f"        batch = items[start:start + {b}]", "        for attempt in range(retries):",
+                      "            if all(x is not None for x in batch):", "                done.extend(batch)",
+                      "                break", f"            batch = [x for x in batch if x is not None][:{b}]",
+                      f"    # {r.choice(['kept for audit', 'see storage runbook', 'retry per policy', 'legacy path'])}",
+                      "    return done", "", ""]
+            i += 1
+        (d / "modules" / f"m{m:02d}.py").write_text("\n".join(parts).rstrip() + "\n")
+    codename, build, checksum = LONG_LOOP_FACTS
+    (d / "init.py").write_text(f'''"""One-shot release init: prints the release facts once, then removes itself."""
+import os
+
+print("release codename: {codename}")
+print("build number: {build}")
+print("artifact checksum: {checksum}")
+os.remove(__file__)
+''')
+    (d / "check.py").write_text('''"""Quick per-module check: python3 check.py NN [NN ...]"""
+import ast
+import sys
+
+for n in sys.argv[1:]:
+    fns = [f.name for f in ast.parse(open(f"modules/m{int(n):02d}.py").read()).body if isinstance(f, ast.FunctionDef)]
+    print(f"m{int(n):02d}: {len(fns)} functions, {sum(f.startswith('sync_') for f in fns)} sync_, ok")
+''')
+
+
 if __name__ == "__main__":
     (HERE / "ci_log").mkdir(exist_ok=True)
     (HERE / "big_source").mkdir(exist_ok=True)
@@ -147,4 +194,5 @@ if __name__ == "__main__":
     ledger()
     freeze()
     freeze(270, "freeze_small")
+    long_loop()
     print("fixtures written")

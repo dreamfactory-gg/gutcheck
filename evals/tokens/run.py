@@ -12,6 +12,7 @@ Usage (summed over every model the run used, from the result JSON's modelUsage):
   cache_read   cache_read_input_tokens
   output       output_tokens (thinking included)
   cost         input + cache_write * 1.25 + cache_read * 0.1 + output * 5   (cost-equivalent tokens)
+  cost_prod    the same at production prices (1h cache): cache_write * 2, cache_read * 0.05; reported, never gated
 Only cost is gated: a Claude Code release can turn cache writes into reads, which moves the raw counts in opposite
 directions while the price goes the other way.
 
@@ -35,6 +36,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -43,7 +45,8 @@ HERE = Path(__file__).resolve().parent
 FIX = HERE / "fixtures"
 CEILINGS = HERE / "ceilings.json"
 WEIGHTS = {"input": 1, "cache_write": 1.25, "cache_read": 0.1, "output": 5}
-FIELDS = (*WEIGHTS, "cost")
+PROD_WEIGHTS = {"input": 1, "cache_write": 2, "cache_read": 0.05, "output": 5}
+FIELDS = (*WEIGHTS, "cost", "cost_prod")
 METRICS = ("cost",)   # gated
 MODEL = "sonnet"     # an alias, never a version
 EFFORT = "low"
@@ -88,6 +91,14 @@ def check_handback(res, wd):
     ok = (got.get("1", "").strip("`*").upper() == "BLOCK" and "store.py" in got.get("2", "")
           and re.sub(r"\D", "", got.get("3", "")) == "15")
     return ok, "" if ok else f"answer {res.strip()[:120]!r}"
+
+
+def check_long_loop(res, wd):
+    sys.path.insert(0, str(FIX))
+    from make import LONG_LOOP_FACTS
+    got = dict(re.findall(r"^\s*([123])\s*[:.)]\s*(.+?)\s*$", res, re.M))
+    right = sum(f.lower() in got.get(str(i), "").lower() for i, f in enumerate(LONG_LOOP_FACTS, 1))
+    return right == 3, f"{right}/3 facts" + ("" if right == 3 else f": {res.strip()[:120]!r}")
 
 
 def check_mcp_log(res, wd):
@@ -147,6 +158,19 @@ TASKS = {
                "the repo's files yourself. 1. What is the verdict? 2. Which file has the SQL injection? 3. How many "
                "lines does ledgerkit/notify.py have, per the audit? Reply with exactly three lines: `1: SHIP or "
                "BLOCK`, `2: file path`, `3: number`."),
+    # Lever 1 (compact earlier): run on and off, e.g. --config '[compact]\nmain_tokens = 60000' against
+    # '[compact]\nmode = "off"'. Pass: 3/3 facts with compaction on, cost -25% and turns <= off + 2.
+    "long_loop": dict(
+        fixture="long_loop", check=check_long_loop, gate=False, max_turns="80", timeout=1200,
+        prompts=["Run `python3 init.py` once (it can only run once) and keep what it prints: you will need those three "
+                 "values at the very end. Then use the Read tool on modules/m01.py (the whole file) and reply with one "
+                 "line: how many functions it defines."]
+                + [f"Use the Read tool on modules/m{a:02d}.py and modules/m{a + 1:02d}.py (whole files, no offset or "
+                   f"limit). Then run `python3 check.py {a}`, `python3 check.py {a + 1}` and `python3 check.py {a} "
+                   f"{a + 1}`, one Bash call each, in that order. Reply with one line: the smallest `retries=` default "
+                   f"in the two files." for a in range(2, 14, 2)]
+                + ["Without using any tools, from memory: what did init.py print? Reply with exactly three lines: "
+                   "`1: codename`, `2: build number`, `3: checksum`."]),
     "mcp_log": dict(
         mcp=True, check=check_mcp_log,
         prompt="Use the ci-fixture MCP tool fetch_ci_logs for run 4411. Which job failed, and what is its error "
@@ -217,10 +241,13 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
         subprocess.run(g + ["commit", "-qm", "fixture"], cwd=wd, check=True)
     tools = ",".join(filter(None, (TOOLS, spec.get("tools"))))   # e.g. Agent, only for the task that needs it
     allowed = tools
-    cmd = ["claude", "-p", spec["prompt"], "--output-format", "json", "--model", model, "--effort", EFFORT,
+    prompts = spec.get("prompts")
+    io = (["--input-format", "stream-json", "--output-format", "stream-json", "--verbose"] if prompts
+          else [spec["prompt"], "--output-format", "json"])
+    cmd = ["claude", "-p", *io, "--model", model, "--effort", EFFORT,
            "--plugin-dir", str(plugin), "--setting-sources", "", "--strict-mcp-config",
            "--permission-mode", "dontAsk", "--tools", tools,
-           "--max-turns", MAX_TURNS, "--add-dir", str(d / "data")]
+           "--max-turns", spec.get("max_turns", MAX_TURNS), "--add-dir", str(d / "data")]
     if spec.get("mcp"):
         cfg = d / "mcp.json"
         cfg.write_text(json.dumps({"mcpServers": {"ci-fixture": {
@@ -233,12 +260,17 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
                CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1")
     t0 = time.monotonic()
     rec = {"task": task, "run": i}
+    timeout = spec.get("timeout", RUN_TIMEOUT)
     try:
-        p = subprocess.run(cmd, cwd=wd, env=env, capture_output=True, text=True, timeout=RUN_TIMEOUT,
-                           stdin=subprocess.DEVNULL)
-        out = json.loads(p.stdout)
+        if prompts:
+            out = converse(cmd, prompts, wd, env, timeout)
+            rec["compactions"], rec["last_turns"] = out["compactions"], out["last_turns"]
+        else:
+            p = subprocess.run(cmd, cwd=wd, env=env, capture_output=True, text=True, timeout=timeout,
+                               stdin=subprocess.DEVNULL)
+            out = json.loads(p.stdout)
     except subprocess.TimeoutExpired:
-        out = {"is_error": True, "result": "", "error": f"timeout after {RUN_TIMEOUT}s"}
+        out = {"is_error": True, "result": "", "error": f"timeout after {timeout}s"}
     except ValueError:
         out = {"is_error": True, "result": "", "error": f"no JSON result (exit {p.returncode}): {p.stderr[-300:]}"}
     rec["seconds"] = round(time.monotonic() - t0, 1)
@@ -270,9 +302,15 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     # harness guards: the candidate's hooks fired exactly once per prompt (so no second tokenmaxxing is loaded), and
     # for MCP tasks the whole tool output reached tokenmaxxing's MCP layer (not Claude Code's own large-output stub)
     rec["prompt_hooks"] = _lines(d / "state" / "prompt_hook.jsonl")
-    if len(rec["prompt_hooks"]) != 1:
+    want = len(prompts or [1])
+    if len(rec["prompt_hooks"]) != want:
         rec["ok"], rec["wrong"], rec["why"] = False, False, (f"the candidate's UserPromptSubmit hook ran {len(rec['prompt_hooks'])} "
-                                                      "times (want 1: not loaded, or loaded twice)")
+                                                      f"times (want {want}: not loaded, or loaded twice)")
+    if prompts and rec["ok"] and rec["last_turns"] != 1:
+        rec["ok"], rec["why"] = False, f"the last prompt took {rec['last_turns']} turns (tools used to answer it)"
+    if prompts:
+        rec["mod_compactions"] = _lines(d / "state" / "compact.jsonl")
+        rec["checkpoint_injects"] = _lines(d / "state" / "checkpoint_inject.jsonl")
     if spec.get("tools") == "Agent" and task in TASKS and rec["ok"] and rec.get("report_chars", 0) < 5000:
         rec["skip"] = f"the subagent's report was short ({rec.get('report_chars')} chars)"   # nothing to cap: no data
     if spec.get("mcp") and task in TASKS:
@@ -284,8 +322,47 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     return rec
 
 
+def converse(cmd, prompts, wd, env, timeout):
+    """One session over several prompts (stream-json): each prompt is sent once the previous one's turn has ended.
+    A compaction ends in a result of its own (num_turns 0), which sends nothing. Returns the last result (its usage
+    is cumulative) with the last prompt's answer, num_turns summed over the prompts and the compactions counted."""
+    p = subprocess.Popen(cmd, cwd=wd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                         text=True)
+    timer = threading.Timer(timeout, p.kill)
+    timer.start()
+    todo, turns, compactions, out, answer = list(prompts), 0, 0, {}, {}
+
+    def send():
+        p.stdin.write(json.dumps({"type": "user", "message": {"role": "user", "content": todo.pop(0)}}) + "\n")
+        p.stdin.flush()
+    try:
+        send()
+        for line in p.stdout:
+            d = json.loads(line)
+            compactions += d.get("subtype") == "compact_boundary"
+            if d["type"] != "result":
+                continue
+            out = d
+            if d.get("num_turns"):
+                turns, answer = turns + d["num_turns"], d
+                if d.get("is_error") or d.get("subtype") != "success" or not todo:
+                    p.stdin.close()
+                else:
+                    send()
+        p.wait()
+    finally:
+        timer.cancel()
+    if p.returncode == -9:
+        raise subprocess.TimeoutExpired(cmd, timeout)
+    if todo:
+        out = out | {"is_error": True, "error": f"session ended with {len(todo)} prompts unsent"}
+    return out | {"result": answer.get("result"), "num_turns": turns, "last_turns": answer.get("num_turns"),
+                  "compactions": compactions}
+
+
 def _priced(u):
-    return u | {"cost": int(sum(u[f] * w for f, w in WEIGHTS.items()))}
+    return u | {"cost": int(sum(u[f] * w for f, w in WEIGHTS.items())),
+                "cost_prod": int(sum(u[f] * w for f, w in PROD_WEIGHTS.items()))}
 
 
 def _usage(transcript):
@@ -357,7 +434,8 @@ def measure(a):
                         parent = (f"  parent {r['parent']['cost']:,}  report {r.get('report_chars', 0):,}"
                                   if "parent" in r else "")
                         status = "SKIP " + r["skip"] if r.get("skip") else "ok" if r["ok"] else "FAIL " + r["why"]
-                        print(f"    {r['task']:<14} run {i + 1}: cost {u['cost']:>7,}  in {u['input']:>6,}  "
+                        print(f"    {r['task']:<14} run {i + 1}: cost {u['cost']:>7,}  prod {u['cost_prod']:>7,}  "
+                              f"turns {r['turns']}  in {u['input']:>6,}  "
                               f"cache_write {u['cache_write']:>6,}  cache_read {u['cache_read']:>8,}  "
                               f"out {u['output']:>6,}{parent}  {r['seconds']:>5.0f}s  {status}", flush=True)
     finally:

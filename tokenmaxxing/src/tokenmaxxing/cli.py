@@ -17,6 +17,7 @@
   tokenmaxxing explain [--repo D] [--commit SHA|--base REF] [--slug S] [--background]   Codex-written explainer page
   tokenmaxxing mcp [--measure] | off|on NAME...   what each MCP server costs per request; default-off list
   tokenmaxxing init | refresh
+  tokenmaxxing config SECTION | log NAME JSON    for the mod (hooks/register.ts): a config section; a log record
 
 Inside a Claude session the owner can also type /tokenmaxxing:report [days], /tokenmaxxing:recall QUESTION and
 /tokenmaxxing:init (user-only skills: they cost no context until typed).
@@ -135,6 +136,12 @@ def main(argv=None):
         elif cmd in ("relevance", "review", "evidence", "explain"):
             import importlib
             importlib.import_module(f"tokenmaxxing.{cmd}").main(args)
+        elif cmd == "config":
+            from gutcheck_core import config
+            print(json.dumps(config.load().get(args[0], {})))
+        elif cmd == "log":
+            from gutcheck_core.hookio import log
+            log(args[0], json.loads(args[1]))
         elif cmd == "hook":
             from . import hooks
             hooks.main(args)

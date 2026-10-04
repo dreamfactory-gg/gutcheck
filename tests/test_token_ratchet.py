@@ -20,7 +20,7 @@ def results(costs, ok=True, runs=3, wrong=()):
     """costs: {task: cost, or a list with one cost per run}; wrong: (task, run) pairs that answered wrong."""
     rs = [{"task": t, "run": n, "ok": ok and (t, n) not in wrong, "wrong": (t, n) in wrong,
            "why": "" if ok else "hook guard", "models": ["m"],
-           "usage": {"input": 0, "cache_write": 0, "cache_read": 0, "output": 0, "cost": c}, "cost_usd": 0.01}
+           "usage": {"input": 0, "cache_write": 0, "cache_read": 0, "output": 0, "cost": c, "cost_prod": c}, "cost_usd": 0.01}
           for t, cs in costs.items() for n, c in enumerate(cs if isinstance(cs, list) else [cs] * runs)]
     d = {"model": "sonnet", "effort": "low", "runs": runs, "claude_code": "x", "seconds": 1, "cost_usd": 0.1,
          "results": rs, "medians": R.medians(rs)}
