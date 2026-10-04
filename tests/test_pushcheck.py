@@ -46,4 +46,28 @@ g("branch", "-u", "origin/main")
 g("commit", "-qam", "two")
 assert pc.pending_base(str(r)) == "origin/main"
 
+# ast-grep runs only when the repo has an sgconfig.yml; missing ast-grep is a note, not a failure
+(r / "CLAUDE.md").unlink()
+g("commit", "-qam", "no rules")
+calls = []
+which = pc.shutil.which
+pc.shutil.which = lambda *a, **k: calls.append(a) or which(*a, **k)
+res = pc.check_repo(str(r))
+assert not calls and res["ast_grep"] is None, res
+(r / "sgconfig.yml").write_text("ruleDirs: [lint]\n")
+(r / "lint").mkdir()
+(r / "lint" / "no-eval.yml").write_text("id: no-eval\nlanguage: python\nseverity: error\nmessage: no eval\n"
+                                        "rule:\n  pattern: eval($$$)\n")
+(r / "a.py").write_text("y = eval('2')\n")
+g("add", ".")
+g("commit", "-qm", "lint")
+res = pc.check_repo(str(r))
+if which("ast-grep"):
+    assert ("ast-grep", "a.py", "no-eval (line 1): no eval") in res["deterministic"], res
+path = os.environ["PATH"]
+os.environ["PATH"] = "/usr/bin:/bin"  # git, no ast-grep
+res = pc.check_repo(str(r))
+os.environ["PATH"] = path
+assert res["ast_grep"] == "ast-grep not found; sgconfig.yml rules skipped", res
+
 print("ok")

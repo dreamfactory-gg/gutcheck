@@ -1,7 +1,7 @@
 """House-rules check before `git push`: the unpushed diff against the project's standing rules (its CLAUDE.md files).
 
-Deterministic checks first (secrets and secret files in the diff, merge-conflict markers, and "never/don't `X`"
-rules whose literal appears in added lines), then Jev over rule x diff hunk. Logging-only by default:
+Deterministic checks first (secrets and secret files in the diff, merge-conflict markers, "never/don't `X`"
+rules whose literal appears in added lines, and the repo's own ast-grep rules when it has an sgconfig.yml), then Jev over rule x diff hunk. Logging-only by default:
 `[house_rules] mode = "log" | "on" | "off"`; "on" turns findings into a permission ask, never a block.
 
   gutcheck house-rules [--repo D] [--base REF] [--all]      dry run on the current branch's unpushed commits
@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -212,6 +213,25 @@ def deterministic(diff, files_added, rule_list):
     return found
 
 
+def ast_grep_hits(root, changed, timeout=20):
+    """([(kind, path, why)], note): the repo's ast-grep rules over the changed files that still exist; note says why
+    nothing ran (no ast-grep on PATH or in node_modules/.bin, or a failed scan)."""
+    files = [p for p in changed if (Path(root) / p).is_file()]
+    exe = shutil.which("ast-grep", path=os.pathsep.join([str(Path(root) / "node_modules" / ".bin"),
+                                                         os.environ.get("PATH", "")]))
+    if not exe:
+        return [], "ast-grep not found; sgconfig.yml rules skipped"
+    if not files:
+        return [], None
+    try:  # exits 1 when an error-severity rule hits; stdout holds the matches either way
+        out = subprocess.run([exe, "scan", "--json=compact", *files], cwd=root, capture_output=True, text=True,
+                             timeout=timeout).stdout
+        return [("ast-grep", m["file"], f"{m['ruleId']} (line {m['range']['start']['line'] + 1}): {m['message']}")
+                for m in json.loads(out or "[]")], None
+    except (OSError, subprocess.TimeoutExpired, ValueError, KeyError) as e:
+        return [], f"ast-grep: {type(e).__name__}"
+
+
 def jev_violations(rule_list, hunk_list, deadline=None):
     if not rule_list or not hunk_list:
         return []
@@ -254,6 +274,10 @@ def check_repo(repo, push_args=(), base=None, deadline=None):
     except jev.JevError as e:
         err = f"rules: {str(e)[:150]}"
     det = deterministic(diff, names, rule_list)
+    sg_note = None
+    if (Path(root) / "sgconfig.yml").is_file():
+        sg, sg_note = ast_grep_hits(root, changed, timeout=deadline or 60)
+        det += sg
     hl = [h for h in hunks(diff) if not _is_rule_file(h[0])]
     viol = []
     if rule_list and not err:
@@ -265,7 +289,7 @@ def check_repo(repo, push_args=(), base=None, deadline=None):
     return {"repo": root, "base": base, "rule_files": [str(p) for p in rf], "rules": len(rule_list),
             "hunks": len(hl), "deterministic": det,
             "violations": [{"file": p, "hunk": h[:60], "rule_src": r[0], "rule": r[1][:200], "p": round(pr, 2)}
-                           for p, h, r, pr in viol], "jev_error": err, "ms": int((time.monotonic() - t0) * 1000)}
+                           for p, h, r, pr in viol], "jev_error": err, "ast_grep": sg_note, "ms": int((time.monotonic() - t0) * 1000)}
 
 
 def summary(res, limit=3):
@@ -319,7 +343,7 @@ def main(args):
         print(f"gutcheck house-rules: skipped ({res['skipped']})")
         return
     print(f"# {res['rules']} rules from {', '.join(Path(p).name for p in res['rule_files']) or 'no CLAUDE.md'}; "
-          f"{res['hunks']} hunks vs {res['base']}; {res['ms']} ms" + (f"; {res['jev_error']}" if res["jev_error"] else ""))
+          f"{res['hunks']} hunks vs {res['base']}; {res['ms']} ms" + "".join(f"; {res[k]}" for k in ("jev_error", "ast_grep") if res[k]))
     for k, p, why in res["deterministic"]:
         print(f"[{k}] {p}: {why}")
     for v in res["violations"]:
