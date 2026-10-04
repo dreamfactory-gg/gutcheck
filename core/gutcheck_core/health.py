@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 from . import config
 
@@ -36,13 +37,23 @@ def init(kind, args, run):
 
 
 def link_cli():
-    """~/.local/bin/<plugin> -> this install's CLI, when ~/.local/bin exists and nothing is at that name yet."""
+    """~/.local/bin/<plugin> -> this install's CLI, when ~/.local/bin exists and nothing is at that name yet, or when
+    it is our own link to another version of this install (same cache or release tree, same bin/<cli>)."""
     root, link = os.environ.get("CLAUDE_PLUGIN_ROOT"), config.HOME / ".local" / "bin" / config.APP
-    if root and link.parent.is_dir() and not os.path.lexists(link):
-        try:
-            link.symlink_to(os.path.join(root, "bin", config.APP))
-        except OSError:
-            pass
+    if not root or not link.parent.is_dir():
+        return
+    target = os.path.join(root, "bin", config.APP)
+    if os.path.lexists(link):
+        old = Path(os.readlink(link)) if link.is_symlink() else None
+        if not old or str(old) == target or old.parts[-2:] != ("bin", config.APP) or \
+                old.parent.parent.parent != Path(root).parent:
+            return
+    tmp = link.with_name(f".{config.APP}.{os.getpid()}.tmp")
+    try:  # symlink then rename: the link is never missing
+        tmp.symlink_to(target)
+        os.replace(tmp, link)
+    except OSError:
+        tmp.unlink(missing_ok=True)
 
 
 def start(inp):

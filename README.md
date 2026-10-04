@@ -34,14 +34,12 @@ Use the service name `ai-gateway` for a Vercel AI Gateway key. You can also set 
 
 Start Claude Code. Each plugin sets up the Python environment they share (`~/.local/share/gutcheck/venv`) and writes its own config the first time: `~/.config/gutcheck/config.toml` and `~/.config/tokenmaxxing/config.toml`.
 
-Each session start also puts the plugin's CLI on your PATH: it links `~/.local/bin/gutcheck` and `~/.local/bin/tokenmaxxing` to the installed plugin's `bin/`, when `~/.local/bin` exists and nothing is at that name yet (an existing file or link is left alone). If `~/.local/bin` isn't on your PATH, or you keep the CLI elsewhere, link it by hand:
+Each session start also puts the plugin's CLI on your PATH: it links `~/.local/bin/gutcheck` and `~/.local/bin/tokenmaxxing` to the installed plugin's `bin/`, when `~/.local/bin` exists and nothing is at that name yet (after an update it repoints its own link to the new version; any other file or link is left alone). If `~/.local/bin` isn't on your PATH, or you keep the CLI elsewhere, link it by hand:
 
 ```sh
 ln -s ~/.claude/plugins/cache/gutcheck/gutcheck/<version>/bin/gutcheck ~/.local/bin/gutcheck
 ln -s ~/.claude/plugins/cache/gutcheck/tokenmaxxing/<version>/bin/tokenmaxxing ~/.local/bin/tokenmaxxing
 ```
-
-The link names the installed version, and an update doesn't move it: after `claude plugin update`, run `rm ~/.local/bin/gutcheck ~/.local/bin/tokenmaxxing` and the next session links the new one.
 
 ## How they work together
 

@@ -213,7 +213,7 @@ def deterministic(diff, files_added, rule_list):
     return found
 
 
-def ast_grep_hits(root, changed, timeout=20):
+def ast_grep_hits(root, changed, timeout):
     """([(kind, path, why)], note): the repo's ast-grep rules over the changed files that still exist; note says why
     nothing ran (no ast-grep on PATH or in node_modules/.bin, or a failed scan)."""
     files = [p for p in changed if (Path(root) / p).is_file()]
@@ -268,6 +268,9 @@ def check_repo(repo, push_args=(), base=None, deadline=None):
     changed = (_git(root, "diff", "--name-only", f"{base}...HEAD") or "").split()
     rf = rule_files(root, changed)
     t0 = time.monotonic()
+
+    def left():  # what remains of the deadline for the next step (rules, ast-grep and violations share it)
+        return None if deadline is None else max(1.0, deadline - (time.monotonic() - t0))
     rule_list, err = [], None
     try:
         rule_list = rules(rf, deadline=deadline)
@@ -276,14 +279,13 @@ def check_repo(repo, push_args=(), base=None, deadline=None):
     det = deterministic(diff, names, rule_list)
     sg_note = None
     if (Path(root) / "sgconfig.yml").is_file():
-        sg, sg_note = ast_grep_hits(root, changed, timeout=deadline or 60)
+        sg, sg_note = ast_grep_hits(root, changed, timeout=left())
         det += sg
     hl = [h for h in hunks(diff) if not _is_rule_file(h[0])]
     viol = []
     if rule_list and not err:
         try:
-            left = None if deadline is None else max(1.0, deadline - (time.monotonic() - t0))
-            viol = jev_violations(rule_list, hl, deadline=left)
+            viol = jev_violations(rule_list, hl, deadline=left())
         except jev.JevError as e:
             err = f"violations: {str(e)[:150]}"
     return {"repo": root, "base": base, "rule_files": [str(p) for p in rf], "rules": len(rule_list),
