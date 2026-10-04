@@ -68,9 +68,11 @@ Start Claude Code. `gutcheck init` does the rest: it sets up its Python environm
 ## What runs by itself, and what Claude reaches for
 
 **Automatic, through hooks:**
-- **Key blocker.** A prompt that contains a known key format is blocked before it's sent.
+- **Key blocker.** A prompt you type that contains a known key format is blocked before it's sent. Messages delivered from subagents or other sessions are never blocked; Claude gets a one-line note instead.
 - **Secret files.** `.env`, private keys and credential files can't be read into the chat. Templates like `.env.example` stay readable.
 - **Big file Reads.** A whole-file Read whose first 2,000 lines exceed 30,000 chars is refused once: find the lines with `grep -n`, then Read that range with offset/limit before editing, or repeat the same Read if you need it all. Images, PDFs, notebooks and nearly single-line files stay untouched.
+- **Don't-delete guard.** When you've told the session not to delete, remove or overwrite something ("don't delete notes.txt", "never overwrite `config/`"; paths that existed when you said it), a command or Write that would (`rm`, `git rm`, `git clean`, `git checkout --`, `git reset --hard`, `git stash drop`, `find -delete`, `mv` or `>` over it, a directory holding it) needs your OK first, quoting what you said.
+- **Keys in tool calls.** A literal key in a command, a file Claude writes or edits, or an MCP call is refused, with a pointer to `gutcheck withsecret`. Placeholders, `$VARS` and `.env.example` content pass. A key in a known provider format that a command prints is redacted before Claude sees it.
 - **Bash check.** Before a command runs, gutcheck looks for destructive, secret-printing or hidden (decoded-then-run) commands and makes Claude ask you. It starts in logging mode and switches itself on once its own logs show it's fast and quiet enough.
 - **MCP output.** Large tool answers become a compact view plus a saved file, per tool, based on what Claude actually used from that tool before. Screenshots are never touched.
 - **Bash output.** Command output over 4,000 chars can become a compact view with the full output saved to a file. The view includes lines that match what the call was for. Commands reading gutcheck's saved outputs stay untouched.
@@ -91,7 +93,7 @@ Start Claude Code. `gutcheck init` does the rest: it sets up its Python environm
 
 ## Safety model
 
-- **It only adds friction.** gutcheck can make Claude ask you, block a pasted key, refuse to read a secret file, or refuse a fork that would copy a large context. It never approves anything for you.
+- **It only adds friction.** gutcheck can make Claude ask you, block a pasted key, refuse a tool call holding a key, redact a key from command output, refuse to read a secret file, or refuse a fork that would copy a large context. It never approves anything for you.
 - **It fails open.** If Jev is slow or down, or gutcheck itself errors, your session carries on as if gutcheck weren't there. A hook never blocks Claude Code on its own failure.
 - **Keys stay out of the chat.** Pasted keys are blocked, secret files can't be read, and commands that would print a secret need your OK. `withsecret` hands a key to a command without showing it.
 - **You get the last word.** If the key blocker is wrong, send the exact same prompt again within 60 seconds and it goes through.
@@ -105,6 +107,8 @@ Everything lives in `~/.config/gutcheck/config.toml`. `gutcheck init` writes it,
 |---|---|---|
 | `[bash_check] mode` | `log` (record only), `on` (ask), `off` | `log`, switches itself on when healthy (`auto_promote = false` holds it) |
 | `[keyblock] mode` | pasted-key blocker | `on` |
+| `[key_guard] mode` | keys in tool calls refused, keys in Bash output redacted (`log`: record only) | `on` |
+| `[delete_guard] mode` | asks before deleting what you said not to delete (`log`: record only) | `on` |
 | `[mcp_trim] mode` | compact views for large MCP output | `on` |
 | `[tool_trim] mode` | compact views for long Bash output (`log`: record only, `off`: untouched) | `on` |
 | `[read_gate] mode`, `min_chars` | once-only gate on big whole-file Reads (`log`: record only, `off`: untouched) | `on`, `30000` |

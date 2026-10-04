@@ -4,14 +4,14 @@ import re
 
 # Prefixed tokens: provider-specific shapes. Kept conservative so prose never matches.
 PREFIXED = [
-    ("anthropic", r"sk-ant-[A-Za-z0-9_\-]{20,}"),
-    ("openai", r"sk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{20,}"),
+    ("anthropic", r"(?<![\w-])sk-ant-[A-Za-z0-9_\-]{20,}"),
+    ("openai", r"(?<![\w-])sk-(?=[\w-]*\d)(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{20,}"),
     ("typesafe", r"apik[_\-][A-Za-z0-9_\-]{16,}"),
     ("vercel", r"vck_[A-Za-z0-9_\-]{16,}"),
     ("github", r"(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}"),
     ("aws-access-key", r"(?<![A-Z0-9])(?:AKIA|ASIA)[A-Z0-9]{16}(?![A-Z0-9])"),
     ("slack", r"xox[abprs]-[A-Za-z0-9\-]{10,}"),
-    ("stripe", r"(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}"),
+    ("stripe", r"(?<![\w-])(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}"),
     ("google", r"AIza[0-9A-Za-z_\-]{35}"),
     ("private-key", r"-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----"),
     ("jwt", r"eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"),
@@ -69,15 +69,16 @@ def find(text, high_entropy=True):
     return merged
 
 
-def redact(text):
-    spans = find(text)
+def redact(text, known_only=False):
+    """Spans become <KIND-REDACTED>; known_only: provider key formats only (no assignments, no high-entropy)."""
+    spans = [x for x in find(text, not known_only) if not known_only or x[0] in BLOCK_KINDS]
     for k, s, e in reversed(spans):
         text = text[:s] + f"<{k.upper()}-REDACTED>" + text[e:]
     return text
 
 
 # ---- secret files -------------------------------------------------------------------------
-_SAFE_ENV = re.compile(r"\.env(\.[\w\-]+)*\.(example|sample|template|dist|defaults?)$", re.I)
+SAFE_ENV = re.compile(r"\.env(\.[\w\-]+)*\.(example|sample|template|dist|defaults?)$", re.I)
 _SECRET_FILE = re.compile(
     r"(^|/)(\.env(\.[\w.\-]+)?|[^/]*\.pem|[^/]*\.key|[^/]*\.p12|[^/]*\.pfx|id_(rsa|ed25519|ecdsa|dsa)"
     r"|\.netrc|\.pgpass|\.pypirc|\.npmrc|credentials(\.json)?|\.credentials\.json|secrets?\.(json|ya?ml|toml)"
@@ -88,7 +89,7 @@ def is_secret_file(path):
     p = path.strip("'\"")
     if not p or p.startswith("-"):
         return False
-    if _SAFE_ENV.search(p):
+    if SAFE_ENV.search(p):
         return False
     if p.endswith((".pub", ".example")):
         return False
@@ -111,6 +112,8 @@ def is_secret_var(name):
 # ---- prompt policy: block only on known key formats -----------------------------------------------
 _URL = re.compile(r"(?i)\b(?:https?|wss?|ftp)://[^\s<>\"'`)\]]+")
 BLOCK_KINDS = {k for k, _ in PREFIXED}
+# docs and templates: AKIA...EXAMPLE, sk-your-key-here, ghp_xxxxxxxx
+_PLACEHOLDER = re.compile(r"(?i)example|your|placeholder|dummy|redacted|changeme|x{6,}|\*{3,}")
 
 
 def _url_spans(text):
@@ -125,12 +128,15 @@ def _in_query_value(url, rel_start):
     return url.rfind("=", q, rel_start + 1) > max(url.rfind("&", q, rel_start + 1), q)
 
 
-def classify_prompt(text):
+def classify_prompt(text, skip_placeholders=False):
     """(block_kinds, warn_kinds) for a prompt. Known key formats block; anything else only warns.
-    Inside URLs nothing counts except a known key format sitting in a query value (?api_key=sk-...)."""
+    Inside URLs nothing counts except a known key format sitting in a query value (?api_key=sk-...).
+    skip_placeholders (tool inputs): example and template values don't count."""
     urls = _url_spans(text)
     block, warn = set(), set()
     for kind, s, e in find(text):
+        if skip_placeholders and (_PLACEHOLDER.search(text[s:e]) or entropy(text[s:e]) < 3.0):
+            continue
         url = next(((us, ue, u) for us, ue, u in urls if us <= s < ue), None)
         known = kind in BLOCK_KINDS
         if url:

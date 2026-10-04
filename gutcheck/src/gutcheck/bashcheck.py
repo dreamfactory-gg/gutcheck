@@ -74,6 +74,7 @@ class Analysis:
     readonly: bool = False
     extra: dict = field(default_factory=dict)      # extra Jev state: decoded, scripts, runners
     notes: list = field(default_factory=list)
+    deletes: list = field(default_factory=list)    # absolute paths the command deletes or overwrites
 
 
 # ---- helpers -------------------------------------------------------------------------------
@@ -165,6 +166,47 @@ def _rule_rm(c, cwd, repo_root):
         if any(ch in raw for ch in "*?") and os.path.dirname(ap) == base:
             return ("delete", f"rm -rf with a glob at the repo root: {raw}")
     return None
+
+
+def _deletes(c, cwd):
+    """Paths this command deletes or overwrites, resolved against cwd (globs expanded). The whole repo for git
+    commands that discard work without naming files. `find -delete` with -name/-path filters gives fnmatch
+    patterns (start/NAME, start/*/NAME, PATH) instead of its start directories."""
+    import glob
+    if c.remote or not cwd:
+        return []
+    sub, rest = _git_sub(c.argv) if c.name == "git" else ("", [])
+    fl = _flags(["git"] + rest)
+    args, pats = [], []
+    if c.name in ("rm", "rmdir", "unlink", "shred", "srm", "trash"):
+        args = _positional(c.argv)
+    elif sub == "rm" and "--cached" not in rest:
+        args = _positional(["git"] + rest)
+    elif sub == "checkout" and "--" in rest:
+        args = rest[rest.index("--") + 1:]
+    elif (sub == "clean" and fl & {"-f", "--force"} and not fl & {"-n", "--dry-run"} or
+          sub == "reset" and "--hard" in rest or sub == "stash" and rest[:1] == ["drop"]):
+        args = [_repo_root(cwd) or "."]
+    elif c.name == "find" and "-delete" in c.argv:
+        n = next((i for i, x in enumerate(c.argv[1:], 1) if x.startswith(("-", "(", "!"))), len(c.argv))
+        starts = c.argv[1:n] or ["."]
+        flt = [(x, c.argv[i + 1]) for i, x in enumerate(c.argv[:-1])
+               if x in ("-name", "-iname", "-path", "-ipath", "-wholename")]
+        pats = [os.path.realpath(os.path.join(cwd, *p)) for s in starts for f, v in flt
+                for p in ([(s, v), (s, "*", v)] if f in ("-name", "-iname") else [(v,)])]
+        args = [] if flt else starts
+    over = [t.strip("'\"") for op, t in c.redirects if op in (">", ">|", "&>")]  # overwrites: existing paths only
+    if c.name == "mv" and len(pos := _positional(c.argv)) > 1:
+        dest = os.path.join(cwd, _expand_home(pos[-1]))
+        over += [os.path.join(dest, os.path.basename(x)) for x in pos[:-1]] if os.path.isdir(dest) else [dest]
+    out = []
+    for a in args + over:
+        if "$" in a or "`" in a or a.startswith("&"):
+            continue
+        p = os.path.join(cwd, _expand_home(a))
+        hits = glob.glob(p) if any(ch in a for ch in "*?[") else [p]
+        out += [os.path.realpath(h) for h in hits if a in args or os.path.lexists(h)]
+    return out + pats
 
 
 READERS = {"cat", "head", "tail", "less", "more", "bat", "strings", "grep", "egrep", "fgrep", "rg", "sed", "awk",
@@ -741,6 +783,7 @@ def analyze(command, cwd=None, cfg=None, depth=0, seen=None):
             elif pos:
                 cur = None
             continue
+        an.deletes += _deletes(c, cur)
         hits = [_rule_git(c, repo_root, cfg), _rule_secrets(c, an.cmds)]
         if not c.remote:  # remote deletes go to Jev with the host's label
             hits.append(_rule_rm(c, cur, _repo_root(cur) if cur != cwd else repo_root))
@@ -867,13 +910,13 @@ def check(command, cwd=None, use_jev=True, deadline=None, session=None):
     cfg = config.load()
     bc = cfg["bash_check"]
     deadline = deadline or bc.get("deadline_s", 3.0)
-    res = {"decision": None, "reason": None, "check": None, "stage": None}
+    an = analyze(command, cwd, cfg)
+    res = {"decision": None, "reason": None, "check": None, "stage": None, "deletes": an.deletes}
     for pat in bc.get("approved_patterns", []):
         if normalize(command) == pat:
             res.update(stage="approved-pattern")
             res["ms"] = int((time.monotonic() - t0) * 1000)
             return res
-    an = analyze(command, cwd, cfg)
     if an.asks:
         chk, why = an.asks[0]
         res.update(decision="ask", reason=f"gutcheck: {why}", check=chk, stage="rule", all=an.asks)

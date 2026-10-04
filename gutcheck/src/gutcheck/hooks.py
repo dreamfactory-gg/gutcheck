@@ -34,9 +34,9 @@ def emit(obj):
 def pre_bash(inp):
     from . import bashcheck, secretscan, transcripts
     cmd = (inp.get("tool_input") or {}).get("command", "")
-    if not cmd:
-        return
     cfg = config.load()
+    if not cmd or key_guard(inp, cmd, cfg):
+        return
     mode = cfg["bash_check"]["mode"]
     session = None
     # own-job detection needs the session's earlier commands; only read them when a kill is involved
@@ -52,6 +52,9 @@ def pre_bash(inp):
     out = {"hookEventName": "PreToolUse"}
     if mode == "on" and res.get("decision") == "ask":
         out.update(permissionDecision="ask", permissionDecisionReason=res["reason"])
+    keep = delete_guard(inp, res.get("deletes"), cfg)
+    if keep:
+        out.update(permissionDecision="ask", permissionDecisionReason=keep)
     if nudge:
         out["additionalContext"] = nudge
     if re.search(r"\bcodex\b[^|;&\n]*\bexec\b", cmd):
@@ -69,12 +72,72 @@ def pre_mcp(inp):
     Studio calls get the Studio soldier hint (fresh agent per task above ~100k main context) instead of the
     general loop nudge; the MCP off switch silences it for stock comparisons."""
     from . import switches
+    if key_guard(inp, json.dumps(inp.get("tool_input") or {}, ensure_ascii=False), config.load()):
+        return
     if str(inp.get("tool_name", "")).startswith("mcp__Roblox_Studio__"):
         nudge = None if switches.mcp_layer_off(inp) else studio_nudge(inp)
     else:
         nudge = loop_nudge(inp)
     if nudge:
         emit({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": nudge}})
+
+
+def pre_edit(inp):
+    """Write/Edit/MultiEdit: key guard on the new text (.env templates pass), don't-delete guard on a Write over an
+    existing file, then the formatter baseline."""
+    from pathlib import Path
+
+    from . import lint, secretscan
+    cfg = config.load()
+    ti = inp.get("tool_input") or {}
+    path = ti.get("file_path") or ""
+    text = "\n".join([ti.get("content") or "", ti.get("new_string") or ""] +
+                     [e.get("new_string") or "" for e in ti.get("edits") or []])
+    if not secretscan.SAFE_ENV.search(path) and key_guard(inp, text, cfg):
+        return
+    p = Path(inp.get("cwd") or os.getcwd()) / Path(path).expanduser()
+    keep = inp.get("tool_name") == "Write" and path and p.exists() and delete_guard(inp, [os.path.realpath(p)], cfg)
+    if keep:
+        emit({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
+                                     "permissionDecisionReason": keep}})
+    lint.pre(inp)
+
+
+def key_guard(inp, text, cfg):
+    """A literal key in a tool's input is denied (placeholders and $VAR references pass). True when denied."""
+    from . import secretscan
+    mode = cfg["key_guard"]["mode"]
+    kinds = mode != "off" and secretscan.classify_prompt(text, skip_placeholders=True)[0]
+    if not kinds:
+        return False
+    log("key_guard", {"session": inp.get("session_id"), "tool": inp.get("tool_name"), "kinds": kinds, "mode": mode,
+                      "action": "deny" if mode == "on" else "would-deny"})
+    if mode == "on":
+        emit({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                     "permissionDecisionReason":
+                                         f"gutcheck: this {inp.get('tool_name')} input holds a literal secret "
+                                         f"({', '.join(kinds)}), so it would be in the transcript for good. Pass it "
+                                         "by name instead: `gutcheck withsecret <service> ENV_NAME -- command` puts "
+                                         "the key in the command's environment as $ENV_NAME without showing it. "
+                                         "For a test fixture, build the value at runtime (e.g. 'sk-' + 'ant-...') "
+                                         "so no literal key is written."}})
+    return mode == "on"
+
+
+def delete_guard(inp, paths, cfg):
+    """The ask reason when a call deletes or overwrites something the owner said not to delete, else None."""
+    from . import rules
+    mode = cfg["delete_guard"]["mode"]
+    hit = mode != "off" and paths and rules.keep_hit(inp.get("session_id"), paths)
+    if not hit:
+        return None
+    rule, path = hit
+    log("delete_guard", {"session": inp.get("session_id"), "tool": inp.get("tool_name"), "path": path,
+                         "rule": rule[:300], "mode": mode, "action": "ask" if mode == "on" else "would-ask"})
+    if mode == "on":
+        return (f'gutcheck: this deletes or overwrites {path}, and the owner said: "{rule[:300]}". '
+                "Confirm with the owner before going ahead.")
+    return None
 
 
 FORK_LIMIT = 50_000
@@ -269,12 +332,29 @@ def post_failure(inp):
 
 
 def post_bash(inp):
-    """Record the approved Bash call and compact long output."""
+    """Record the approved Bash call, redact keys in its output, compact long output. One updatedToolOutput with the
+    response's shape, built from the redacted text (so the saved full output holds no key either)."""
+    from . import secretscan
     log("bash_ran", {"session": inp.get("session_id"), "tool_use_id": inp.get("tool_use_id")})
-    post_tool_trim(inp)
+    resp = inp["tool_response"]
+    mode = config.load()["key_guard"]["mode"]
+    out = {} if mode == "off" else {k: r for k in ("stdout", "stderr") if isinstance(resp.get(k), str)
+                                    and (r := secretscan.redact(resp[k], known_only=True)) != resp[k]}
+    if out:
+        log("key_guard", {"session": inp.get("session_id"), "tool": "Bash", "streams": sorted(out), "mode": mode,
+                          "action": "redact" if mode == "on" else "would-redact"})
+        if mode == "on":
+            resp = inp["tool_response"] = {**resp, **out}
+        else:
+            out = {}
+    out.update(_safe("tool_trim", post_tool_trim, inp) or {})
+    if out:
+        emit({"hookSpecificOutput": {"hookEventName": "PostToolUse", "updatedToolOutput": {**resp, **out}}})
 
 
 def post_tool_trim(inp):
+    """Compact views of long stdout/stderr as {stream: view}; None or {} when nothing is trimmed (or tool_trim
+    mode isn't on)."""
     import shlex
     from pathlib import Path
     from . import mcpout
@@ -309,8 +389,7 @@ def post_tool_trim(inp):
             log("tool_trim", {"session": inp.get("session_id"), "tool_use_id": inp.get("tool_use_id"),
                               "agent": inp.get("agent_id"), "mode": mode, "tool": name,
                               "chars": len(text), "out_chars": len(view)})
-    if out and mode == "on":
-        emit({"hookSpecificOutput": {"hookEventName": "PostToolUse", "updatedToolOutput": {**resp, **out}}})
+    return out if mode == "on" else {}
 
 
 # ---- PostToolUse: any MCP output (core + adapters) ------------------------------------------------
@@ -422,12 +501,18 @@ def _log_judge(inp, name):
 
 # ---- UserPromptSubmit: pasted keys -------------------------------------------------------------
 def prompt_submit(inp):
-    from . import secretscan, secrets
+    from . import checkpoint, secretscan, secrets
     cfg = config.load()
-    warn_msg = None
+    warn_msg = delivered = None
     prompt = inp.get("prompt") or ""
     if cfg["keyblock"]["mode"] != "off":
         kinds, warn_kinds = secretscan.classify_prompt(prompt)
+        if kinds and checkpoint.owner_source(prompt) != "owner":
+            # a subagent hand-back, peer or teammate message: only what the person typed is ever blocked
+            log("keyblock", {"session": inp.get("session_id"), "kinds": kinds, "action": "delivered"})
+            delivered = (f"gutcheck: a delivered message contained a key-shaped string ({', '.join(kinds)}). "
+                         "Don't repeat it in tool calls or files.")
+            kinds = warn_kinds = []
         if warn_kinds and not kinds:
             log("keyblock", {"session": inp.get("session_id"), "warn": warn_kinds, "action": "warn"})
             warn_msg = (f"gutcheck: this prompt contains a long random-looking string ({', '.join(warn_kinds)}). "
@@ -467,7 +552,7 @@ def prompt_submit(inp):
     out = {}
     if warn_msg:
         out["systemMessage"] = warn_msg
-    extra = None if timed_out else res.get("extra")
+    extra = "\n".join(filter(None, [delivered, None if timed_out else res.get("extra")]))
     if extra:
         out["hookSpecificOutput"] = {"hookEventName": "UserPromptSubmit", "additionalContext": extra}
     log("prompt_hook", {"session": inp.get("session_id"), "ms": int((time.monotonic() - _T0) * 1000),
@@ -613,8 +698,7 @@ HANDLERS = {"PreCompact": compact_log, "PreToolUse:Bash": pre_bash, "PreToolUse:
             "PrePush": lambda i: __import__("gutcheck.pushcheck", fromlist=["hook"]).hook(i),
             **dict.fromkeys(("PostToolUse:Edit", "PostToolUse:Write", "PostToolUse:MultiEdit"),
                             lambda i: __import__("gutcheck.lint", fromlist=["hook"]).hook(i)),
-            **dict.fromkeys(("PreToolUse:Edit", "PreToolUse:Write", "PreToolUse:MultiEdit"),
-                            lambda i: __import__("gutcheck.lint", fromlist=["pre"]).pre(i))}
+            **dict.fromkeys(("PreToolUse:Edit", "PreToolUse:Write", "PreToolUse:MultiEdit"), pre_edit)}
 
 
 def main(args):

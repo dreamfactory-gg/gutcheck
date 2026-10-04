@@ -18,6 +18,7 @@ Entry points (all fail open):
 """
 import fcntl
 import json
+import os
 import re
 import time
 from contextlib import contextmanager
@@ -128,8 +129,9 @@ def _related(a, b):
 
 
 # ---- adding units -------------------------------------------------------------------------------------
-def _new_units(recs, ts, src, text):
-    """Units of a message not already in the store (by exact key)."""
+def _new_units(recs, ts, src, text, cwd=None):
+    """Units of a message not already in the store (by exact key). A don't-delete unit also records the existing
+    paths it names, resolved against the message's cwd (keep_hit)."""
     from . import secretscan
     seen = {r["key"] for r in recs} | {k for r in recs for k in r.get("merged_keys", [])}
     out = []
@@ -139,6 +141,9 @@ def _new_units(recs, ts, src, text):
         if k and k not in seen:
             seen.add(k)
             out.append({"key": k, "ts": ts, "first_ts": ts, "src": src, "text": u, "status": "pending", "p": None})
+            keep, but = _keep_paths(u, cwd)
+            if keep:
+                out[-1].update(keep=keep, keep_except=but)
     return out
 
 
@@ -219,6 +224,7 @@ def _merge_dups(recs, new):
                 o.setdefault("restated", []).append(o["ts"])
                 o["text"], o["ts"], o["p"] = r["text"], r["ts"], max(o.get("p") or 0, r.get("p") or 0)
                 o.setdefault("merged_keys", []).append(r["key"])
+                o.update({k: r[k] for k in ("keep", "keep_except") if k in r})
                 drop.add(id(r))
                 break
         else:
@@ -226,14 +232,15 @@ def _merge_dups(recs, new):
     return [r for r in recs if id(r) not in drop]
 
 
-def add_message(session, ts, src, text, deadline=PROMPT_DEADLINE):
+def add_message(session, ts, src, text, deadline=PROMPT_DEADLINE, cwd=None):
     """Record one owner/lead message. Returns how it was classified ('jev', 'failed', 'none')."""
     with _locked(session):
         recs = load(session)
-        new = _new_units(recs, ts, src, text)
+        new = _new_units(recs, ts, src, text, cwd)
         if not new:
             return "none"
         recs.extend(new)
+        _save(session, recs)  # stored as pending first: the prompt hook may exit before Jev answers
         t0 = time.monotonic()
         how = _classify(recs, new, deadline)
         recs = _merge_dups(recs, new)
@@ -246,7 +253,7 @@ def add_message(session, ts, src, text, deadline=PROMPT_DEADLINE):
 
 # ---- transcript catch-up ------------------------------------------------------------------------------
 def _messages(path, start=0, until_line=None):
-    """(ts, src, text) of owner/lead messages from byte offset `start`; returns (messages, end_offset)."""
+    """(ts, src, text, cwd) of owner/lead messages from byte offset `start`; returns (messages, end_offset)."""
     msgs = []
     try:
         fh = open(path, "rb")
@@ -280,7 +287,7 @@ def _messages(path, start=0, until_line=None):
             for txt in texts:
                 src = cp.owner_source(txt)
                 if src:
-                    msgs.append((d.get("timestamp"), src, txt))
+                    msgs.append((d.get("timestamp"), src, txt, d.get("cwd")))
     return msgs, pos
 
 
@@ -297,8 +304,8 @@ def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE):
         start = 0 if until_line is not None or state.get("transcript") != transcript_path else state.get("offset", 0)
         msgs, end = _messages(transcript_path, start, until_line)
         recs = load(session)
-        for ts, src, text in msgs:
-            recs.extend(_new_units(recs, ts, src, text))
+        for ts, src, text, cwd in msgs:
+            recs.extend(_new_units(recs, ts, src, text, cwd))
         pending = [r for r in recs if r["status"] == "pending"]
         chunks = [pending[i:i + 60] for i in range(0, len(pending), 60)]
         # classify in parallel chunks, then one supersession pass over everything new
@@ -333,7 +340,8 @@ def on_user_prompt(inp):
         if not src or not inp.get("session_id"):
             return
         t0 = time.monotonic()
-        how = add_message(inp["session_id"], time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), src, prompt)
+        how = add_message(inp["session_id"], time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), src, prompt,
+                          cwd=inp.get("cwd"))
         _log({"session": inp.get("session_id"), "via": "prompt", "src": src, "chars": len(prompt), "how": how,
               "ms": int((time.monotonic() - t0) * 1000)})
     except Exception as e:
@@ -429,3 +437,45 @@ def section(session, lead_cap=LEAD_CAP_TOKENS):
                 "lead_tokens_all": cp.est_tokens(render(lead, None)) if lead else 0,
                 "lead_tokens": cp.est_tokens(render([r for r in recs if r["src"] == "lead"], lead_cap)) if lead else 0,
                 "rules_tokens": cp.est_tokens(md) if md else 0}
+
+
+# ---- don't-delete guard -------------------------------------------------------------------------------
+# "don't delete X", "never overwrite `X`": the clause after the verb, up to the end of its sentence; paths after
+# "except"/"but" in it are exclusions
+_KEEP = re.compile(r"(?i)\b(?:don'?t|do not|never|must not|mustn'?t|should ?n[o']t)\s+(?:\w+\s+){0,2}?"
+                   r"(?:delete|remove|rm|overwrite|wipe|erase|clobber|trash)\b((?:[^.!?;\n]|\.(?=[\w/]))*)")
+_KEEP_BUT = re.compile(r"(?i)\b(?:except|but|other than|apart from|besides)\b")
+
+
+def _keep_paths(text, cwd):
+    """(keep, except): existing paths a don't-delete instruction names, resolved against the cwd it was given in.
+    Path-shaped words only (a '/' or a file extension); '/' itself never counts."""
+    keep, but = [], []
+    for m in _KEEP.finditer(text) if cwd else []:
+        for n, part in enumerate(_KEEP_BUT.split(m.group(1), maxsplit=1)):
+            for w in re.findall(r"[~\w./-]+", part):
+                w = w.rstrip(".")
+                p = os.path.realpath(os.path.join(cwd, os.path.expanduser(w)))
+                if ("/" in w or re.search(r"\w\.\w+$", w)) and p != "/" and os.path.lexists(p):
+                    (but if n else keep).append(p)
+    return keep, but
+
+
+def keep_hit(session, paths):
+    """(instruction, path) when a standing don't-delete instruction covers one of `paths` (absolute, resolved;
+    fnmatch patterns from `find -delete`): the same path, a path inside it, or a directory holding it while it
+    still exists. Superseded instructions don't count; Jev's rule call doesn't matter (the wording states the
+    boundary)."""
+    from fnmatch import fnmatch
+    for r in load(session) if session and paths else []:
+        if r.get("superseded_by"):
+            continue
+        for keep in r.get("keep", []):
+            for p in paths:
+                if any(p == x or p.startswith(x + "/") for x in r.get("keep_except", [])):
+                    continue
+                if (fnmatch(keep, p) if any(ch in p for ch in "*?[") else
+                        p == keep or p.startswith(keep + "/") or
+                        keep.startswith(p.rstrip("/") + "/") and os.path.lexists(keep)):
+                    return r["text"], keep
+    return None
