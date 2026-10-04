@@ -2,7 +2,7 @@
 
 **Claude checks with you before it does something you can't undo.**
 
-gutcheck is a Claude Code plugin that guards against rogue agent actions: risky commands, keys in the transcript, secret files read into the chat, and deleting what you said to keep. It only adds friction; it never approves anything for you. Install and key setup: see the [marketplace README](../README.md). For longer, cheaper sessions, its sibling plugin is [tokenmaxxing](../tokenmaxxing/README.md).
+gutcheck is a Claude Code plugin that guards against rogue agent actions: risky commands, keys in the transcript, secret files read into the chat, and deleting what you said to keep. It only adds friction; it never approves anything for you. Install and key setup: see the [marketplace README](../README.md); its first session links the `gutcheck` CLI into `~/.local/bin` (manual command there). For longer, cheaper sessions, its sibling plugin is [tokenmaxxing](../tokenmaxxing/README.md).
 
 | When… | Without gutcheck | With gutcheck |
 |---|---|---|

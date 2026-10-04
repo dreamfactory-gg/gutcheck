@@ -2,7 +2,7 @@
 
 **Your Claude Code sessions run longer, spend less, and stop asking to continue.**
 
-tokenmaxxing is a Claude Code plugin. It keeps text Claude doesn't need out of its context and holds on to what you told it across compactions. Install and key setup: see the [marketplace README](../README.md). For guards against risky commands and leaked keys, its sibling plugin is [gutcheck](../gutcheck/README.md).
+tokenmaxxing is a Claude Code plugin. It keeps text Claude doesn't need out of its context and holds on to what you told it across compactions. Install and key setup: see the [marketplace README](../README.md); its first session links the `tokenmaxxing` CLI into `~/.local/bin` (manual command there). For guards against risky commands and leaked keys, its sibling plugin is [gutcheck](../gutcheck/README.md).
 
 Every call Claude makes re-sends the whole conversation. Anything that lands in context gets paid for again on every step after it. Long logs, huge tool outputs and forgotten instructions are what make a session expensive and short.
 

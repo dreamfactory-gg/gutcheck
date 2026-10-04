@@ -35,9 +35,20 @@ def init(kind, args, run):
     run(kind, quiet="--quiet" in args)
 
 
+def link_cli():
+    """~/.local/bin/<plugin> -> this install's CLI, when ~/.local/bin exists and nothing is at that name yet."""
+    root, link = os.environ.get("CLAUDE_PLUGIN_ROOT"), config.HOME / ".local" / "bin" / config.APP
+    if root and link.parent.is_dir() and not os.path.lexists(link):
+        try:
+            link.symlink_to(os.path.join(root, "bin", config.APP))
+        except OSError:
+            pass
+
+
 def start(inp):
     """(done, notice): done when there is nothing more to do this start (a nested probe, or no Jev key, then with
-    the notice); else init or refresh is started in the background as due."""
+    the notice); else init or refresh is started in the background as due. Links the CLI onto PATH first."""
+    link_cli()
     if os.environ.get("GUTCHECK_NESTED"):  # tokenmaxxing's own `claude -p` probes (mcpload)
         return True, None
     from . import jev
