@@ -63,27 +63,12 @@ def agent_transcript(inp):
     return path
 
 
-def once(kind, *key):
-    """True the first time this key is seen (a marker file under the state dir), False on a repeat, None when the
-    marker can't be written."""
-    import hashlib
-    marker = config.STATE_DIR / kind / hashlib.sha256(json.dumps(key).encode()).hexdigest()
-    try:
-        marker.parent.mkdir(parents=True, exist_ok=True)
-        os.close(os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
-        return True
-    except FileExistsError:
-        return False
-    except OSError:
-        return None
-
-
 def subagent_cap(inp):
     """Any tool call in a subagent whose own context is past [subagent_cap] tokens is denied, so it hands back with a
     handoff note. SubagentHandback always goes through (a denied hand-back is retried); main sessions are never
     capped. Returns the hook output, or None to carry on with the tool's own handler."""
     cfg = config.load().get("subagent_cap", {})
-    mode = cfg.get("mode", "on")
+    mode = cfg.get("mode", "log")
     if not inp.get("agent_id") or inp.get("tool_name") == "SubagentHandback" or mode == "off":
         return None
     path = agent_transcript(inp)
@@ -94,12 +79,13 @@ def subagent_cap(inp):
     if not n or n <= limit:
         return None
     log("subagent_cap", {"session": inp.get("session_id"), "agent": inp.get("agent_id"), "tool": inp.get("tool_name"),
-                         "context_tokens": n, "mode": mode, "denied": mode == "on"})
+                         "context_tokens": n, "mode": mode, "decision": "denied" if mode == "on" else "would-deny"})
     if mode == "on":
+        from .handback import SHAPE
         return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
                                        "permissionDecisionReason":
                                            f"Context is past {limit:,} tokens: write your handoff note (what's done, "
-                                           f"what's left, file paths) and hand back now."}}
+                                           f"what's left, file paths) and hand back now. {SHAPE}"}}
 
 
 def context_tokens(transcript_path, max_bytes=2_000_000):
@@ -232,6 +218,7 @@ def pre_read(inp):
     path = ti.get("file_path") or ti.get("path") or ""
     if inp.get("tool_name") != "Read" or not path or any(k in ti for k in ("offset", "limit", "pages")):
         return
+    import hashlib
     from pathlib import Path
     cfg = config.load().get("read_gate", {})
     mode = cfg.get("mode", "on")
@@ -253,10 +240,15 @@ def pre_read(inp):
     if len(lines) < 10 or sum(map(len, lines[:2000])) <= limit:
         return
     session = inp.get("session_id")
-    first = once("read_gate", session, str(p))
-    if first is None:
+    marker = config.STATE_DIR / "read_gate" / hashlib.sha256(json.dumps([session, str(p)]).encode()).hexdigest()
+    try:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        os.close(os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
+        retry = False
+    except FileExistsError:
+        retry = True
+    except OSError:
         return
-    retry = not first
     log("read_gate", {"session": session, "agent": inp.get("agent_id"), "path": str(p), "chars": len(text),
                       "mode": mode, "decision": "retry" if retry else "denied"})
     if mode == "on" and not retry:

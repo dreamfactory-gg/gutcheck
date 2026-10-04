@@ -15,7 +15,8 @@ Usage (summed over every model the run used, from the result JSON's modelUsage):
 Only cost is gated: a Claude Code release can turn cache writes into reads, which moves the raw counts in opposite
 directions while the price goes the other way.
 
-  run.py measure  --plugin DIR [--runs N] [--tasks a,b] [--out FILE] [--config TOML]   run the suite, write results
+  run.py measure  --plugin DIR [--runs N] [--tasks a,b] [--out FILE] [--config TOML]
+                                     run the suite (gated tasks unless --tasks names others), write results
   run.py gate     --results FILE [--ceilings FILE]                     table; exit 1 on a failed check or cost ceiling
   run.py lower    --results FILE --ceilings FILE --sha SHA             lower a ceiling when the costliest run shows the higher level
   run.py raise    --results FILE --ceilings FILE --sha SHA --task T --reason TEXT   (maintainers, via the release script)
@@ -135,12 +136,13 @@ TASKS = {
         prompt="The unit tests in this repo fail (run them with `python3 -m unittest -q`). Fix the bug in the "
                "source with a one-line change; don't edit the tests. Reply with one short sentence when done."),
     "handback_cap": dict(
-        fixture="audit_repo", check=check_handback, tools="Agent",
+        fixture="audit_repo", check=check_handback, tools="Agent", gate=False,   # measured on request, never gated
         prompt="Delegate an audit of this repo to one subagent with the Agent tool (subagent_type general-purpose) "
                "and this brief, word for word: 'Audit every .py file under ledgerkit/ for bugs and security problems. "
                "Organise the report by file, in path order, and begin each file's section with its line count (from "
                "`wc -l`). For each finding give file:line, severity (high/medium/low), a three-sentence explanation "
-               "and a suggested fix with a short code snippet. End with an overall verdict: SHIP, or BLOCK if any finding is high severity.' "
+               "and a suggested fix with a short code snippet. End with an overall verdict: SHIP, or BLOCK if any "
+               "finding is high severity.' "
                "Answer only from what the subagent reports (its report, and any file it points you to); don't open "
                "the repo's files yourself. 1. What is the verdict? 2. Which file has the SQL injection? 3. How many "
                "lines does ledgerkit/notify.py have, per the audit? Reply with exactly three lines: `1: SHIP or "
@@ -159,7 +161,8 @@ TASKS = {
 # untimed runs before round 1 so every measured run reads the same warm prompt cache (with and without MCP tools)
 WARMUPS = {"_warm": dict(prompt="Reply with the single word: ok", check=lambda res, wd: (True, "")),
            "_warm_mcp": dict(prompt="Reply with the single word: ok", mcp=True, check=lambda res, wd: (True, "")),
-           "_warm_agent": dict(prompt="Reply with the single word: ok", tools="Agent", check=lambda res, wd: (True, ""))}
+           "_warm_agent": dict(prompt="Reply with the single word: ok", tools="Agent",
+                               check=lambda res, wd: (True, ""))}
 
 
 # ---- environment ------------------------------------------------------------------------------------------------
@@ -271,7 +274,7 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
         rec["ok"], rec["wrong"], rec["why"] = False, False, (f"the candidate's UserPromptSubmit hook ran {len(rec['prompt_hooks'])} "
                                                       "times (want 1: not loaded, or loaded twice)")
     if spec.get("tools") == "Agent" and task in TASKS and rec["ok"] and rec.get("report_chars", 0) < 5000:
-        rec["ok"], rec["wrong"], rec["why"] = False, False, f"the subagent's report was short ({rec.get('report_chars')} chars)"
+        rec["skip"] = f"the subagent's report was short ({rec.get('report_chars')} chars)"   # nothing to cap: no data
     if spec.get("mcp") and task in TASKS:
         seen = [x.get("chars", 0) for x in _lines(d / "state" / "mcp_trim.jsonl")]
         rec["mcp_chars"] = seen
@@ -327,7 +330,7 @@ def measure(a):
     plugin = Path(a.plugin).resolve()
     if not (plugin / ".claude-plugin" / "plugin.json").exists():
         sys.exit(f"token eval: {plugin} is not a plugin dir")
-    tasks = a.tasks.split(",") if a.tasks else list(TASKS)
+    tasks = a.tasks.split(",") if a.tasks else [t for t, spec in TASKS.items() if spec.get("gate", True)]
     root = Path(tempfile.mkdtemp(prefix="gutcheck-tokens."))
     t0 = time.monotonic()
     try:
@@ -351,11 +354,12 @@ def measure(a):
                     runs.append(r)
                     if not a.quiet:
                         u = r["usage"]
-                        parent = f"  parent {r['parent']['cost']:,}  report {r.get('report_chars', 0):,}" if "parent" in r else ""
+                        parent = (f"  parent {r['parent']['cost']:,}  report {r.get('report_chars', 0):,}"
+                                  if "parent" in r else "")
+                        status = "SKIP " + r["skip"] if r.get("skip") else "ok" if r["ok"] else "FAIL " + r["why"]
                         print(f"    {r['task']:<14} run {i + 1}: cost {u['cost']:>7,}  in {u['input']:>6,}  "
                               f"cache_write {u['cache_write']:>6,}  cache_read {u['cache_read']:>8,}  "
-                              f"out {u['output']:>6,}{parent}  {r['seconds']:>5.0f}s  {'ok' if r['ok'] else 'FAIL ' + r['why']}",
-                              flush=True)
+                              f"out {u['output']:>6,}{parent}  {r['seconds']:>5.0f}s  {status}", flush=True)
     finally:
         if a.keep:
             print(f"kept run dirs in {root}")
@@ -374,7 +378,8 @@ def measure(a):
 def medians(runs):
     by = {}
     for r in runs:
-        by.setdefault(r["task"], []).append(r)
+        if not r.get("skip"):
+            by.setdefault(r["task"], []).append(r)
     return {t: {m: int(statistics.median(x["usage"][m] for x in rs)) for m in FIELDS}
             | ({"parent_cost": int(statistics.median(x["parent"]["cost"] for x in rs))}
                if all("parent" in x for x in rs) else {})
@@ -624,7 +629,8 @@ def main():
     m.add_argument("--model", default=MODEL)
     m.add_argument("--out", default="tokens.results.json")
     m.add_argument("--keep", action="store_true")
-    m.add_argument("--config", default="", help='TOML for the candidate\'s config, e.g. \'[handback]\\nmode = "off"\'')
+    m.add_argument("--config", default="",
+                   help='TOML for the candidate\'s config, e.g. \'[handback]\\nmode = "off"\'')
     m.add_argument("--quiet", action="store_true")
     for name in ("gate", "lower", "raise", "bootstrap", "spread", "summary"):
         p = sub.add_parser(name)

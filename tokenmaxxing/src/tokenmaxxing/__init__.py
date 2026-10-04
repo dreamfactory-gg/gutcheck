@@ -19,9 +19,11 @@ config.configure("tokenmaxxing", {
     # oof's eval (soldier reuse vs fresh helper) sets the real values.
     "soldier": {"mode": "on", "max_context_tokens": 250_000, "agents": {}},  # idle limit follows the cache TTL
     "lint": {"mode": "on", "off": []},  # per-edit check (lint.py); off: project roots it stays silent in
-    # Hand-back reports (handback.py): the brief asks for a `## Summary`; the parent gets the Summary + saved path.
+    # Hand-back reports (handback.py): the parent gets the part before `## Details` plus the saved path.
     "handback": {"mode": "on"},
-    # A subagent past this context size may only hand back (its context is mostly carry by then).
-    "subagent_cap": {"mode": "on", "tokens": 250_000},
+    # A subagent past this context size may only hand back (its context is mostly carry by then). log: measured, 15%
+    # of subagents cross 250k mid-task with a median 49 calls left, and warm agents resumed over it would hand back
+    # with no work done.
+    "subagent_cap": {"mode": "log", "tokens": 250_000},
     "transitions": {"mode": "on"},  # Now-block backup, ticked-item move, /clear and restart pickup (transitions.py)
 })
