@@ -264,7 +264,7 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     try:
         if prompts:
             out = converse(cmd, prompts, wd, env, timeout)
-            rec["compactions"], rec["last_turns"] = out["compactions"], out["last_turns"]
+            rec |= {k: out[k] for k in ("compactions", "last_turns", "peak_context")}
         else:
             p = subprocess.run(cmd, cwd=wd, env=env, capture_output=True, text=True, timeout=timeout,
                                stdin=subprocess.DEVNULL)
@@ -325,12 +325,13 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
 def converse(cmd, prompts, wd, env, timeout):
     """One session over several prompts (stream-json): each prompt is sent once the previous one's turn has ended.
     A compaction ends in a result of its own (num_turns 0), which sends nothing. Returns the last result (its usage
-    is cumulative) with the last prompt's answer, num_turns summed over the prompts and the compactions counted."""
+    is cumulative) with the last prompt's answer, num_turns summed over the prompts, the compactions counted and the
+    largest context one request was answered over."""
     p = subprocess.Popen(cmd, cwd=wd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                          text=True)
     timer = threading.Timer(timeout, p.kill)
     timer.start()
-    todo, turns, compactions, out, answer = list(prompts), 0, 0, {}, {}
+    todo, turns, compactions, out, answer, peak = list(prompts), 0, 0, {}, {}, 0
 
     def send():
         p.stdin.write(json.dumps({"type": "user", "message": {"role": "user", "content": todo.pop(0)}}) + "\n")
@@ -340,6 +341,10 @@ def converse(cmd, prompts, wd, env, timeout):
         for line in p.stdout:
             d = json.loads(line)
             compactions += d.get("subtype") == "compact_boundary"
+            if d["type"] == "assistant":
+                u = d["message"].get("usage") or {}
+                peak = max(peak, sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens",
+                                                              "cache_creation_input_tokens")))
             if d["type"] != "result":
                 continue
             out = d
@@ -357,7 +362,7 @@ def converse(cmd, prompts, wd, env, timeout):
     if todo:
         out = out | {"is_error": True, "error": f"session ended with {len(todo)} prompts unsent"}
     return out | {"result": answer.get("result"), "num_turns": turns, "last_turns": answer.get("num_turns"),
-                  "compactions": compactions}
+                  "compactions": compactions, "peak_context": peak}
 
 
 def _priced(u):
