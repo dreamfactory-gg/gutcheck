@@ -9,8 +9,8 @@ disable-model-invocation: true
 
 Prose rules get read; lint rules bite. A pair is a helper plus a repo check that fails on a new copy of what it replaced.
 
-1. **Find the copies.** Churn: `git log --since=60.days --name-only --format= -- DIR | sort | uniq -c | sort -rn | head -30`. Then the owner's reuse corrections: `tokenmaxxing recall "use the existing helper"` (also "reuse", "duplicate", "copy of"). Look for a function body pasted across files, or an existing helper that code routes around (hand-rolled connection lists beside a Janitor).
-2. **Defaults, not shape.** Diff the variants. If they differ only in default values, one helper with overrides fits. If they differ in shape (different fields, steps or control flow), stop and tell the owner: a parameter per difference is the wrong abstraction.
+1. **Find the copies.** Churn: `git log --since=60.days --name-only --format= -- DIR | sort | uniq -c | sort -rn | head -30`. Then the user's reuse corrections: `tokenmaxxing recall "use the existing helper"` (also "reuse", "duplicate", "copy of"). Look for a function body pasted across files, or an existing helper that code routes around (a hand-rolled list of connections beside an existing cleanup helper).
+2. **Defaults, not shape.** Diff the variants. If they differ only in default values, one helper with overrides fits. If they differ in shape (different fields, steps or control flow), stop and tell the user: a parameter per difference is the wrong abstraction.
 3. **Make one helper** in the directory it serves. Each file's drifted defaults survive as an explicit preset or override at its call site, so behaviour doesn't change.
 4. **Migrate by script**, not by hand. Prove sameness: dump what the old and new code produce (tables, output) and diff.
 5. **Ban the second copy with ast-grep.**
@@ -22,19 +22,20 @@ Prose rules get read; lint rules bite. A pair is a helper plus a repo check that
 
 Afterwards, more than two ignore comments against a rule means the rule is wrong, not the code.
 
-## Example (df-ability-system, branch lint-looks)
-548 Looks each carried a local `emitter` (67 drifted default sets) plus `key`/`c` helpers.
-- Helper `src/shared/Vfx/Look.luau`: `Look.emitter(o)`, `Look.preset(base)` (each file's old defaults became its `base`), `Look.key`, `Look.rgb`, `Look.at`, `Look.every`.
-- `sgconfig.yml`: `ruleDirs: [tools/lint]`, `languageGlobs: { lua: ["*.luau"] }`. `tools/lint/look-helpers.yml`:
+## Example
+Forty Luau files under `src/effects/` each carry a local `emitter` builder, in a dozen drifted default sets.
+- Helper `src/shared/Effect.luau`: `Effect.emitter(o)`, and `Effect.preset(base)` for what one file's emitters share (each file's old defaults become its `base`).
+- `sgconfig.yml`: `ruleDirs: [tools/lint]`, `languageGlobs: { lua: ["*.luau"] }`. `tools/lint/effect-helpers.yml`:
   ```yaml
-  id: look-helpers
+  id: effect-helpers
   language: lua
   severity: error
-  message: A Look builds emitters and colour keys with Vfx/Look.luau, never a local copy.
-  files: ["src/shared/Vfx/Looks/**"]
+  message: Effects build emitters with shared/Effect.luau, never a local copy.
+  note: "local emitter = Effect.preset({ brightness = 2 }); interface in src/effects/CLAUDE.md"
+  files: ["src/effects/**"]
   rule:
     any:
       - pattern: local function emitter($$$) $$$ end
-      - pattern: local function key($$$) $$$ end
+      - pattern: local emitter = function($$$) $$$ end
   ```
-- `rokit.toml` pins ast-grep; `scripts/check.sh` runs the scan; `docs/design/looks/kickoff.md` holds the Look.luau interface.
+- `rokit.toml` pins ast-grep; `scripts/check.sh` runs `ast-grep scan src`; `src/effects/CLAUDE.md` holds the Effect.luau interface.

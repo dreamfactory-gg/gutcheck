@@ -37,11 +37,14 @@ def init(kind, args, run):
 
 
 def link_cli():
-    """~/.local/bin/<plugin> -> this install's CLI, when ~/.local/bin exists and nothing is at that name yet, or when
-    it is our own link to another version of this install (same cache or release tree, same bin/<cli>)."""
+    """~/.local/bin/<plugin> -> this install's CLI (plugin cache or release dir), when ~/.local/bin exists and nothing
+    is at that name yet, or when it is our own link to another version of this install (same cache or release tree,
+    same bin/<cli>), dangling or not."""
     root, link = os.environ.get("CLAUDE_PLUGIN_ROOT"), config.HOME / ".local" / "bin" / config.APP
-    if not root or not link.parent.is_dir():
-        return
+    installs = (Path(os.environ.get("CLAUDE_CONFIG_DIR", config.HOME / ".claude")) / "plugins" / "cache",
+                config.SHARED_HOME / "release")
+    if not root or not link.parent.is_dir() or not any(Path(root).is_relative_to(d) for d in installs):
+        return  # a --plugin-dir checkout would leave a link to a dir that goes away
     target = os.path.join(root, "bin", config.APP)
     if os.path.lexists(link):
         old = Path(os.readlink(link)) if link.is_symlink() else None

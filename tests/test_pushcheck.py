@@ -64,6 +64,12 @@ g("commit", "-qm", "lint")
 res = pc.check_repo(str(r))
 if which("ast-grep"):
     assert ("ast-grep", "a.py", "no-eval (line 1): no eval") in res["deterministic"], res
+    (r / "lint" / "hint.yml").write_text("id: style\nlanguage: python\nseverity: hint\nmessage: hint\n"
+                                          "rule:\n  pattern: eval($$$)\n")
+    assert pc.ast_grep_hits(str(r), ["a.py"], 20) == ([("ast-grep", "a.py", "no-eval (line 1): no eval")], None)
+    (r / "lint" / "bad.yml").write_text("id: bad\nlanguage: pythn\nrule:\n  pattern: x\n")
+    hits, note = pc.ast_grep_hits(str(r), ["a.py"], 20)
+    assert not hits and note.startswith("ast-grep: scan failed"), note
 path = os.environ["PATH"]
 os.environ["PATH"] = "/usr/bin:/bin"  # git, no ast-grep
 res = pc.check_repo(str(r))

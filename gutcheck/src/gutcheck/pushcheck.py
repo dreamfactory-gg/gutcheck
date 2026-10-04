@@ -214,8 +214,8 @@ def deterministic(diff, files_added, rule_list):
 
 
 def ast_grep_hits(root, changed, timeout):
-    """([(kind, path, why)], note): the repo's ast-grep rules over the changed files that still exist; note says why
-    nothing ran (no ast-grep on PATH or in node_modules/.bin, or a failed scan)."""
+    """([(kind, path, why)], note): warning and error hits of the repo's ast-grep rules over the changed files that
+    still exist; note says why nothing ran (no ast-grep on PATH or in node_modules/.bin, or a failed scan)."""
     files = [p for p in changed if (Path(root) / p).is_file()]
     exe = shutil.which("ast-grep", path=os.pathsep.join([str(Path(root) / "node_modules" / ".bin"),
                                                          os.environ.get("PATH", "")]))
@@ -224,12 +224,16 @@ def ast_grep_hits(root, changed, timeout):
     if not files:
         return [], None
     try:  # exits 1 when an error-severity rule hits; stdout holds the matches either way
-        out = subprocess.run([exe, "scan", "--json=compact", *files], cwd=root, capture_output=True, text=True,
-                             timeout=timeout).stdout
-        return [("ast-grep", m["file"], f"{m['ruleId']} (line {m['range']['start']['line'] + 1}): {m['message']}")
-                for m in json.loads(out or "[]")], None
+        r = subprocess.run([exe, "scan", "--json=compact", *files], cwd=root, capture_output=True, text=True,
+                           timeout=timeout)
+        found = json.loads(r.stdout or "[]")
+        hits = [("ast-grep", m["file"], f"{m['ruleId']} (line {m['range']['start']['line'] + 1}): {m['message']}")
+                for m in found if m["severity"] in ("warning", "error")]
     except (OSError, subprocess.TimeoutExpired, ValueError, KeyError) as e:
         return [], f"ast-grep: {type(e).__name__}"
+    if r.returncode and not found:
+        return [], f"ast-grep: scan failed (exit {r.returncode}): {r.stderr.strip().partition('\n')[0][:150]}"
+    return hits, None
 
 
 def jev_violations(rule_list, hunk_list, deadline=None):
