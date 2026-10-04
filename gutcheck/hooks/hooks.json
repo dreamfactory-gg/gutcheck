@@ -92,8 +92,7 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PostToolUse",
-            "timeout": 5,
-            "async": true
+            "timeout": 10
           }
         ]
       },

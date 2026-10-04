@@ -38,6 +38,7 @@ DEFAULTS = {
     "adapters": [],                # MCP adapters to run; `gutcheck init` fills this from configured servers
     # pass_through: MCP servers whose output is never trimmed or saved to a file (Studio calls go direct)
     "mcp_trim": {"mode": "on", "min_chars": 8000, "min_lines": 300, "pass_through": ["Roblox_Studio"]},
+    "tool_trim": {"mode": "on", "min_chars": 8000},
     # Roblox Studio adapter. mirror: the experimental local script mirror (`gutcheck studio sync` and the resync
     # after an edit), off by default. preload_tools: Roblox_Studio's tools load up front in Roblox projects instead
     # of behind ToolSearch (the server entry's alwaysLoad; adapters/roblox_studio/preload.py). Off: measured, it

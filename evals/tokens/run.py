@@ -63,6 +63,10 @@ def check_log(res, wd):
     return False, f"named {sorted(got)}"
 
 
+def check_pin(res, wd):
+    return ("4.17.2" in res), f"answer {res.strip()[:80]!r}"
+
+
 def check_source(res, wd):
     nums = re.findall(r"\d[\d,]*", res)
     return ("1125" in [n.replace(",", "") for n in nums]), f"answer {res.strip()[:80]!r}"
@@ -100,6 +104,14 @@ TASKS = {
         fixture="ci_log", check=check_log,
         prompt="build.log in the current directory is the output of a CI test run. Which tests failed? "
                "Reply with only the failing test function names, one per line, nothing else."),
+    "bash_log": dict(
+        fixture="ci_log", check=check_log,
+        prompt="Run `grep -v 'PASSED\\|DEBUG' build.log` (that exact command, once) and read its output: which tests failed? "
+               "Reply with only the failing test function names, one per line, nothing else."),
+    "bash_lookup": dict(
+        fixture="freeze", check=check_pin,
+        prompt="Run `cat freeze.txt` (that exact command, once) and read its output: which version of quillstone is "
+               "pinned? Reply with only the version."),
     "big_source": dict(
         fixture="big_source", check=check_source, wrong_ok=1 / 3,   # low-effort sonnet sometimes misreads the math
         prompt="In ledger.py, what does late_fee(25000, 20) return? Reply with only the integer."),
@@ -175,7 +187,7 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     allowed = TOOLS
     cmd = ["claude", "-p", spec["prompt"], "--output-format", "json", "--model", model, "--effort", EFFORT,
            "--plugin-dir", str(plugin), "--setting-sources", "", "--strict-mcp-config",
-           "--no-session-persistence", "--permission-mode", "dontAsk", "--tools", TOOLS,
+           "--permission-mode", "dontAsk", "--tools", TOOLS,
            "--max-turns", MAX_TURNS, "--add-dir", str(d / "data")]
     if spec.get("mcp"):
         cfg = d / "mcp.json"
@@ -198,6 +210,10 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     except ValueError:
         out = {"is_error": True, "result": "", "error": f"no JSON result (exit {p.returncode}): {p.stderr[-300:]}"}
     rec["seconds"] = round(time.monotonic() - t0, 1)
+    # the session is persisted (gutcheck's hooks read its transcript, as in real use); drop it from ~/.claude after
+    for t in Path.home().glob(f".claude/projects/*/{out.get('session_id') or '-'}.jsonl"):
+        t.unlink(missing_ok=True)
+        shutil.rmtree(t.with_suffix(""), ignore_errors=True)
     mu = out.get("modelUsage") or {}
     rec["models"] = sorted(mu)
     u = {f: sum(m.get(key) or 0 for m in mu.values()) for f, key in (

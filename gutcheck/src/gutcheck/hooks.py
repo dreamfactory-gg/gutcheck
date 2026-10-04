@@ -220,8 +220,46 @@ def post_failure(inp):
 
 
 def post_bash(inp):
-    """Record that a Bash call ran (after an ask, this means the owner approved it)."""
+    """Record the approved Bash call and compact long output."""
     log("bash_ran", {"session": inp.get("session_id"), "tool_use_id": inp.get("tool_use_id")})
+    post_tool_trim(inp)
+
+
+def post_tool_trim(inp):
+    import shlex
+    from pathlib import Path
+    from . import mcpout
+    cfg = config.load().get("tool_trim", {})
+    mode = cfg.get("mode", "on")
+    if mode == "off":
+        return
+    name = inp["tool_name"]
+    resp = inp["tool_response"]
+    if resp.get("interrupted") or resp.get("isImage"):
+        return
+    cmd = shlex.shlex((inp.get("tool_input") or {}).get("command", ""), posix=True, punctuation_chars=True)
+    cmd.whitespace_split = True
+    cwd = Path(inp.get("cwd") or os.getcwd())
+    saved_dir = mcpout.out_dir().resolve()
+    if any((cwd / Path(arg).expanduser()).resolve().is_relative_to(saved_dir) for arg in cmd):
+        return
+    ti = inp.get("tool_input") or {}
+    try:
+        purpose = " ".join([ti.get("description", ""), _purpose(inp, include_user=True)])
+    except Exception:
+        purpose = ""
+    out = {}
+    for key in ("stdout", "stderr"):
+        text = resp[key]
+        view = mcpout.render(name, text, "read", mcpout.DEFAULT_LEVEL["read"], cfg,
+                             lambda ext: mcpout.save(name, text, ext), purpose=purpose, command=ti.get("command", ""))
+        if view is not None:
+            out[key] = view
+            log("tool_trim", {"session": inp.get("session_id"), "tool_use_id": inp.get("tool_use_id"),
+                              "agent": inp.get("agent_id"), "mode": mode, "tool": name,
+                              "chars": len(text), "out_chars": len(view)})
+    if out and mode == "on":
+        emit({"hookSpecificOutput": {"hookEventName": "PostToolUse", "updatedToolOutput": {**resp, **out}}})
 
 
 # ---- PostToolUse: any MCP output (core + adapters) ------------------------------------------------
@@ -280,8 +318,8 @@ def post_mcp(inp):
                                      "updatedMCPToolOutput": [{"type": "text", "text": out}]}})
 
 
-def _purpose(inp, max_chars=400):
-    """The agent's own words just before this call (its stated purpose), from the transcript tail."""
+def _purpose(inp, max_chars=400, include_user=False):
+    """The agent's words before this call, optionally with the latest plain-string user prompt."""
     path = inp.get("transcript_path") or ""
     if inp.get("agent_id") and path:
         from pathlib import Path
@@ -290,21 +328,28 @@ def _purpose(inp, max_chars=400):
     try:
         size = os.path.getsize(path)
         with open(path, "rb") as fh:
-            fh.seek(max(0, size - 300_000))
+            if not include_user:
+                fh.seek(max(0, size - 300_000))
             lines = fh.read().decode("utf-8", errors="replace").splitlines()
     except OSError:
         return ""
+    purpose = ""
     for line in reversed(lines):
         try:
             d = json.loads(line)
         except ValueError:
             continue
         m = d.get("message") or {}
-        if d.get("type") == "assistant" and isinstance(m.get("content"), list):
-            txt = " ".join(b.get("text", "") for b in m["content"] if isinstance(b, dict) and b.get("type") == "text")
+        content = m.get("content")
+        if include_user and d.get("type") == "user" and isinstance(content, str):
+            return " ".join([purpose, content])
+        if not purpose and d.get("type") == "assistant" and isinstance(content, list):
+            txt = " ".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
             if txt.strip():
-                return txt.strip()[-max_chars:]
-    return ""
+                purpose = txt.strip()[-max_chars:]
+                if not include_user:
+                    return purpose
+    return purpose
 
 
 def _log_judge(inp, name):

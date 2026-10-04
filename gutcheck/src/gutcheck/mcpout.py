@@ -10,11 +10,13 @@ Adapters (gutcheck/adapters/<mcp>/) can take over specific tools first. Servers 
 """
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
 import subprocess
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 from . import config
@@ -242,7 +244,7 @@ def _dedupe(items):
     return [(n, ln + (f"  (×{count[k]})" if count[k] > 1 else "")) for k, (n, ln) in first.items()]
 
 
-def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None):
+def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None, purpose="", command=""):
     """Compact view of `text` at `level` for a tool of `kind`, or None to pass it through.
     save_fn(ext) -> saved path (None for a dry run: learning and evals); routine: set of line keys seen before in
     this tool's output (log kind); judge(lines) -> subset of lines that show a failure or something unexpected."""
@@ -268,6 +270,11 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None)
         return _log_view(text, nlines, save_fn, routine or set(), judge, cfg)
     if level == "outline":
         return _outline_view(tool, text, nlines, save_fn, cfg)
+    if purpose:
+        try:
+            return _headtail_view(tool, text, nlines, save_fn, cfg, purpose, command)
+        except Exception:
+            pass  # purpose selection must never prevent the ordinary trim
     return _headtail_view(tool, text, nlines, save_fn, cfg)
 
 
@@ -284,24 +291,67 @@ def _middle_failures(text, head, tail, limit=20):
     return [(n + start, ln) for n, ln in failure_lines(mid, limit)]
 
 
-def _headtail_view(tool, text, nlines, save_fn, cfg):
-    jv = json_view(text)
+_PURPOSE_WORDS = re.compile(r"\b\w{3,}\b")
+_PURPOSE_STOP = set("the and for that this with from into what which when where how are was were has have "
+                    "had will would could should not but you your its our their they them then than only "
+                    "please tell show read run output command file lines reply nothing else".split())
+
+
+def _purpose_lines(text, purpose, command):
+    def words(s):
+        return set(_PURPOSE_WORDS.findall(s.lower()))
+
+    terms = words(purpose) - words(command) - _PURPOSE_STOP
+    if not terms:
+        return ""
+    lines = text.splitlines()
+    hits = [words(ln) & terms for ln in lines]
+    counts = Counter(term for hit in hits for term in hit)
+    weights = {term: math.log(len(lines) / count) for term, count in counts.items()}
+    scores = [sum(weights[term] for term in hit) for hit in hits]
+    kept = {}
+    for i in sorted(range(len(lines)), key=lambda i: (-scores[i], i)):
+        if scores[i] <= 0:
+            break
+        group = {j + 1: lines[j] for j in range(max(0, i - 1), min(len(lines), i + 2))}
+        candidate = kept | group
+        if len(candidate) <= 40 and len(_numbered(sorted(candidate.items()))) <= 3000:
+            kept = candidate
+    return _numbered(sorted(kept.items()))
+
+
+def _headtail_view(tool, text, nlines, save_fn, cfg, purpose="", command=""):
+    matches = _purpose_lines(text, purpose, command) if purpose else ""
+    block = ("\n[gutcheck: lines matching the call's purpose (line: text)]\n" + matches + "\n") if matches else ""
+    jv = json_view(text) if not block else None
     if jv is not None:
         p = save_fn(".json")
         return (f"[gutcheck: {len(text):,}-char JSON output saved to {p}; structure below. Read or `jq` the file "
                 f"for the values you need.]\n{jv}" + _fail_block(text))
-    ext = code_ext(text)
+    ext = code_ext(text) if tool != "Bash" and not block else None
     cv = code_view(text, ext) if ext else None
     if cv:
         p = save_fn(ext)
         return (f"[gutcheck: {len(text):,}-char code output saved to {p}; outline below (line ranges refer to "
                 f"the saved file). Read the ranges you need.]\n{cv}")
     p = save_fn(".txt")
-    h, t = head_tail(text, cfg.get("head_chars", 2500), cfg.get("tail_chars", 1500))
+    head, tail = cfg.get("head_chars", 2500), cfg.get("tail_chars", 1500)
+    if block:
+        errors = _numbered(_dedupe(failure_lines(text, limit=20)))
+        budget = max(0, len(text) // 2 - len(block) - len(errors) - len(str(p)) - 300)
+        head, tail = min(head, 1000, budget * 5 // 8), min(tail, 500, budget * 3 // 8)
+    h, t = head_tail(text, head, tail)
+    if block and not tail:
+        t = ""
     mid = _middle_failures(text, h, t)
+    if block:
+        mid = _dedupe(mid)
     extra = ("\n[gutcheck: error lines in the omitted part]\n" + _numbered(mid) + "\n") if mid else ""
-    return (h + f"\n\n… [gutcheck: {len(text) - len(h) - len(t):,} chars omitted; full output ({len(text):,} chars, "
-            f"{nlines:,} lines) saved to {p}; Read or grep it] …\n{extra}\n" + t)
+    out = (h + f"\n\n… [gutcheck: {len(text) - len(h) - len(t):,} chars omitted; full output ({len(text):,} chars, "
+           f"{nlines:,} lines) saved to {p}; Read or grep it] …\n{extra}{block}\n" + t)
+    if block and len(out) >= len(text) / 2:
+        return _headtail_view(tool, text, nlines, save_fn, cfg)
+    return out
 
 
 def _outline_view(tool, text, nlines, save_fn, cfg):
