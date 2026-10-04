@@ -86,7 +86,10 @@ def subagent_cap(inp):
     mode = cfg.get("mode", "on")
     if not inp.get("agent_id") or inp.get("tool_name") == "SubagentHandback" or mode == "off":
         return None
-    n = context_tokens(agent_transcript(inp))
+    path = agent_transcript(inp)
+    if path == inp.get("transcript_path"):
+        return None  # the subagent's own file isn't there yet; the main's context never feeds the cap
+    n = context_tokens(path)
     limit = cfg.get("tokens", 250_000)
     if not n or n <= limit:
         return None

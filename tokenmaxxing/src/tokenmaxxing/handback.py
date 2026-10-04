@@ -15,7 +15,7 @@ LINE = ("\n\nStart your final report with `## Summary` (at most 1,500 chars, wit
         "left) and put everything else under `## Details`: your caller sees only the Summary plus a path to the "
         "full report.")
 WHOLE, SUMMARY, UNSTRUCTURED = 2000, 1500, 3000
-_SUMMARY = re.compile(r"^##[ \t]*Summary[ \t]*\n(.*?)(?=^##[ \t]|\Z)", re.M | re.S)
+_SUMMARY = re.compile(r"^##[ \t]*Summary[ \t]*:?[ \t]*\n(.*?)(?=^##[ \t]|\Z)", re.M | re.S | re.I)
 
 
 def _mode():

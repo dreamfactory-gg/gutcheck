@@ -158,7 +158,8 @@ TASKS = {
 
 # untimed runs before round 1 so every measured run reads the same warm prompt cache (with and without MCP tools)
 WARMUPS = {"_warm": dict(prompt="Reply with the single word: ok", check=lambda res, wd: (True, "")),
-           "_warm_mcp": dict(prompt="Reply with the single word: ok", mcp=True, check=lambda res, wd: (True, ""))}
+           "_warm_mcp": dict(prompt="Reply with the single word: ok", mcp=True, check=lambda res, wd: (True, "")),
+           "_warm_agent": dict(prompt="Reply with the single word: ok", tools="Agent", check=lambda res, wd: (True, ""))}
 
 
 # ---- environment ------------------------------------------------------------------------------------------------
@@ -269,7 +270,7 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     if len(rec["prompt_hooks"]) != 1:
         rec["ok"], rec["wrong"], rec["why"] = False, False, (f"the candidate's UserPromptSubmit hook ran {len(rec['prompt_hooks'])} "
                                                       "times (want 1: not loaded, or loaded twice)")
-    if spec.get("tools") == "Agent" and rec.get("report_chars", 0) < 5000:
+    if spec.get("tools") == "Agent" and task in TASKS and rec["ok"] and rec.get("report_chars", 0) < 5000:
         rec["ok"], rec["wrong"], rec["why"] = False, False, f"the subagent's report was short ({rec.get('report_chars')} chars)"
     if spec.get("mcp") and task in TASKS:
         seen = [x.get("chars", 0) for x in _lines(d / "state" / "mcp_trim.jsonl")]
@@ -331,8 +332,9 @@ def measure(a):
     t0 = time.monotonic()
     try:
         base, claude_dir = prepare(root, plugin, a.config.replace("\\n", "\n"))
-        needs = {"_warm"} | ({"_warm_mcp"} if any(TASKS[t].get("mcp") for t in tasks) else set())
-        with ThreadPoolExecutor(max_workers=2) as ex:
+        needs = ({"_warm"} | ({"_warm_mcp"} if any(TASKS[t].get("mcp") for t in tasks) else set())
+                 | ({"_warm_agent"} if any(TASKS[t].get("tools") for t in tasks) else set()))
+        with ThreadPoolExecutor(max_workers=3) as ex:
             warm = list(ex.map(lambda w: run_one(w, 0, root, base, claude_dir, plugin, a.model), sorted(needs)))
         bad = [w for w in warm if not w["ok"]]
         if bad:
