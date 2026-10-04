@@ -12,8 +12,8 @@ from gutcheck_core import config
 from gutcheck_core.hookio import emit, log
 
 LINE = ("\n\nStart your final report with `## Summary` (at most 1,500 chars, with the verdict or answer and what's "
-        "left) and put everything else under `## Details`: your caller sees only the Summary plus a path to the "
-        "full report.")
+        "left) and put everything else under `## Details` in the same report, not in a file: your caller sees the "
+        "Summary plus a path where the whole report is saved for it.")
 WHOLE, SUMMARY, UNSTRUCTURED = 2000, 1500, 3000
 _SUMMARY = re.compile(r"^##[ \t]*Summary[ \t]*:?[ \t]*\n(.*?)(?=^##[ \t]|\Z)", re.M | re.S | re.I)
 
