@@ -7,16 +7,17 @@ import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gutcheck" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tokenmaxxing" / "src"))
 _TMP = tempfile.mkdtemp()
-os.environ["GUTCHECK_STATE_DIR"] = _TMP + "/state"
-os.environ["GUTCHECK_CONFIG_DIR"] = _TMP + "/cfg"
+os.environ["TOKENMAXXING_STATE_DIR"] = _TMP + "/state"
+os.environ["TOKENMAXXING_CONFIG_DIR"] = _TMP + "/cfg"
 os.environ["CLAUDE_PLUGIN_DATA"] = _TMP + "/data"
 Path(_TMP, "cfg").mkdir()
 Path(_TMP, "cfg", "config.toml").write_text('adapters = ["roblox_studio"]\n')
 
-from gutcheck import config, hooks, mcpout  # noqa: E402
-from gutcheck.adapters import roblox_studio as rs  # noqa: E402
+from tokenmaxxing import hooks, mcpout  # noqa: E402
+from gutcheck_core import config  # noqa: E402
+from tokenmaxxing.adapters import roblox_studio as rs  # noqa: E402
 
 CFG = config.load(refresh=True)["mcp_trim"]
 
@@ -143,11 +144,11 @@ def test_off_switch_env_and_project():
     post = {"tool_name": "mcp__Other__multi_edit", "session_id": "s", "cwd": _TMP,
             "tool_input": {"code": "make a part"}, "tool_response": [{"type": "text", "text": text}]}
     assert _run_hook("PostToolUse", post)
-    os.environ["GUTCHECK_MCP"] = "off"
+    os.environ["TOKENMAXXING_MCP"] = "off"
     try:
         assert _run_hook("PostToolUse", post) is None
     finally:
-        del os.environ["GUTCHECK_MCP"]
+        del os.environ["TOKENMAXXING_MCP"]
     proj = Path(_TMP, "proj")
     (proj / "sub").mkdir(parents=True, exist_ok=True)
     cfg = Path(_TMP, "cfg", "config.toml")
@@ -174,7 +175,7 @@ def _rec(i, sim, live_level=None, reread=None):
 
 
 def test_waste_tightens_and_loosens():
-    from gutcheck import mcpwaste
+    from tokenmaxxing import mcpwaste
     # [view chars, hid a used line?, used chars shown, used chars hidden]
     wasteful = {"pass": [20000, 0, 100, 0], "headtail": [4000, 0, 100, 0], "outline": [1500, 0, 100, 0],
                 "receipt": [1500, 0, 100, 0]}
@@ -215,12 +216,12 @@ def test_project_rules_block_refresh():
     assert t.startswith("# A\nkeep me\n") and t.endswith(rs.BLOCK_END + "\ntail\n") and "old rules" not in t
     for want in ("directly", "one turn", "Never poll", "SendMessage", "retire", "handoff note"):
         assert want in t, want
-    assert "gutcheck studio sync" not in t and (root / "bak" / "a" / "CLAUDE.md.before-studio-block").exists()
+    assert "tokenmaxxing studio sync" not in t and (root / "bak" / "a" / "CLAUDE.md.before-studio-block").exists()
     assert rs.install_rules([a], backup_root=root / "bak", refresh_only=True) == []  # idempotent
 
 
 def test_preload_on_off_keeps_owner_setting():
-    from gutcheck.adapters.roblox_studio import preload
+    from tokenmaxxing.adapters.roblox_studio import preload
     root = Path(tempfile.mkdtemp())
     cj, st = root / "claude.json", root / "state.json"
     srv = {"type": "stdio", "command": "/x/StudioMCP", "args": []}

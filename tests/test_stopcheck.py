@@ -7,10 +7,12 @@ import time
 from pathlib import Path
 
 tmp = Path(tempfile.mkdtemp())
-os.environ["GUTCHECK_STATE_DIR"] = str(tmp / "state")
-os.environ["GUTCHECK_CONFIG_DIR"] = str(tmp / "cfg")
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
-from gutcheck import config, stopcheck as S  # noqa: E402
+os.environ["TOKENMAXXING_STATE_DIR"] = str(tmp / "state")
+os.environ["GUTCHECK_RULES_DIR"] = str(tmp / "rules")
+os.environ["TOKENMAXXING_CONFIG_DIR"] = str(tmp / "cfg")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
+from tokenmaxxing import stopcheck as S  # noqa: E402
+from gutcheck_core import config  # noqa: E402
 
 (tmp / "cfg").mkdir()
 (tmp / "cfg" / "config.toml").write_text('[stop]\nmode = "on"\njev_fallback = "on"\n')

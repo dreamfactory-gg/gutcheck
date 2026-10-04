@@ -6,11 +6,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
 tmp_state = tempfile.mkdtemp()
-os.environ["GUTCHECK_STATE_DIR"] = tmp_state
-os.environ["GUTCHECK_CONFIG_DIR"] = tempfile.mkdtemp()
-from gutcheck import evidence as ev, explain, jobs, pushcheck as pc, relevance as rel  # noqa: E402
+os.environ["TOKENMAXXING_STATE_DIR"] = tmp_state
+os.environ["TOKENMAXXING_CONFIG_DIR"] = tempfile.mkdtemp()
+from tokenmaxxing import evidence as ev, explain, jobs, relevance as rel  # noqa: E402
 
 
 # ---- evidence: claim parsing -------------------------------------------------------------------
@@ -66,25 +66,7 @@ assert msg.count("\n") == 0 and "a.py:3" in msg
 assert ev.on_subagent_stop({"stop_hook_active": True, "last_assistant_message": "a.py:1 x"}) is None
 assert ev.on_subagent_stop({"last_assistant_message": "All done, nothing to cite."}) is None
 
-# ---- push check ---------------------------------------------------------------------------------
-assert pc.push_target("git status && git push origin main", "/r") == ("/r", ["origin", "main"])
-assert pc.push_target("git -C sub push", "/r")[0] == "/r/sub"
-assert pc.push_target("git commit -m 'push it'", "/r") is None
-assert pc.push_target("echo git push", "/r") is None
-cands = pc._candidates("# Rules\n- Never use `any`; prefer\n  `unknown` instead.\n\n```\n- not a rule\n```\n| a | b |\n")
-assert cands == [(2, "Never use `any`; prefer `unknown` instead.")], cands
-diff = ("diff --git a/src/a.ts b/src/a.ts\n@@ -1,2 +1,3 @@ fn\n const x = 1\n+let y: any = 2\n+const company = 3\n"
-        "diff --git a/.env b/.env\n@@ -0,0 +1 @@\n+X=1\n"
-        "diff --git a/b.py b/b.py\n@@ -1 +1,2 @@\n+<<<<<<< HEAD\n")
-hk = pc.hunks(diff)
-assert [h[0] for h in hk] == ["src/a.ts", ".env", "b.py"]
-found = pc.deterministic(diff, [".env"], [("CLAUDE.md:2", "Never use `any`; prefer `unknown`.")])
-kinds = sorted(k for k, _, _ in found)
-assert kinds == ["conflict marker", "rule literal", "secret file"], found
-assert sum(k == "rule literal" for k, _, _ in found) == 1  # "company" doesn't match `any`
-assert pc.summary({"deterministic": [], "violations": []}) is None
-
-# pending diff in a scratch repo with an upstream
+# a scratch repo with an upstream
 r = Path(tempfile.mkdtemp())
 g = lambda *a: subprocess.run(["git", "-C", str(r), *a], capture_output=True, text=True, check=True)  # noqa: E731
 g("init", "-q", "-b", "main")
@@ -99,7 +81,6 @@ g("update-ref", "refs/remotes/origin/main", "HEAD")
 g("branch", "-u", "origin/main")
 (r / "a.py").write_text("x = 1\n<<<<<<< HEAD\n")
 g("commit", "-qam", "two")
-assert pc.pending_base(str(r)) == "origin/main"
 
 # ---- relevance: diff parsing and changed symbols --------------------------------------------------
 files = rel.parse_diff(g("show", "--format=", "HEAD").stdout)

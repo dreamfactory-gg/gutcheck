@@ -9,13 +9,14 @@ import time
 from pathlib import Path
 
 tmp = Path(tempfile.mkdtemp())
-os.environ["GUTCHECK_STATE_DIR"] = str(tmp / "state")
-os.environ["GUTCHECK_CONFIG_DIR"] = str(tmp / "cfg")
+os.environ["TOKENMAXXING_STATE_DIR"] = str(tmp / "state")
+os.environ["GUTCHECK_RULES_DIR"] = str(tmp / "rules")
+os.environ["TOKENMAXXING_CONFIG_DIR"] = str(tmp / "cfg")
 os.environ.pop("CLAUDE_PLUGIN_DATA", None)
 os.environ["CLAUDE_CODE_ENTRYPOINT"] = "cli"
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
-from gutcheck import checkpoint, evidence, health, stopcheck
-from gutcheck import transitions as T
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
+from tokenmaxxing import checkpoint, evidence, health, stopcheck
+from tokenmaxxing import transitions as T
 
 write_now = T.write_now   # stubbed below for the transition cases
 evidence._claude = lambda *a, **k: ("- Goal: new goal\n- Next step: y", {"cost_usd": 0})

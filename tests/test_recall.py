@@ -16,12 +16,13 @@ def day(n):
 
 
 TMP = Path(tempfile.mkdtemp(prefix="gc-recall-")).resolve()
-os.environ.update(GUTCHECK_STATE_DIR=str(TMP / "state"), GUTCHECK_CONFIG_DIR=str(TMP / "config"),
+os.environ.update(TOKENMAXXING_STATE_DIR=str(TMP / "state"), TOKENMAXXING_CONFIG_DIR=str(TMP / "config"),
                   GUTCHECK_PROJECTS_DIR=str(TMP / "claude" / "projects"), GUTCHECK_CODEX_DIR=str(TMP / "codex"),
                   GUTCHECK_GIT_ROOT=str(TMP / "none"))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
 
-from gutcheck import index, jev, recall  # noqa: E402
+from tokenmaxxing import index, recall  # noqa: E402
+from gutcheck_core import jev  # noqa: E402
 
 FAKE_KEY = "sk-ant-" + "abcDEF123456" * 4
 
@@ -139,7 +140,7 @@ out = recall.on_tool_failure({"tool_name": "Bash", "session_id": "22222222-aaaa-
                               "error": "Exit code 1\nModuleNotFoundError: No module named 'frobnicate'",
                               "tool_input": {"command": "pytest"}})
 ctx = out["hookSpecificOutput"]["additionalContext"]
-assert "frobnicate extra" in ctx and "gutcheck recall --at" in ctx, ctx
+assert "frobnicate extra" in ctx and "tokenmaxxing recall --at" in ctx, ctx
 # same session: silent
 assert recall.on_tool_failure({"tool_name": "Bash", "session_id": S1, "tool_input": {"command": "pytest"},
                                "error": "Exit code 1\nModuleNotFoundError: No module named 'frobnicate'"}) is None

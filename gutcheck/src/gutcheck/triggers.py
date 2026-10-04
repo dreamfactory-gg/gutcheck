@@ -8,7 +8,7 @@ import os
 import re
 import subprocess
 
-from . import secretscan
+from gutcheck_core import secretscan
 
 LOCAL_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0", "[::1]", "::1")
 DEPLOY_WORDS = re.compile(r"(?i)^(deploy|publish|release|upload|promote|rollout|migrate|apply|destroy|drop|purge|"
@@ -359,7 +359,7 @@ def triggers(an, cwd, cfg, session=None):
             writes = bool(fl & {"-d", "-F", "-T"} or {"--data", "--data-raw", "--data-binary", "--data-urlencode",
                                                       "--form", "--upload-file", "--json"} & fl or
                           re.search(r"-X\s*(POST|PUT|PATCH|DELETE)|--request\s+(POST|PUT|PATCH|DELETE)", text))
-            from .pyscan import INFERENCE_HOSTS
+            from gutcheck_core.pyscan import INFERENCE_HOSTS
             hosts = [re.sub(r"^https?://([^/:]+).*$", r"\1", u) for u in urls]
             inference = hosts and all(any(h == ih or h.endswith("." + ih) for ih in INFERENCE_HOSTS) for h in hosts)
             if writes and not local and not inference:

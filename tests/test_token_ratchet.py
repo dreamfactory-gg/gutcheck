@@ -108,10 +108,10 @@ assert not R.check_log("test_rounding_half_even\ntest_zone_lookup_unknown", None
 assert R.check_source("1125", None)[0] and not R.check_source("800", None)[0]
 assert R.check_mcp_json(R._stuck_id(), None)[0]
 
-# GUTCHECK_DATA_DIR keeps plugin data out of the shared Claude Code plugin data dir
-env = dict(os.environ, GUTCHECK_DATA_DIR=str(tmp / "data"), CLAUDE_PLUGIN_DATA=str(tmp / "cc-data"),
-           GUTCHECK_STATE_DIR=str(tmp / "state"), PYTHONPATH=str(ROOT / "gutcheck" / "src"))
-out = subprocess.run([sys.executable, "-c", "from gutcheck import skills, mcpout, checkpoint; "
+# TOKENMAXXING_DATA_DIR keeps plugin data out of the shared Claude Code plugin data dir
+env = dict(os.environ, TOKENMAXXING_DATA_DIR=str(tmp / "data"), CLAUDE_PLUGIN_DATA=str(tmp / "cc-data"),
+           TOKENMAXXING_STATE_DIR=str(tmp / "state"), PYTHONPATH=str(ROOT / "tokenmaxxing" / "src"))
+out = subprocess.run([sys.executable, "-c", "from tokenmaxxing import skills, mcpout, checkpoint; "
                       "print(skills.data_dir(), mcpout.out_dir().parent, checkpoint.checkpoint_dir().parent)"],
                      env=env, capture_output=True, text=True, check=True).stdout.split()
 assert out == [str(tmp / "data")] * 3, out

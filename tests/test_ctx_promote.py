@@ -2,10 +2,10 @@
 import json, os, sys, tempfile, time
 from pathlib import Path
 d = Path(tempfile.mkdtemp())
-os.environ["GUTCHECK_STATE_DIR"] = str(d)
-os.environ["GUTCHECK_CONFIG_DIR"] = str(d / "cfg")
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
-from gutcheck import init  # noqa: E402
+os.environ["TOKENMAXXING_STATE_DIR"] = str(d)
+os.environ["TOKENMAXXING_CONFIG_DIR"] = str(d / "cfg")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
+from tokenmaxxing import init  # noqa: E402
 
 
 def logs(ms_list, err=0):

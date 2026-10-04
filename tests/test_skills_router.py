@@ -8,11 +8,11 @@ from pathlib import Path
 
 TMP = Path(tempfile.mkdtemp(prefix="gc-test-")).resolve()
 CL = TMP / "claude"
-os.environ.update(GUTCHECK_CLAUDE_DIR=str(CL), GUTCHECK_STATE_DIR=str(TMP / "state"),
-                  GUTCHECK_CONFIG_DIR=str(TMP / "config"))
+os.environ.update(GUTCHECK_CLAUDE_DIR=str(CL), TOKENMAXXING_STATE_DIR=str(TMP / "state"),
+                  TOKENMAXXING_CONFIG_DIR=str(TMP / "config"))
 os.environ.pop("CLAUDE_PLUGIN_DATA", None)
 os.environ.pop("CLAUDE_PLUGIN_ROOT", None)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
 
 
 def write(p, text):
@@ -31,15 +31,16 @@ write(CL / "skills/synced/.bucket-1", "")
 PLUG = TMP / "plugins/toolkit"
 write(PLUG / "skills/helper/SKILL.md", "---\nname: helper\ndescription: Draft release notes from a changelog.\n---\n")
 write(PLUG / "commands/ship.md", "---\ndescription: Ship it\ndisable-model-invocation: true\n---\n")
-write(TMP / "plugins/gutcheck/skills/jev/SKILL.md", "---\nname: jev\ndescription: own skill\n---\n")
+write(TMP / "plugins/tokenmaxxing/skills/jev/SKILL.md", "---\nname: jev\ndescription: own skill\n---\n")
 write(TMP / "plugins/off/skills/x/SKILL.md", "---\nname: x\ndescription: disabled plugin\n---\n")
 write(CL / "plugins/installed_plugins.json", json.dumps({"version": 2, "plugins": {
     "toolkit@market": [{"scope": "user", "installPath": str(PLUG)}],
-    "gutcheck@local": [{"scope": "user", "installPath": str(TMP / "plugins/gutcheck")}],
+    "tokenmaxxing@local": [{"scope": "user", "installPath": str(TMP / "plugins/tokenmaxxing")}],
     "off@market": [{"scope": "user", "installPath": str(TMP / "plugins/off")}]}}))
 write(CL / "settings.json", json.dumps({"enabledPlugins": {"off@market": False}}))
 
-from gutcheck import config, ctxload, jev, router, skills  # noqa: E402
+from tokenmaxxing import ctxload, router, skills  # noqa: E402
+from gutcheck_core import config, jev  # noqa: E402
 
 # ---- skill index ---------------------------------------------------------------------------------------------
 idx, new = skills.build()
@@ -147,7 +148,7 @@ write(TMP / "config/config.toml", "[context]\nmode = \"on\"\n[skill_router]\nmod
 config.load(refresh=True)
 cinp = {"prompt": "should we regenerate the ledgers after this commit lands?", "session_id": "c1", "cwd": root}
 text = router.for_prompt(cinp)
-assert text and "gutcheck context (memory/ledgers-frozen.md" in text and "never regenerate ledgers" in text, text
+assert text and "tokenmaxxing context (memory/ledgers-frozen.md" in text and "never regenerate ledgers" in text, text
 assert router.for_prompt(cinp) is None  # same section, same session: not again
 text = router.for_prompt(dict(cinp, prompt="how do restarts of the ingest worker work with the drain flag?"))
 assert text and "OPS.md lines 5-11 (OPS.md § Restarts); read it" in text, text  # long: a pointer

@@ -2,13 +2,13 @@
 import json, os, sys, tempfile
 from pathlib import Path
 d = Path(tempfile.mkdtemp())
-os.environ["GUTCHECK_STATE_DIR"] = str(d)
-os.environ["GUTCHECK_CONFIG_DIR"] = str(d / "cfg")
+os.environ["TOKENMAXXING_STATE_DIR"] = str(d)
+os.environ["TOKENMAXXING_CONFIG_DIR"] = str(d / "cfg")
 (d / "cfg").mkdir()
 (d / "cfg" / "config.toml").write_text('adapters = ["roblox_studio"]\n')
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
-from gutcheck import soldier  # noqa: E402
-from gutcheck.adapters import roblox_studio as rs  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
+from tokenmaxxing import soldier  # noqa: E402
+from tokenmaxxing.adapters import roblox_studio as rs  # noqa: E402
 
 assert soldier.policy("studio", "studio")["reuse"] is False
 assert soldier.policy("builder", "general-purpose")["reuse"] is True

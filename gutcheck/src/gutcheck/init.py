@@ -7,34 +7,24 @@ Both run as local code (no Claude tokens). Refresh never loosens thresholds; it 
   - adds ask patterns for probable misses: a command followed by the owner saying stop/undo/revert.
 """
 import json
-import os
 import re
 import time
 from collections import Counter
 
-from . import config, secrets
+from gutcheck_core import config, secrets
+from gutcheck_core.health import _stamp, _touch
 
 MISS_RE = re.compile(r"(?i)^\s*(stop\b|undo\b|revert\b|why did you|you (deleted|killed|broke|restarted|removed)|"
                      r"roll ?back)")
 
 
-def _stamp(name):
-    p = config.STATE_DIR / f"{name}.stamp"
-    return p.stat().st_mtime if p.exists() else 0
-
-
-def _touch(name):
-    config.STATE_DIR.mkdir(parents=True, exist_ok=True)
-    (config.STATE_DIR / f"{name}.stamp").write_text(time.strftime("%Y-%m-%dT%H:%M:%S"))
-
-
 def mine(since=0.0):
     """Scan transcripts newer than `since`. Returns stats and candidate patterns."""
-    from . import transcripts
+    from gutcheck_core import transcripts
     try:
-        from . import bashcheck
+        from gutcheck_core import commands
     except Exception:  # tree-sitter missing: skip command classification
-        bashcheck = None
+        commands = None
     heads, misses, hosts, n = Counter(), [], Counter(), 0
     for f in transcripts.files(since=since):
         for r in transcripts.bash_commands(f):
@@ -45,9 +35,9 @@ def mine(since=0.0):
                 hosts[h] += 1
             if r.get("next_prompt") and MISS_RE.search(r["next_prompt"]) and r["outcome"] == "ok":
                 misses.append(cmd)
-            if bashcheck is not None:
+            if commands is not None:
                 try:
-                    an = bashcheck.analyze(cmd, r.get("cwd"))
+                    an = commands.analyze(cmd, r.get("cwd"))
                     if an.readonly:
                         for c in an.cmds:
                             heads[c.name] += 1
@@ -61,7 +51,7 @@ def _learn_approvals(cfg):
     from . import report
     checks = report._read("bashcheck")
     ran = {d["tool_use_id"] for d in report._read("bash_ran") if d.get("tool_use_id")}
-    from .bashcheck import normalize
+    from gutcheck_core.commands import normalize
     counts = Counter()
     for d in checks:
         if d.get("mode") == "on" and d.get("decision") == "ask" and d.get("tool_use_id") in ran and \
@@ -97,97 +87,16 @@ def _maybe_promote(bc):
     return None
 
 
-def _index_context():
-    """Skill index, project doc/memory index, and old per-session router state (Phase 6)."""
-    new, n = [], 0
-    try:
-        from . import ctxload, router, skills
-        _, new = skills.build()
-        n = ctxload.build()
-        router.prune_seen()
-    except Exception as e:
-        (config.STATE_DIR / "background.log").open("a").write(f"refresh: context index failed: {e}\n")
-    return new, n
-
-
-def _index_history():
-    """Recall's tree index of past work (transcripts, memory incl. archive, Codex, git). Incremental: a daily
-    refresh re-reads only what changed (seconds); the first build takes about a minute."""
-    try:
-        from . import index
-        t0 = time.time()
-        n = index.build()
-        return n, time.time() - t0
-    except Exception as e:
-        (config.STATE_DIR / "background.log").open("a").write(f"refresh: recall index failed: {e}\n")
-        return None, 0
-
-
-def _maybe_promote_context(user, days=3, min_runs=30):
-    """Doc/memory loading: log -> on once its logged background runs are fast (p95 < 1 s) and rarely fail.
-    Picks were already checked against the previous version (evals/ctxload_eval.py); only speed was blocking."""
-    ctx = user.setdefault("context", {})
-    if ctx.get("mode", "log") != "log" or ctx.get("auto_promote") is False:
-        return None
-    since = time.time() - days * 86400
-    runs = []
-    p = config.STATE_DIR / "router.jsonl"
-    if not p.exists():
-        return None
-    for line in p.open():
-        try:
-            d = json.loads(line)
-        except ValueError:
-            continue
-        if not d.get("background"):
-            continue
-        try:
-            if time.mktime(time.strptime(d["t"], "%Y-%m-%dT%H:%M:%S")) < since:
-                continue
-        except (KeyError, ValueError):
-            continue
-        runs.append(d)
-    if len(runs) < min_runs:
-        return None
-    ms = sorted(r.get("ms") or 0 for r in runs)
-    p95 = ms[int(len(ms) * 0.95)]
-    errors = sum(1 for r in runs if "error" in (r.get("context") or {}))
-    if p95 < 1000 and errors / len(runs) < 0.1:
-        ctx["mode"] = "on"
-        line = f"{len(runs)} background runs, p95 {p95} ms, {errors} errors"
-        (config.STATE_DIR / "promotions.log").open("a").write(
-            f"{time.strftime('%Y-%m-%dT%H:%M:%S')} context loading on: {line}\n")
-        return line
-    return None
-
-
-def _measure_mcp(kind):
-    """Per-request cost of each MCP server: at init, and at refresh when the configured servers changed."""
-    from . import mcpload
-    servers = set(mcpload.user_servers())   # empty on a failed read of ~/.claude.json: don't re-measure then
-    if servers and (kind == "init" or set(mcpload._read(mcpload.LOAD, {}).get("servers", {})) != servers):
-        try:
-            mcpload.measure()
-        except Exception as e:
-            (config.STATE_DIR / "background.log").open("a").write(f"{kind}: MCP load measure failed: {e}\n")
-
-
 def run(kind, quiet=False):
-    from . import jev
+    from gutcheck_core import jev
     user = config.user_config()
     since = 0 if kind == "init" else _stamp("refresh")
     stats = mine(since)
     user.setdefault("keys", {"typesafe_service": "typesafe", "gateway_service": "ai-gateway"})
-    if "adapters" not in user:  # MCP adapters for servers configured here; later edits by the user are kept
-        try:
-            from . import adapters
-            user["adapters"] = adapters.detect()
-        except Exception:
-            user["adapters"] = []
     bc = user.setdefault("bash_check", {})
     bc.setdefault("mode", "log")
     # misses -> ask patterns (tightening is always safe)
-    from .bashcheck import normalize
+    from gutcheck_core.commands import normalize
     asks = set(bc.get("ask_patterns", []))
     for cmd in stats["misses"]:
         pat = "^" + re.escape(normalize(cmd)[:200])
@@ -196,21 +105,8 @@ def run(kind, quiet=False):
     if kind == "refresh":
         bc["approved_patterns"] = sorted(set(bc.get("approved_patterns", [])) | set(_learn_approvals(config.load())))
         promoted = _maybe_promote(bc)
-        try:
-            ctx_on = _maybe_promote_context(user)
-            if ctx_on and not quiet:
-                print(f"  doc/memory loading switched on: {ctx_on}")
-        except Exception:
-            pass
         if promoted and not quiet:
             print(f"  bash check switched on: {promoted}")
-        try:  # long-run stop check: logging-only -> on once its logged TASKS.md blocks prove right (never loosens)
-            from . import stopcheck
-            stop_on = stopcheck.maybe_promote(user)
-            if stop_on and not quiet:
-                print(f"  {stop_on}")
-        except Exception as e:
-            (config.STATE_DIR / "background.log").open("a").write(f"refresh: stop check promotion failed: {e}\n")
     sens = user.setdefault("sensitivity", {})
     sens.setdefault("hosts", {})
     sens.setdefault("branches", {"main": "shared default branch", "master": "shared default branch"})
@@ -221,10 +117,7 @@ def run(kind, quiet=False):
         "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "commands": stats["commands"],
         "readonly_heads": stats["readonly_heads"].most_common(200),
         "ssh_hosts": stats["ssh_hosts"].most_common(50), "misses": len(stats["misses"])}, indent=1))
-    new_skills, ctx_files = _index_context()
-    hist, hist_s = _index_history()
     _touch("refresh")
-    _measure_mcp(kind)
     if not quiet:
         print(f"gutcheck {kind}: scanned {stats['commands']} Bash commands")
         print(f"  key: {'found' if jev.have_key() else 'MISSING - ' + secrets.store_hint('typesafe')}")
@@ -235,13 +128,7 @@ def run(kind, quiet=False):
             print(f"  ssh hosts not in your sensitivity map: {', '.join(unknown)}")
             print(f"    label them in {config.CONFIG_PATH} under [sensitivity.hosts]")
         print(f"  probable misses turned into ask patterns: {len(stats['misses'])}")
-        print(f"  skills newly indexed: {', '.join(new_skills) or 'none'}; doc/memory files (re)indexed: {ctx_files}")
-        if hist is not None:
-            print(f"  recall index: re-read {hist['claude']} transcripts, {hist['memory']} memory files, "
-                  f"{hist['codex']} Codex runs, checked {hist['git']} git repos ({hist_s:.0f}s)")
         print(f"  config: {config.CONFIG_PATH}")
-        from . import mcpload
-        mcpload.main([])   # table only; the probes ran above
 
 
 def main(kind, args):

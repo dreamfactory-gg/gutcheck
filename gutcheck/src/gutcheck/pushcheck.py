@@ -17,7 +17,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from . import config, jev, secretscan
+from gutcheck_core import config, jev, secretscan
 
 LOG = config.STATE_DIR / "house_rules.jsonl"
 RULE_CACHE = config.STATE_DIR / "house_rules_cache.json"
@@ -38,7 +38,7 @@ def _git(repo, *args):
 def push_target(command, cwd):
     """(repo_dir, argv after 'push') for the first `git push` in the command, else None."""
     try:
-        from . import shellparse
+        from gutcheck_core import shellparse
         cmds = [c.argv for c in shellparse.parse(command).cmds if not c.remote]
     except Exception:  # tree-sitter missing: plain split on shell separators
         import shlex
@@ -311,7 +311,7 @@ def _log(rec):
 
 
 def main(args):
-    from .cli import _opt
+    from gutcheck_core.args import _opt
     repo = _opt(args, "--repo", os.getcwd())
     base = _opt(args, "--base")
     res = check_repo(repo, base=base)

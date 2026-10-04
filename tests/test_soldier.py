@@ -8,15 +8,16 @@ import tempfile
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gutcheck" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tokenmaxxing" / "src"))
 _TMP = tempfile.mkdtemp()
-os.environ["GUTCHECK_STATE_DIR"] = _TMP + "/state"
-os.environ["GUTCHECK_CONFIG_DIR"] = _TMP + "/cfg"
+os.environ["TOKENMAXXING_STATE_DIR"] = _TMP + "/state"
+os.environ["TOKENMAXXING_CONFIG_DIR"] = _TMP + "/cfg"
 os.environ["CLAUDE_PLUGIN_DATA"] = _TMP + "/data"
 Path(_TMP, "cfg").mkdir()
 Path(_TMP, "cfg", "config.toml").write_text('[soldier.agents.bigctx]\nmax_context_tokens = 500000\n')
 
-from gutcheck import config, hooks, soldier  # noqa: E402
+from tokenmaxxing import hooks, soldier  # noqa: E402
+from gutcheck_core import config  # noqa: E402
 
 config.load(refresh=True)
 PROJ = Path(_TMP, "proj")

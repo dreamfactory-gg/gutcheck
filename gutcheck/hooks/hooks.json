@@ -1,19 +1,9 @@
 {
-  "description": "gutcheck: pre-run Bash check, pasted-key blocker, session health line, long-run stop check, durable transitions",
+  "description": "gutcheck: pre-run Bash check, pasted-key blocker, key guards, secret-file block, don't-delete guard, pre-push house rules",
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreToolUse",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Agent",
         "hooks": [
           {
             "type": "command",
@@ -55,16 +45,6 @@
         ]
       },
       {
-        "matcher": "SendMessage",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreToolUse",
-            "timeout": 5
-          }
-        ]
-      },
-      {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
@@ -77,32 +57,12 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PostToolUse",
-            "timeout": 10
-          }
-        ]
-      },
-      {
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PostToolUse",
             "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PostToolUse",
-            "timeout": 20
           }
         ]
       }
@@ -136,62 +96,6 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" Stop",
             "timeout": 30
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PreCompact",
-            "timeout": 120
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" SessionEnd",
-            "timeout": 60
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" SubagentStop",
-            "timeout": 60
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" PostToolUseFailure",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/gutcheck-hook\" SubagentStart",
-            "timeout": 5
           }
         ]
       }

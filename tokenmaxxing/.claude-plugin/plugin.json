@@ -1,0 +1,9 @@
+{
+  "name": "tokenmaxxing",
+  "version": "0.2.0",
+  "description": "Longer, cheaper Claude Code sessions: compact views of big tool output, recall of past work, durable compactions and cheap Jev triage.",
+  "author": {"name": "dreamfactory-gg"},
+  "homepage": "https://github.com/dreamfactory-gg/gutcheck",
+  "repository": "https://github.com/dreamfactory-gg/gutcheck",
+  "license": "MIT"
+}

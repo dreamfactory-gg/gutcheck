@@ -1,8 +1,8 @@
-"""Token eval + ratchet for gutcheck releases.
+"""Token eval + ratchet for tokenmaxxing releases.
 
 Small headless tasks run with `claude -p --output-format json` against a CANDIDATE copy of the plugin
 (--plugin-dir), with the installed plugins, user settings, CLAUDE.md files and auto-memory switched off and
-gutcheck's state, config, plugin data and ~/.claude reads pointed at temp dirs. Each task runs N times; the
+tokenmaxxing's state, config, plugin data, the standing-rules store and ~/.claude reads pointed at temp dirs. Each task runs N times; the
 median of each metric is compared with a ceiling file (default evals/tokens/ceilings.json). The maintainers'
 ceilings are measured on their machine and kept out of this repo; build your own baseline with `run.py bootstrap`.
 
@@ -49,7 +49,7 @@ EFFORT = "low"
 MAX_TURNS = "30"
 RUN_TIMEOUT = 300           # a run normally takes 5-15 s
 RELEASE_RUNS = int(os.environ.get("GUTCHECK_TOKEN_RUNS", 3))   # runs per task in a release (the median counts)
-TOOLS = "Bash,Read,Edit,Grep,Glob,Skill"   # Skill: gutcheck's own skills are listed to the model
+TOOLS = "Bash,Read,Edit,Grep,Glob,Skill"   # Skill: tokenmaxxing's own skills are listed to the model
 MCP_TOOLS = "mcp__ci-fixture__fetch_ci_logs,mcp__ci-fixture__list_orders"
 
 
@@ -145,10 +145,10 @@ WARMUPS = {"_warm": dict(prompt="Reply with the single word: ok", check=lambda r
 
 # ---- environment ------------------------------------------------------------------------------------------------
 def clean_env():
-    """The caller's environment minus anything Claude Code or gutcheck set for the current session."""
+    """The caller's environment minus anything Claude Code or the plugins set for the current session."""
     keep = {"CLAUDE_CONFIG_DIR", "GUTCHECK_HOME"}
     return {k: v for k, v in os.environ.items()
-            if k in keep or not (k.startswith("CLAUDE") or k.startswith("GUTCHECK_") or k.startswith("ANTHROPIC_MODEL"))}
+            if k in keep or not (k.startswith("CLAUDE") or k.startswith(("GUTCHECK_", "TOKENMAXXING_")) or k.startswith("ANTHROPIC_MODEL"))}
 
 
 def prepare(root, plugin):
@@ -163,7 +163,7 @@ def prepare(root, plugin):
     for stamp in ("refresh", "mcpwaste"):
         (base / "state" / f"{stamp}.stamp").write_text("")
     env = dict(clean_env(), **iso_env(base, claude_dir, root), PYTHONPATH=str(plugin / "src"))
-    subprocess.run([sys.executable, "-m", "gutcheck.cli", "skill-find", "--reindex"], env=env, check=True,
+    subprocess.run([sys.executable, "-m", "tokenmaxxing.cli", "skill-find", "--reindex"], env=env, check=True,
                    capture_output=True, text=True, timeout=120)
     if not (base / "data" / "skills.json").exists():
         sys.exit("token eval: skill index was not built")
@@ -173,8 +173,9 @@ def prepare(root, plugin):
 def iso_env(d, claude_dir, root):
     empty = root / "empty"
     empty.mkdir(exist_ok=True)
-    return {"GUTCHECK_STATE_DIR": str(d / "state"), "GUTCHECK_CONFIG_DIR": str(d / "config"),
-            "GUTCHECK_DATA_DIR": str(d / "data"), "GUTCHECK_CLAUDE_DIR": str(claude_dir),
+    return {"TOKENMAXXING_STATE_DIR": str(d / "state"), "TOKENMAXXING_CONFIG_DIR": str(d / "config"),
+            "TOKENMAXXING_DATA_DIR": str(d / "data"), "GUTCHECK_RULES_DIR": str(d / "rules"),
+            "GUTCHECK_CLAUDE_DIR": str(claude_dir),
             "GUTCHECK_PROJECTS_DIR": str(empty), "GUTCHECK_CODEX_DIR": str(empty), "GUTCHECK_GIT_ROOT": str(empty)}
 
 
@@ -218,7 +219,7 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     except ValueError:
         out = {"is_error": True, "result": "", "error": f"no JSON result (exit {p.returncode}): {p.stderr[-300:]}"}
     rec["seconds"] = round(time.monotonic() - t0, 1)
-    # the session is persisted (gutcheck's hooks read its transcript, as in real use); drop it from ~/.claude after
+    # the session is persisted (tokenmaxxing's hooks read its transcript, as in real use); drop it from ~/.claude after
     for t in Path.home().glob(f".claude/projects/*/{out.get('session_id') or '-'}.jsonl"):
         t.unlink(missing_ok=True)
         shutil.rmtree(t.with_suffix(""), ignore_errors=True)
@@ -239,8 +240,8 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
             rec["wrong"] = not rec["ok"]   # a wrong answer, which a task's wrong_ok may tolerate; guards below reset it
         except Exception as e:
             rec["ok"], rec["why"] = False, f"check crashed: {type(e).__name__}: {e}"
-    # harness guards: the candidate's hooks fired exactly once per prompt (so no second gutcheck is loaded), and
-    # for MCP tasks the whole tool output reached gutcheck's MCP layer (not Claude Code's own large-output stub)
+    # harness guards: the candidate's hooks fired exactly once per prompt (so no second tokenmaxxing is loaded), and
+    # for MCP tasks the whole tool output reached tokenmaxxing's MCP layer (not Claude Code's own large-output stub)
     rec["prompt_hooks"] = _lines(d / "state" / "prompt_hook.jsonl")
     if len(rec["prompt_hooks"]) != 1:
         rec["ok"], rec["wrong"], rec["why"] = False, False, (f"the candidate's UserPromptSubmit hook ran {len(rec['prompt_hooks'])} "
@@ -249,7 +250,7 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
         seen = [x.get("chars", 0) for x in _lines(d / "state" / "mcp_trim.jsonl")]
         rec["mcp_chars"] = seen
         if not any(c >= 40_000 for c in seen):
-            rec["ok"], rec["wrong"], rec["why"] = False, False, f"gutcheck's MCP layer never saw the full tool output ({seen})"
+            rec["ok"], rec["wrong"], rec["why"] = False, False, f"tokenmaxxing's MCP layer never saw the full tool output ({seen})"
     rec["result"] = res[:300]
     return rec
 
@@ -513,7 +514,7 @@ def bootstrap(a):
     else:
         tol = {"cost": float(a.tolerance)}
     old = load(a.ceilings) if Path(a.ceilings).exists() else {}
-    ceil = {"about": "Per-task cost ceilings (cost-equivalent tokens, see evals/tokens/run.py) for gutcheck releases. "
+    ceil = {"about": "Per-task cost ceilings (cost-equivalent tokens, see evals/tokens/run.py) for tokenmaxxing releases. "
                      "Medians must stay at or below these. Ceilings sit at each task's higher level * (1 + "
                      "tolerance) (some tasks take one extra turn in some runs); a release lowers one only when its "
                      "costliest run shows that level. Only the maintainer raises them (release script: "

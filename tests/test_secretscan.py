@@ -1,7 +1,7 @@
 """Fixtures are made up. Run: python3 tests/test_secretscan.py"""
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
-from gutcheck import secretscan as s
+from gutcheck_core import secretscan as s
 
 POS = ["here is my key sk-ant-api03-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789",
        "export OPENAI_API_KEY=sk-proj-Zx9aB8cD7eF6gH5iJ4kL3mN2oP1qR0sT",

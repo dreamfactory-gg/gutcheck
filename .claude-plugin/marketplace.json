@@ -4,13 +4,18 @@
     "name": "dreamfactory-gg"
   },
   "metadata": {
-    "description": "gutcheck: longer, cheaper Claude Code sessions."
+    "description": "gutcheck and tokenmaxxing: safer, longer, cheaper Claude Code sessions."
   },
   "plugins": [
     {
       "name": "gutcheck",
       "source": "./gutcheck",
-      "description": "Longer, cheaper Claude Code sessions: hooks, skills and a CLI that keep noise out of context and catch risky commands."
+      "description": "Guards against rogue agent actions: risky Bash asks first, keys are blocked, secret files stay unread."
+    },
+    {
+      "name": "tokenmaxxing",
+      "source": "./tokenmaxxing",
+      "description": "Longer, cheaper sessions: hooks, skills and a CLI that keep noise out of Claude's context."
     }
   ]
 }

@@ -1,0 +1,16 @@
+#!/bin/sh
+# Hook shim: never blocks Claude Code on a tokenmaxxing failure (fail open).
+here=$(cd "$(dirname "$(realpath "$0")")" && pwd)
+py="${GUTCHECK_HOME:-$HOME/.local/share/gutcheck}/venv/bin/python"
+if [ ! -x "$py" ]; then
+  # first run: build the venv in the background, run this hook without tree-sitter on a Python 3.12+ from PATH
+  ( "$here/../setup.sh" >/dev/null 2>&1 & )
+  if ! py=$("$here/gutcheck-python" --system); then
+    if [ "${1:-}" = "SessionStart" ]; then
+      printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"tokenmaxxing is installed but inactive: it needs Python 3.12 or newer. Tell the user to install uv (https://docs.astral.sh/uv/) or Python 3.12+; the next session sets itself up."}}'
+    fi
+    exit 0
+  fi
+fi
+PYTHONPATH="$here/../src" "$py" -m tokenmaxxing.cli hook "$@" 2>/dev/null
+exit 0

@@ -8,11 +8,13 @@ import tempfile
 from pathlib import Path
 
 tmp = Path(tempfile.mkdtemp())
-os.environ["GUTCHECK_STATE_DIR"] = str(tmp / "state")
-os.environ["GUTCHECK_CONFIG_DIR"] = str(tmp / "cfg")
+os.environ["TOKENMAXXING_STATE_DIR"] = str(tmp / "state")
+os.environ["GUTCHECK_RULES_DIR"] = str(tmp / "rules")
+os.environ["TOKENMAXXING_CONFIG_DIR"] = str(tmp / "cfg")
 os.environ["CLAUDE_PLUGIN_DATA"] = str(tmp / "plugin-data")
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
-from gutcheck import checkpoint as C, evidence, hooks, jev  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
+from tokenmaxxing import checkpoint as C, evidence, hooks  # noqa: E402
+from gutcheck_core import jev  # noqa: E402
 
 evidence._claude = lambda *a, **k: ("- Goal: ship the parser\n- In progress: parser", {"cost_usd": 0})
 
@@ -109,7 +111,7 @@ assert "ship the parser" in capped and "30/30 fixtures pass" in capped and "READ
 assert "done thing" not in capped
 assert "bgaaa111" in capped and "bgbbb222" not in capped and "a1b2c3" in capped and "helper@sess-1" in capped
 assert "keep the old schema" in capped and "fix/y" in capped and "a.py" in capped
-assert "gutcheck recall" in capped
+assert "tokenmaxxing recall" in capped
 assert "the staging db is read-only until friday" in capped                       # implicit availability fact
 assert capped.count("ever push to main") == 1                              # near-duplicate restatement merged
 assert "superseded by" in capped and "Only deploy to staging-a." in capped and "staging-b instead" in capped
@@ -141,12 +143,12 @@ jev.noul_each = fake_noul_each
 jev.call = fake_call
 
 # ---- capture as stated: UserPromptSubmit handler, fast path, rules file written; Stop catch-up is idempotent ----
-from gutcheck import rules as R  # noqa: E402
+from gutcheck_core import rules as R  # noqa: E402
 R.on_user_prompt({"session_id": "sess-4", "prompt": "never run migrations on prod"})
 R.on_user_prompt({"session_id": "sess-4", "prompt": "what time is it?"})
 R.on_user_prompt({"session_id": "sess-4", "prompt": '<teammate-message teammate_id="team-lead">Always report in '
                                                    'under 200 words.</teammate-message>'})
-rmd = (tmp / "plugin-data" / "checkpoints" / "sess-4.rules.md").read_text()
+rmd = (tmp / "rules" / "sess-4.rules.md").read_text()
 assert "never run migrations on prod" in rmd and "what time" not in rmd and "under 200 words" in rmd
 assert "The lead's instructions" in rmd
 R.on_stop({"session_id": "sess-1", "transcript_path": str(tp)})
@@ -167,7 +169,7 @@ def run_hook(event, inp):
     return out.getvalue()
 
 
-import gutcheck.health as health  # noqa: E402
+import tokenmaxxing.health as health  # noqa: E402
 health.session_start = lambda inp: None
 assert run_hook("PreCompact", {"session_id": "sess-1", "transcript_path": str(tp), "cwd": str(proj),
                                "hook_event_name": "PreCompact", "trigger": "auto"}) == ""
@@ -178,7 +180,7 @@ comp = [json.loads(x) for x in (tmp / "state" / "compactions.jsonl").read_text()
 assert comp[-1]["checkpoint_tokens"] > 0 and comp[-1]["open_items"] == 2, comp[-1]
 out = json.loads(run_hook("SessionStart", {"session_id": "sess-1", "transcript_path": str(tp), "source": "compact"}))
 ctx = out["hookSpecificOutput"]["additionalContext"]
-assert "Never push to main." in ctx and "gutcheck recall" in ctx and FAKE_KEY not in ctx
+assert "Never push to main." in ctx and "tokenmaxxing recall" in ctx and FAKE_KEY not in ctx
 assert run_hook("SessionStart", {"session_id": "sess-1", "transcript_path": str(tp), "source": "resume"}) == ""
 # a session id that changed across compaction: found by transcript path
 out = json.loads(run_hook("SessionStart", {"session_id": "other", "transcript_path": str(tp), "source": "compact"}))
