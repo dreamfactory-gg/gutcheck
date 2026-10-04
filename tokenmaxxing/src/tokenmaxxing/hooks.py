@@ -52,6 +52,53 @@ def pre_edit(inp):
 FORK_LIMIT = 50_000
 
 
+def agent_transcript(inp):
+    """The calling agent's own transcript: a subagent's file next to the main one, else the main transcript."""
+    path = inp.get("transcript_path") or ""
+    if inp.get("agent_id") and path:
+        from pathlib import Path
+        p = Path(path).with_suffix("") / "subagents" / f"agent-{inp['agent_id']}.jsonl"
+        if p.exists():
+            return str(p)
+    return path
+
+
+def once(kind, *key):
+    """True the first time this key is seen (a marker file under the state dir), False on a repeat, None when the
+    marker can't be written."""
+    import hashlib
+    marker = config.STATE_DIR / kind / hashlib.sha256(json.dumps(key).encode()).hexdigest()
+    try:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        os.close(os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
+        return True
+    except FileExistsError:
+        return False
+    except OSError:
+        return None
+
+
+def subagent_cap(inp):
+    """Any tool call in a subagent whose own context is past [subagent_cap] tokens is denied, so it hands back with a
+    handoff note. SubagentHandback always goes through (a denied hand-back is retried); main sessions are never
+    capped. Returns the hook output, or None to carry on with the tool's own handler."""
+    cfg = config.load().get("subagent_cap", {})
+    mode = cfg.get("mode", "on")
+    if not inp.get("agent_id") or inp.get("tool_name") == "SubagentHandback" or mode == "off":
+        return None
+    n = context_tokens(agent_transcript(inp))
+    limit = cfg.get("tokens", 250_000)
+    if not n or n <= limit:
+        return None
+    log("subagent_cap", {"session": inp.get("session_id"), "agent": inp.get("agent_id"), "tool": inp.get("tool_name"),
+                         "context_tokens": n, "mode": mode, "denied": mode == "on"})
+    if mode == "on":
+        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                       "permissionDecisionReason":
+                                           f"Context is past {limit:,} tokens: write your handoff note (what's done, "
+                                           f"what's left, file paths) and hand back now."}}
+
+
 def context_tokens(transcript_path, max_bytes=2_000_000):
     """Context size from the latest assistant turn's usage in the transcript (input + cache read + cache write)."""
     try:
@@ -68,8 +115,6 @@ def context_tokens(transcript_path, max_bytes=2_000_000):
             d = json.loads(line)
         except ValueError:
             continue
-        if d.get("isSidechain"):
-            continue
         u = (d.get("message") or {}).get("usage") if isinstance(d.get("message"), dict) else None
         if u:
             return (u.get("input_tokens") or 0) + (u.get("cache_read_input_tokens") or 0) + \
@@ -78,23 +123,30 @@ def context_tokens(transcript_path, max_bytes=2_000_000):
 
 
 def pre_agent(inp):
-    """Fork guard: a fork copies the whole context every turn; above ~50k, a fresh agent with a brief is cheaper."""
+    """Fork guard: a fork copies the whole context every turn; above ~50k, a fresh agent with a brief is cheaper.
+    Otherwise the brief gets the hand-back report shape (handback.py), plus the recall dedup note for a fresh agent."""
+    from . import handback
     ti = inp.get("tool_input") or {}
-    if ti.get("subagent_type") != "fork":
+    if ti.get("subagent_type") == "fork":
+        n = context_tokens(inp.get("transcript_path") or "")
+        limit = config.load().get("fork_guard", {}).get("max_context_tokens", FORK_LIMIT)
+        log("fork_guard", {"session": inp.get("session_id"), "context_tokens": n, "denied": bool(n and n > limit)})
+        if n and n > limit:
+            emit({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                         "permissionDecisionReason":
+                                             f"tokenmaxxing fork guard: a fork would copy ~{n // 1000}k tokens of "
+                                             f"context on every turn; brief a fresh agent instead (small "
+                                             f"self-contained brief, absolute paths)."}})
+            return
+        out = {"hookEventName": "PreToolUse"}
+    else:
         from . import recall
-        out = _safe("dedup", recall.on_launch, inp)
-        if out:
-            emit(out)
-        return
-    n = context_tokens(inp.get("transcript_path") or "")
-    limit = config.load().get("fork_guard", {}).get("max_context_tokens", FORK_LIMIT)
-    log("fork_guard", {"session": inp.get("session_id"), "context_tokens": n, "denied": bool(n and n > limit)})
-    if n and n > limit:
-        emit({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
-                                     "permissionDecisionReason":
-                                         f"tokenmaxxing fork guard: a fork would copy ~{n // 1000}k tokens of context "
-                                         f"on every turn; brief a fresh agent instead (small self-contained brief, "
-                                         f"absolute paths)."}})
+        out = (_safe("dedup", recall.on_launch, inp) or {}).get("hookSpecificOutput") or {"hookEventName": "PreToolUse"}
+    brief = _safe("handback brief", handback.brief, inp)
+    if brief:
+        out["updatedInput"] = brief
+    if len(out) > 1:
+        emit({"hookSpecificOutput": out})
 
 
 def studio_nudge(inp):
@@ -177,7 +229,6 @@ def pre_read(inp):
     path = ti.get("file_path") or ti.get("path") or ""
     if inp.get("tool_name") != "Read" or not path or any(k in ti for k in ("offset", "limit", "pages")):
         return
-    import hashlib
     from pathlib import Path
     cfg = config.load().get("read_gate", {})
     mode = cfg.get("mode", "on")
@@ -199,15 +250,10 @@ def pre_read(inp):
     if len(lines) < 10 or sum(map(len, lines[:2000])) <= limit:
         return
     session = inp.get("session_id")
-    marker = config.STATE_DIR / "read_gate" / hashlib.sha256(json.dumps([session, str(p)]).encode()).hexdigest()
-    try:
-        marker.parent.mkdir(parents=True, exist_ok=True)
-        os.close(os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
-        retry = False
-    except FileExistsError:
-        retry = True
-    except OSError:
+    first = once("read_gate", session, str(p))
+    if first is None:
         return
+    retry = not first
     log("read_gate", {"session": session, "agent": inp.get("agent_id"), "path": str(p), "chars": len(text),
                       "mode": mode, "decision": "retry" if retry else "denied"})
     if mode == "on" and not retry:
@@ -339,11 +385,7 @@ def post_mcp(inp):
 
 def _purpose(inp, max_chars=400, include_user=False):
     """The agent's words before this call, optionally with the latest plain-string user prompt."""
-    path = inp.get("transcript_path") or ""
-    if inp.get("agent_id") and path:
-        from pathlib import Path
-        p = Path(path).with_suffix("") / "subagents" / f"agent-{inp['agent_id']}.jsonl"
-        path = str(p) if p.exists() else path
+    path = agent_transcript(inp)
     try:
         size = os.path.getsize(path)
         with open(path, "rb") as fh:
@@ -510,7 +552,10 @@ def pre_send(inp):
         emit({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": dec["additionalContext"]}})
 
 
-HANDLERS = {"PreCompact": compact_log, "PreToolUse:Bash": pre_bash, "PreToolUse:Agent": pre_agent,
+HANDLERS = {"PreToolUse:*": subagent_cap,
+            "PreToolUse:SubagentHandback": lambda i: __import__("tokenmaxxing.handback", fromlist=["pre"]).pre(i),
+            "PostToolUse:Agent": lambda i: __import__("tokenmaxxing.handback", fromlist=["post"]).post(i),
+            "PreCompact": compact_log, "PreToolUse:Bash": pre_bash, "PreToolUse:Agent": pre_agent,
             "PostToolUse:Bash": post_bash, "PostToolUseFailure:Bash": post_failure,
             "PreToolUse:Read": pre_read, "PreToolUse:mcp__": pre_mcp, "PostToolUse:mcp__": post_mcp,
             "UserPromptSubmit": prompt_submit, "SessionStart": session_start, "Stop": stop,

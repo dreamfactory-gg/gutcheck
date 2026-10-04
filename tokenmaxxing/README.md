@@ -37,6 +37,8 @@ All numbers come from one maintainer's own Claude Code history on macOS: about t
 - **Seen this before.** When a command fails, tokenmaxxing adds one line on how the same error was fixed earlier, but only when it's confident. It does the same when Claude starts a task that was already done.
 - **Nudges.** When a long tool loop runs in a large session, tokenmaxxing suggests handing it to a fresh helper agent. A forked agent that would copy more than about 50k tokens of context is refused, with the same suggestion (`[fork_guard] max_context_tokens`).
 - **Skill hints.** When a prompt clearly matches an installed skill, Claude gets a one-line pointer to it.
+- **Hand-back reports.** Every subagent brief gets one line asking for a final report that starts with `## Summary` (at most 1,500 chars, verdict included) and puts the rest under `## Details`. A report over 2,000 chars reaches the parent as the Summary plus the path of the full report, saved like a trimmed output; a report rides every later call of the parent. A report through the SubagentHandback tool (auto mode) that is over 3,000 chars with no Summary is refused once with the shape to use; the next attempt goes through whole. A report that comes back as the Agent tool's result (no SubagentHandback, e.g. headless `claude -p`) can't be refused, so one with no Summary passes whole. A background agent's result in headless runs arrives as a task notification and isn't touched.
+- **Subagent context cap.** A subagent whose own context passes 250k tokens (`[subagent_cap] tokens`) gets every tool call refused except SubagentHandback, with an ask to write its handoff note (done, left, file paths) and hand back. Main sessions are never capped.
 - **Evidence check.** When a subagent finishes, the claims in its report that cite files or commands are checked against those sources.
 - **Long-run stop check** (with long-run mode only): a turn that ends with open TASKS.md items gets nudged to continue.
 
@@ -74,6 +76,8 @@ Everything lives in `~/.config/tokenmaxxing/config.toml`. `tokenmaxxing init` wr
 | `[evidence] mode` | subagent citation check | `on` |
 | `[skill_router] mode` | skill hints | `on` |
 | `[loop_nudge] mode`, `[soldier] mode` | helper-agent nudges | `on` |
+| `[handback] mode` | Summary line in subagent briefs, Summary + saved path for long reports (`log`: record only) | `on` |
+| `[subagent_cap] mode`, `tokens` | subagents past this context may only hand back (`log`: record only) | `on`, `250000` |
 | `[transitions] mode` | Now-block backup, ticked-item move, re-inject after `/clear` and restart (`off`: compaction checkpoint only) | `on` |
 | `[recall] seen_error`, `[recall] dedup` | "seen this before" hints | `on` |
 | `[mcp_servers] default_off` | MCP servers kept off in every project (`tokenmaxxing mcp off NAME`, `on NAME`) | empty |
