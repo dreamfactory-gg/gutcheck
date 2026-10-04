@@ -1,6 +1,6 @@
 ---
 name: recall
-description: Search past sessions, memory (including archives), Codex logs and git history for an earlier decision, fix or approach.
+description: Search past sessions, memory, Codex logs and git history for an earlier decision, fix or approach.
 argument-hint: "<question>"
 disable-model-invocation: true
 allowed-tools: Bash(*/bin/gutcheck recall*)

@@ -1,6 +1,6 @@
 ---
 name: init
-description: Build or rebuild the personal gutcheck config (~/.config/gutcheck/config.toml) from this user's own history.
+description: Build or rebuild ~/.config/gutcheck/config.toml from this user's history.
 disable-model-invocation: true
 allowed-tools: Bash(*/bin/gutcheck init*), Bash(*/bin/gutcheck mcp*)
 ---

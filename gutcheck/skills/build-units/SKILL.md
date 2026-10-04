@@ -1,6 +1,6 @@
 ---
 name: build-units
-description: Plan, parallelise and finish units of build work. Concrete done bars in TASKS.md, parallel builders in worktrees that state their files first, and when a unit is done, background checks that only read (Codex review, test-gap, duplication/complexity, docs-drift), an independent grader, evidence checks on reports, and an explainer page. Use when splitting work across builders or when a unit is finished.
+description: Split build work across parallel worktree builders with TASKS.md done bars, and finish a unit with read-only checks, a grader and an explainer.
 ---
 
 # Build units: done bars, parallel builders, background checks

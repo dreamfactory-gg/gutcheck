@@ -1,6 +1,6 @@
 ---
 name: jev
-description: Triage large text without reading it: filter logs, test output, search hits, run logs and subagent reports; locate functions in big files from an outline; route to the right pages of a docs site. Uses the `gutcheck jev` CLI (Jev, a cheap calibrated yes/no/choice model) plus ast-outline and ast-grep. Use before reading anything over ~200 lines where only part matters.
+description: Before reading 200+ lines where only part matters (logs, test output, search hits, big files, docs sites): triage with `gutcheck jev` and ast tools.
 ---
 
 # Reading less: `gutcheck jev`, outlines, docs routing

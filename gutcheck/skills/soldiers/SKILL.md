@@ -1,6 +1,6 @@
 ---
 name: soldiers
-description: Reuse a helper subagent across a long tool loop instead of starting fresh each time, and retire it with a handoff note when it's large, off-topic or cold. Use when handing a long tool-heavy loop (e.g. Studio, a browser, a debugger) to a subagent, or before resuming one.
+description: When handing a long tool loop (Studio, browser, debugger) to a subagent: reuse it while warm, retire it with a handoff note when large, off-topic or cold.
 ---
 
 # Persistent soldiers: reuse while warm, retire with a note

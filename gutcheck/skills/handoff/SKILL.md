@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Tidy TASKS.md before a planned restart, /clear or compaction so the next context knows exactly what we're working on. Updates the `## Now` block, moves ticked items to REPORT.md, records running background jobs as open items. Use when the owner says they'll restart or clear, or asks for a handoff.
+description: Before a planned restart, /clear or compaction, or on a handoff ask: update TASKS.md `## Now`, move done items to REPORT.md, record running jobs.
 ---
 
 # Handoff: leave TASKS.md so the next context can carry on
