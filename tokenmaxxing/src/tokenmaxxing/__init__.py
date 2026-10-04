@@ -27,6 +27,6 @@ config.configure("tokenmaxxing", {
     "subagent_cap": {"mode": "log", "tokens": 250_000},
     # Compact the main session between turns once its context passes main_tokens (hooks/register.ts), at most once
     # every 3 turns. Absolute, not a share of the window: what a token costs doesn't depend on the window's size.
-    "compact": {"mode": "on", "main_tokens": 400_000},
+    "compact": {"mode": "log", "main_tokens": 400_000},
     "transitions": {"mode": "on"},  # Now-block backup, ticked-item move, /clear and restart pickup (transitions.py)
 })
