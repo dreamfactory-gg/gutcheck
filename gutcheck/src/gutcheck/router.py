@@ -83,6 +83,7 @@ def prune_seen(days=7):
     """Drop per-session state older than `days` and background jobs that never ran."""
     cutoff = time.time() - days * 86400
     old = [p for sub in ("router_seen", "router_pending") for p in (config.STATE_DIR / sub).glob("*.json")]
+    old += (config.STATE_DIR / "read_gate").glob("*")
     for p in old:
         try:
             if p.stat().st_mtime < cutoff:

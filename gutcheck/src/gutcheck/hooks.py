@@ -160,6 +160,10 @@ def loop_nudge(inp):
             f"subagent can take it (skill `gutcheck:soldiers`); otherwise carry on.")
 
 
+def _user_text(text):
+    return isinstance(text, str) and not text.lstrip().startswith("<")
+
+
 def _calls_since_prompt(path, max_bytes=1_500_000, mark="gutcheck: long tool loop"):
     """(tool calls in the main thread since the owner's last prompt, whether a nudge was already given)."""
     try:
@@ -184,10 +188,10 @@ def _calls_since_prompt(path, max_bytes=1_500_000, mark="gutcheck: long tool loo
         m = d.get("message") or {}
         c = m.get("content") if isinstance(m, dict) else None
         if d.get("type") == "user":
-            if isinstance(c, str) and not c.lstrip().startswith("<"):
+            if _user_text(c):
                 break
             if isinstance(c, list) and any(isinstance(b, dict) and b.get("type") == "text" and
-                                           not b.get("text", "").lstrip().startswith("<") for b in c):
+                                           _user_text(b.get("text", "")) for b in c):
                 break
         elif d.get("type") == "assistant" and isinstance(c, list):
             calls += sum(1 for b in c if isinstance(b, dict) and b.get("type") == "tool_use")
@@ -196,7 +200,9 @@ def _calls_since_prompt(path, max_bytes=1_500_000, mark="gutcheck: long tool loo
 
 def pre_read(inp):
     """Safety net behind the settings deny list: secret-shaped files (.env.*, keys, credentials) can't be read by
-    Read or Grep, whatever their exact name; templates (.env.example, .sample, .template, .default) stay readable."""
+    Read or Grep, whatever their exact name; templates (.env.example, .sample, .template, .default) stay readable.
+    Read gate: the first whole-file Read in a session of a text file whose first 2,000 lines (what Read returns)
+    exceed read_gate.min_chars is denied with its size and how to read a range; the identical retry goes through."""
     from . import secretscan
     ti = inp.get("tool_input") or {}
     path = ti.get("file_path") or ti.get("path") or ""
@@ -208,6 +214,49 @@ def pre_read(inp):
                                          f"gutcheck: {os.path.basename(path)} holds secrets and isn't read into the "
                                          "conversation. Use key names only (`grep -o '^[A-Z_]*=' FILE`) or "
                                          "`gutcheck withsecret`."}})
+        return
+    if inp.get("tool_name") != "Read" or not path or any(k in ti for k in ("offset", "limit", "pages")):
+        return
+    import hashlib
+    from pathlib import Path
+    cfg = config.load().get("read_gate", {})
+    mode = cfg.get("mode", "on")
+    limit = cfg.get("min_chars", 30000)
+    if mode == "off":
+        return
+    p = (Path(inp.get("cwd") or os.getcwd()) / Path(path).expanduser()).resolve()
+    if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff",
+                            ".svg", ".ico", ".avif", ".heic", ".pdf", ".ipynb"):
+        return
+    try:
+        if not p.is_file() or os.path.getsize(p) <= limit:
+            return
+        with p.open(encoding="utf-8", newline="") as fh:
+            text = fh.read()
+    except (OSError, UnicodeError):
+        return
+    lines = text.splitlines(keepends=True)
+    if len(lines) < 10 or sum(map(len, lines[:2000])) <= limit:
+        return
+    session = inp.get("session_id")
+    marker = config.STATE_DIR / "read_gate" / hashlib.sha256(json.dumps([session, str(p)]).encode()).hexdigest()
+    try:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        os.close(os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
+        retry = False
+    except FileExistsError:
+        retry = True
+    except OSError:
+        return
+    log("read_gate", {"session": session, "agent": inp.get("agent_id"), "path": str(p), "chars": len(text),
+                      "mode": mode, "decision": "retry" if retry else "denied"})
+    if mode == "on" and not retry:
+        emit({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                     "permissionDecisionReason":
+                                         f"gutcheck: {p} has {len(lines):,} lines and {len(text):,} chars. "
+                                         "Find the needed lines with grep -n, then Read that range with offset/limit. "
+                                         "Edit and Write need a Read of the part they change. "
+                                         "If the whole file really is needed, repeat the same Read and it goes through."}})
 
 
 def post_failure(inp):
@@ -245,14 +294,16 @@ def post_tool_trim(inp):
         return
     ti = inp.get("tool_input") or {}
     try:
-        purpose = " ".join([ti.get("description", ""), _purpose(inp, include_user=True)])
+        purpose = _purpose(inp, include_user=not inp.get("agent_id"))
+        brief = _purpose(inp, include_user=True) if inp.get("agent_id") else ""
     except Exception:
-        purpose = ""
+        purpose, brief = "", ""
     out = {}
     for key in ("stdout", "stderr"):
         text = resp[key]
         view = mcpout.render(name, text, "read", mcpout.DEFAULT_LEVEL["read"], cfg,
-                             lambda ext: mcpout.save(name, text, ext), purpose=purpose, command=ti.get("command", ""))
+                             lambda ext: mcpout.save(name, text, ext), purpose=purpose, command=ti.get("command", ""),
+                             brief=brief, description=ti.get("description", ""), compact=True)
         if view is not None:
             out[key] = view
             log("tool_trim", {"session": inp.get("session_id"), "tool_use_id": inp.get("tool_use_id"),
@@ -341,7 +392,7 @@ def _purpose(inp, max_chars=400, include_user=False):
             continue
         m = d.get("message") or {}
         content = m.get("content")
-        if include_user and d.get("type") == "user" and isinstance(content, str):
+        if include_user and d.get("type") == "user" and _user_text(content):
             return " ".join([purpose, content])
         if not purpose and d.get("type") == "assistant" and isinstance(content, list):
             txt = " ".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")

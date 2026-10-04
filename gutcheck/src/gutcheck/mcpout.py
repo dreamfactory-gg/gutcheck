@@ -153,9 +153,11 @@ FAIL_RE = re.compile(
     r"\babort(ed)?\b|\bdenied\b|reject(ed|ion|s)?\b|\bmissing\b|forbidden|unauthori[sz]ed|timed? ?out\b|\binvalid\b|not found|no such|cannot|"
     r"can't|couldn't|could not|unable to|refused|mismatch|unexpected|assert|attempt to (index|call|perform|compare|"
     r"concatenate|get)|infinite yield|stack begin|is not a valid member|\bexpected\b.*\bgot\b|\bnil\b.*\bvalue\b|"
-    r"✗|❌|\bFAIL\b|\bERR\b)")
+    r"^\s*(?:expected|received):|✗|❌|\bFAIL\b|\bERR\b)")
 WARN_RE = re.compile(r"(?i)(\bwarn(ing|ings)?\b|⚠)")
 _STACK_RE = re.compile(r"^\s*(Script '|Stack (Begin|End)|  ?Line \d+|\s+at |\s+File \")")
+_ASSERT_DIFF = re.compile(r"^\s*- Expected\b")  # jest's "- Expected  - 1"; its -/+ lines below hold the values
+_DIFF_LINE = re.compile(r"^\s*[-+]\s")
 
 
 def name_kind(tool):
@@ -173,6 +175,8 @@ _ZERO = re.compile(r'^\w*"?\s*(?:[:=]\s*(?:0\b|false\b|nil\b|none\b|null\b|\[\]|
 
 def _real_failure(line, m):
     """A match that isn't a zero count ("err":0, failures=0, errors: 0, 0 errors)."""
+    if m.group().strip().lower() in ("expected:", "received:"):
+        return True  # zero is assertion detail here, not a zero failure count
     if _ZERO.match(line[m.end():m.end() + 12]):
         return False
     return not re.search(r"\b(0|no|zero)\s+\W?$", line[max(0, m.start() - 6):m.start()], re.I)
@@ -201,13 +205,14 @@ def failure_lines(text, limit=40, stack=3, long_line=400):
     lines = text.splitlines()
     out, seen = [], set()
     for i, ln in enumerate(lines):
-        if _is_failure(ln):
-            for j in range(i, min(len(lines), i + 1 + stack)):
-                if j == i or _STACK_RE.match(lines[j]):
+        diff = _ASSERT_DIFF.match(ln)
+        if diff or _is_failure(ln):
+            for j in range(i, min(len(lines), i + 1 + (12 if diff else stack))):
+                if j == i or _STACK_RE.match(lines[j]) or diff and _DIFF_LINE.match(lines[j]):
                     if j not in seen:
                         seen.add(j)
-                        out.append((j + 1, _snips(lines[j]) if len(lines[j]) > long_line else lines[j]))
-                elif j > i:
+                        out.append((j + 1, _snips(lines[j], width=long_line * 2 // 5) if len(lines[j]) > long_line else lines[j]))
+                elif j > i and not diff:
                     break
         if len(out) >= limit:
             break
@@ -233,21 +238,23 @@ def _numbered(items, width=0):
     return "\n".join(f"{n:>{width}}: {ln if len(ln) <= 1200 else ln[:1200] + ' …'}" for n, ln in items)
 
 
-def _dedupe(items):
+def _dedupe(items, normalize=True):
     """Collapse lines that are identical after normalising numbers: keep the first, count the rest."""
     first, count = {}, {}
     for n, ln in items:
-        k = norm_line(ln)
+        k = norm_line(ln) if normalize else ln.strip()
         if k not in first:
             first[k] = (n, ln)
         count[k] = count.get(k, 0) + 1
     return [(n, ln + (f"  (×{count[k]})" if count[k] > 1 else "")) for k, (n, ln) in first.items()]
 
 
-def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None, purpose="", command=""):
+def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None, purpose="", command="", brief="",
+           description="", *, compact=False):
     """Compact view of `text` at `level` for a tool of `kind`, or None to pass it through.
     save_fn(ext) -> saved path (None for a dry run: learning and evals); routine: set of line keys seen before in
-    this tool's output (log kind); judge(lines) -> subset of lines that show a failure or something unexpected."""
+    this tool's output (log kind); judge(lines) -> subset of lines that show a failure or something unexpected.
+    compact: Bash output, cut to the lines its purpose (agent text, user prompt, brief, description) asks for."""
     if level == "pass" or not text:
         return None
     kind = kind if kind in MAX_LEVEL else "read"
@@ -270,12 +277,12 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
         return _log_view(text, nlines, save_fn, routine or set(), judge, cfg)
     if level == "outline":
         return _outline_view(tool, text, nlines, save_fn, cfg)
-    if purpose:
-        try:
-            return _headtail_view(tool, text, nlines, save_fn, cfg, purpose, command)
-        except Exception:
-            pass  # purpose selection must never prevent the ordinary trim
-    return _headtail_view(tool, text, nlines, save_fn, cfg)
+    if not compact:
+        return _headtail_view(text, nlines, save_fn, cfg)
+    try:
+        return _bash_view(text, nlines, save_fn, cfg, purpose, command, brief, description)
+    except Exception:
+        return _bash_view(text, nlines, save_fn, cfg)  # purpose selection must never prevent the ordinary trim
 
 
 def _fail_block(text, limit=20):
@@ -291,67 +298,121 @@ def _middle_failures(text, head, tail, limit=20):
     return [(n + start, ln) for n, ln in failure_lines(mid, limit)]
 
 
+# Stands in for the saved path while a view is sized, so the file is written only when the view is used.
+_SAVED = "<saved file>".ljust(150)
+
+
+def _omitted(text, h, t, nlines, path, extra):
+    """Head, the omitted-part marker naming the saved file, `extra`, tail."""
+    return (h + f"\n\n… [gutcheck: {len(text) - len(h) - len(t):,} chars omitted; full output ({len(text):,} chars, "
+            f"{nlines:,} lines) saved to {path}; Read or grep it] …\n{extra}\n" + t)
+
+
 _PURPOSE_WORDS = re.compile(r"\b\w{3,}\b")
 _PURPOSE_STOP = set("the and for that this with from into what which when where how are was were has have "
                     "had will would could should not but you your its our their they them then than only "
                     "please tell show read run output command file lines reply nothing else".split())
 
 
-def _purpose_lines(text, purpose, command):
+def _purpose_lines(text, purpose, command, ties="", max_chars=3000):
+    """Numbered lines matching the purpose's words (with a line either side); `ties` words only rank lines."""
     def words(s):
         return set(_PURPOSE_WORDS.findall(s.lower()))
 
     terms = words(purpose) - words(command) - _PURPOSE_STOP
+    ties = words(ties) - words(command) - _PURPOSE_STOP - terms
     if not terms:
         return ""
     lines = text.splitlines()
-    hits = [words(ln) & terms for ln in lines]
+    hits = [words(ln) & (terms | ties) for ln in lines]
     counts = Counter(term for hit in hits for term in hit)
     weights = {term: math.log(len(lines) / count) for term, count in counts.items()}
-    scores = [sum(weights[term] for term in hit) for hit in hits]
+    scores = [(sum(weights[term] for term in hit & terms), sum(weights[term] for term in hit & ties)) for hit in hits]
     kept = {}
-    for i in sorted(range(len(lines)), key=lambda i: (-scores[i], i)):
-        if scores[i] <= 0:
+    for i in sorted(range(len(lines)), key=lambda i: (-scores[i][0], -scores[i][1], i)):
+        if scores[i][0] <= 0:
             break
         group = {j + 1: lines[j] for j in range(max(0, i - 1), min(len(lines), i + 2))}
         candidate = kept | group
-        if len(candidate) <= 40 and len(_numbered(sorted(candidate.items()))) <= 3000:
+        if len(candidate) <= 40 and len(_numbered(sorted(candidate.items()))) <= max_chars:
             kept = candidate
     return _numbered(sorted(kept.items()))
 
 
-def _headtail_view(tool, text, nlines, save_fn, cfg, purpose="", command=""):
-    matches = _purpose_lines(text, purpose, command) if purpose else ""
-    block = ("\n[gutcheck: lines matching the call's purpose (line: text)]\n" + matches + "\n") if matches else ""
-    jv = json_view(text) if not block else None
+def _headtail_view(text, nlines, save_fn, cfg):
+    jv = json_view(text)
     if jv is not None:
         p = save_fn(".json")
         return (f"[gutcheck: {len(text):,}-char JSON output saved to {p}; structure below. Read or `jq` the file "
                 f"for the values you need.]\n{jv}" + _fail_block(text))
-    ext = code_ext(text) if tool != "Bash" and not block else None
+    ext = code_ext(text)
     cv = code_view(text, ext) if ext else None
     if cv:
         p = save_fn(ext)
         return (f"[gutcheck: {len(text):,}-char code output saved to {p}; outline below (line ranges refer to "
                 f"the saved file). Read the ranges you need.]\n{cv}")
     p = save_fn(".txt")
-    head, tail = cfg.get("head_chars", 2500), cfg.get("tail_chars", 1500)
-    if block:
-        errors = _numbered(_dedupe(failure_lines(text, limit=20)))
-        budget = max(0, len(text) // 2 - len(block) - len(errors) - len(str(p)) - 300)
-        head, tail = min(head, 1000, budget * 5 // 8), min(tail, 500, budget * 3 // 8)
-    h, t = head_tail(text, head, tail)
-    if block and not tail:
-        t = ""
+    h, t = head_tail(text, cfg.get("head_chars", 2500), cfg.get("tail_chars", 1500))
     mid = _middle_failures(text, h, t)
-    if block:
-        mid = _dedupe(mid)
     extra = ("\n[gutcheck: error lines in the omitted part]\n" + _numbered(mid) + "\n") if mid else ""
-    out = (h + f"\n\n… [gutcheck: {len(text) - len(h) - len(t):,} chars omitted; full output ({len(text):,} chars, "
-           f"{nlines:,} lines) saved to {p}; Read or grep it] …\n{extra}{block}\n" + t)
-    if block and len(out) >= len(text) / 2:
-        return _headtail_view(tool, text, nlines, save_fn, cfg)
-    return out
+    return _omitted(text, h, t, nlines, p, extra)
+
+
+def _error_block(title, items, cap=20):
+    """Up to `cap` error lines under `title`, and how many more the saved file holds."""
+    more = len(items) - cap
+    return (f"\n[gutcheck: {title}]\n" + _numbered(items[:cap])
+            + (f"\n… {more} more error lines in the saved file" if more > 0 else "") + "\n") if items else ""
+
+
+def _bash_view(text, nlines, save_fn, cfg, purpose="", command="", brief="", description=""):
+    """Bash output: the lines its purpose asks for and its error lines, in at most half the output (2.5k chars
+    under 8k, 3k above while the purpose lines fit), or None to pass it through. Under 8k, a diff, JSON, or output
+    no purpose word from the agent or the user matches passes through: a view would only lose its meaning."""
+    small = len(text) < 8000
+    if small:
+        if re.search(r"^(?:diff --git |@@)", text, re.M):
+            return None
+        try:
+            json.loads(text)
+            return None
+        except ValueError:
+            pass
+    cap = min(len(text) // 2, 2500 if small else 3000)
+    fails = _dedupe(failure_lines(text, limit=nlines, long_line=200), normalize=False)
+    budget = max(0, cap - len(_error_block("", fails)) - 300)
+    terms, ties = (purpose, f"{brief} {description}") if small else (f"{description} {purpose}", brief)
+    matches = _purpose_lines(text, terms, command, ties, min(1200, budget))
+    if small and not matches:
+        return None
+    block = ("\n[gutcheck: lines matching the call's purpose (line: text)]\n" + matches + "\n") if matches else ""
+    jv = json_view(text) if not block else None
+    if jv is not None:
+        ext = ".json"
+
+        def make(p):
+            return (f"[gutcheck: {len(text):,}-char JSON output saved to {p}; structure below. Read or `jq` the file "
+                    f"for the values you need.]\n{jv}" + _error_block("error lines (line: text)", fails))
+    else:
+        ext = ".txt"
+        lines = text.splitlines(keepends=True)
+        head = min(len("".join(lines[:10])), max(0, budget - len(block)) * 5 // 8)
+        tail = min(len("".join(lines[-10:])), max(0, budget - len(block)) * 3 // 8)
+
+        def make(p):
+            h, t = head_tail(text, head, tail)
+            t = t if tail else ""
+            lo, hi = text.count("\n", 0, len(h)) + 1, text.count("\n", 0, len(text) - len(t)) + 1
+            mid = [(n, ln) for n, ln in fails if lo <= n <= hi]
+            return _omitted(text, h, t, nlines, p, _error_block("error lines in the omitted part", mid) + block)
+
+        if not small and (not block or len(make(_SAVED)) > cap):
+            block = ""
+            room = max(0, len(text) // 2 - len(_error_block("", fails)) - 300 - len(_SAVED))
+            head, tail = min(cfg.get("head_chars", 2500), room * 5 // 8), min(cfg.get("tail_chars", 1500), room * 3 // 8)
+    if len(make(_SAVED)) > (cap if small else len(text) // 2):
+        return None
+    return make(save_fn(ext))
 
 
 def _outline_view(tool, text, nlines, save_fn, cfg):
@@ -373,8 +434,7 @@ def _outline_view(tool, text, nlines, save_fn, cfg):
     h, t = head_tail(text, cfg.get("outline_head_chars", 1000), cfg.get("outline_tail_chars", 500))
     mid = _middle_failures(text, h, t)
     extra = ("\n[gutcheck: error lines in the omitted part]\n" + _numbered(mid) + "\n") if mid else ""
-    return (h + f"\n\n… [gutcheck: {len(text) - len(h) - len(t):,} chars omitted; full output ({len(text):,} chars, "
-            f"{nlines:,} lines) saved to {p}; Read or grep it] …\n{extra}\n" + t)
+    return _omitted(text, h, t, nlines, p, extra)
 
 
 def _log_view(text, nlines, save_fn, routine, judge, cfg):
@@ -401,16 +461,17 @@ def _log_view(text, nlines, save_fn, routine, judge, cfg):
         except Exception:
             unexpected = fresh  # judge unavailable: show every unseen line (fail open, show more)
     cap = cfg.get("log_max_lines", 60)
-    p = save_fn(".log")
     body = sorted(_dedupe(fails) + _dedupe(warns) + unexpected[:cap])
     more = len(unexpected) - cap if len(unexpected) > cap else 0
-    head = (f"[gutcheck: {nlines:,}-line log; {len(fails)} error, {len(warns)} warning, {len(unexpected)} unexpected "
-            f"line(s); full output saved to {p} (numbers below are its line numbers)"
-            + (f"; {more} more unexpected lines in the file" if more else "") + "]")
     if not body:
-        return f"✓ no errors, warnings or unexpected lines in {nlines:,} lines · full output saved to {p}"
-    out = head + "\n" + _numbered(body)
-    return out if len(out) < len(text) * 0.9 else None
+        return f"✓ no errors, warnings or unexpected lines in {nlines:,} lines · full output saved to {save_fn('.log')}"
+
+    def make(p):
+        return (f"[gutcheck: {nlines:,}-line log; {len(fails)} error, {len(warns)} warning, {len(unexpected)} "
+                f"unexpected line(s); full output saved to {p} (numbers below are its line numbers)"
+                + (f"; {more} more unexpected lines in the file" if more else "") + "]\n" + _numbered(body))
+
+    return make(save_fn(".log")) if len(make(_SAVED)) < len(text) * 0.9 else None
 
 
 def view(tool, text, cfg):

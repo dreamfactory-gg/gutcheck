@@ -125,25 +125,26 @@ def ledger():
     (HERE / "big_source" / "ledger.py").write_text("\n".join(parts).rstrip() + "\n")
 
 
-def freeze():
-    """A pip-freeze listing (~20k chars) with the asked-for pin in the middle, where a head+tail view misses it."""
+def freeze(n=760, folder="freeze"):
+    """A pip-freeze listing with the asked-for pin in the middle, where a head+tail view misses it."""
     r = random.Random(11)
     syl = ["al", "bre", "cor", "dax", "el", "fen", "gor", "hul", "ix", "jor", "kel", "lum", "mor", "nex", "or", "pyr",
            "qua", "ros", "sil", "tor", "ul", "vex", "wyn", "zor"]
     names = set()
-    while len(names) < 760:
+    while len(names) < n:
         names.add("".join(r.choice(syl) for _ in range(r.randint(2, 3))) + r.choice(["", "-py", "-core", "kit"]))
     names.discard("quillstone")
     lines = [f"{n}=={r.randint(0, 9)}.{r.randint(0, 30)}.{r.randint(0, 12)}" for n in sorted(names)]
     lines.insert(len(lines) // 2, "quillstone==4.17.2")
-    (HERE / "freeze" / "freeze.txt").write_text("\n".join(lines) + "\n")
+    (HERE / folder).mkdir(exist_ok=True)
+    (HERE / folder / "freeze.txt").write_text("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":
     (HERE / "ci_log").mkdir(exist_ok=True)
     (HERE / "big_source").mkdir(exist_ok=True)
-    (HERE / "freeze").mkdir(exist_ok=True)
     build_log()
     ledger()
     freeze()
+    freeze(270, "freeze_small")
     print("fixtures written")

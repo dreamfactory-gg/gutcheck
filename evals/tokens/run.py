@@ -112,6 +112,14 @@ TASKS = {
         fixture="freeze", check=check_pin,
         prompt="Run `cat freeze.txt` (that exact command, once) and read its output: which version of quillstone is "
                "pinned? Reply with only the version."),
+    "bash_lookup_5k": dict(
+        fixture="freeze_small", check=check_pin,
+        prompt="Run `cat freeze.txt` (that exact command, once) and read its output: which version of quillstone is "
+               "pinned? Reply with only the version."),
+    "big_read": dict(
+        fixture="big_source", check=check_source, wrong_ok=1 / 3,
+        prompt="Use the Read tool on ledger.py, then tell me what late_fee(25000, 20) returns. Reply with only the "
+               "integer."),
     "big_source": dict(
         fixture="big_source", check=check_source, wrong_ok=1 / 3,   # low-effort sonnet sometimes misreads the math
         prompt="In ledger.py, what does late_fee(25000, 20) return? Reply with only the integer."),

@@ -70,9 +70,10 @@ Start Claude Code. `gutcheck init` does the rest: it sets up its Python environm
 **Automatic, through hooks:**
 - **Key blocker.** A prompt that contains a known key format is blocked before it's sent.
 - **Secret files.** `.env`, private keys and credential files can't be read into the chat. Templates like `.env.example` stay readable.
+- **Big file Reads.** A whole-file Read whose first 2,000 lines exceed 30,000 chars is refused once: find the lines with `grep -n`, then Read that range with offset/limit before editing, or repeat the same Read if you need it all. Images, PDFs, notebooks and nearly single-line files stay untouched.
 - **Bash check.** Before a command runs, gutcheck looks for destructive, secret-printing or hidden (decoded-then-run) commands and makes Claude ask you. It starts in logging mode and switches itself on once its own logs show it's fast and quiet enough.
 - **MCP output.** Large tool answers become a compact view plus a saved file, per tool, based on what Claude actually used from that tool before. Screenshots are never touched.
-- **Bash output.** Long command output becomes a compact view with the full output saved to a file. The view includes lines that match what the call was for. Commands reading gutcheck's saved outputs stay untouched.
+- **Bash output.** Command output over 4,000 chars can become a compact view with the full output saved to a file. The view includes lines that match what the call was for. Commands reading gutcheck's saved outputs stay untouched.
 - **Durable transitions.** Before a compaction, a `/clear` or the end of a session, gutcheck writes a checkpoint that starts with "WHERE WE ARE": the `## Now` block from TASKS.md (goal, item in progress, next step, your latest ask, running jobs), then open tasks, your standing instructions word for word, running jobs, files and branches. It goes back in after the compaction or `/clear`, and into a new session in the same project if the last one ended under 6 hours ago and no other session is running there (`--resume` and `--continue` get nothing extra). If the session didn't keep the Now block current (TASKS.md unchanged since your last prompt), gutcheck writes one from the transcript (one `claude -p` turn, Opus at low effort; on exit only when the session keeps a TASKS.md). Ticked items move from TASKS.md to REPORT.md at each transition; open items are never touched. Interactive sessions only: headless `claude -p` runs are skipped. `/gutcheck:handoff` has Claude tidy TASKS.md before a planned restart.
 - **Seen this before.** When a command fails, gutcheck adds one line on how the same error was fixed earlier, but only when it's confident. It does the same when Claude starts a task that was already done.
 - **Nudges.** When a long tool loop runs in a large session, gutcheck suggests handing it to a fresh helper agent. A forked agent that would copy more than about 50k tokens of context is refused, with the same suggestion (`[fork_guard] max_context_tokens`).
@@ -106,6 +107,7 @@ Everything lives in `~/.config/gutcheck/config.toml`. `gutcheck init` writes it,
 | `[keyblock] mode` | pasted-key blocker | `on` |
 | `[mcp_trim] mode` | compact views for large MCP output | `on` |
 | `[tool_trim] mode` | compact views for long Bash output (`log`: record only, `off`: untouched) | `on` |
+| `[read_gate] mode`, `min_chars` | once-only gate on big whole-file Reads (`log`: record only, `off`: untouched) | `on`, `30000` |
 | `[stop] mode` | long-run stop check (only with long-run mode) | `log` |
 | `[context] mode` | loading the right doc and memory sections per prompt | `log` |
 | `[evidence] mode` | subagent citation check | `on` |
