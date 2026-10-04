@@ -13,6 +13,7 @@ let turns = GAP
 // Fixed prefix: decided at session start and never changed after (a changed attachment re-writes the cache).
 let prefix: { mode: Mode } = { mode: 'off' }
 let usedServers: Set<string> | undefined   // MCP server slugs called in the last 30 days; unknown before a refresh
+const prefixLogged = new Set<string>()
 
 // Long tool inputs: a long Bash command or Write content is recorded as a stub naming its saved copy (at turn.step,
 // the one place the recorded input can change), and the call runs with the original (restored at tool.call, above
@@ -66,8 +67,12 @@ export const register: Register = (on) => {
     if (prefix.mode === 'off' || out.text === null) return out
     const text = prefixText(e.type, out.text, e.agentId)
     if (text === out.text) return out
-    await log($, 'prefix', { mode: prefix.mode, type: e.type, agent: e.agentId ?? null, chars: out.text.length,
-                             out_chars: text?.length ?? 0 })
+    const key = `${e.type} ${e.agentId ?? ''}`
+    if (!prefixLogged.has(key)) {   // once per kind and loop: the reminder comes back on every request
+      prefixLogged.add(key)
+      await log($, 'prefix', { mode: prefix.mode, type: e.type, agent: e.agentId ?? null, chars: out.text.length,
+                               out_chars: text?.length ?? 0 })
+    }
     return prefix.mode === 'on' ? { text } : out
   })
 
