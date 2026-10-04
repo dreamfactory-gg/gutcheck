@@ -63,6 +63,15 @@ def main(args):
     nud = _read("loop_nudge", since)
     if nud:
         print(f"Loop nudges (hand tool-heavy loops to a subagent): {len(nud)}")
+    hb = [d for d in _read("handback", since) if d.get("via")]
+    if hb:
+        cut = [d for d in hb if d["decision"] == "head"]
+        print(f"Hand-back reports: {len(hb)}; {len(cut)} cut to the part before Details + path "
+              f"({sum(d['chars'] for d in cut) // 1000}k -> {sum(d['out_chars'] for d in cut) // 1000}k chars)")
+    cap = _read("subagent_cap", since)
+    if cap:
+        print(f"Subagent context cap: {len(cap)} tool calls past the cap in {len({d.get('agent') for d in cap})} "
+              f"agents; {dict(Counter(d.get('decision') for d in cap))}")
     li = _read("lint", since)
     if li:
         print(f"Edit check: {len(li)} runs, {len({d['file'] for d in li if d.get('findings')})} files with findings; "

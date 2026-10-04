@@ -97,7 +97,9 @@ def _safe(name, fn, *args):
 
 
 def main(args, handlers):
-    """Run the handler for this event: "<Event>:<tool>" for tool events, "<Event>:mcp__" for any MCP tool."""
+    """Run the handler for this event: "<Event>:<tool>" for tool events, "<Event>:mcp__" for any MCP tool. A tool
+    event's "<Event>:*" handler runs first; when it returns hook output, that output stands and the tool's own
+    handler is skipped."""
     event = args[0] if args else ""
     try:
         inp = json.load(sys.stdin)
@@ -106,6 +108,11 @@ def main(args, handlers):
     key = event
     if event in ("PreToolUse", "PostToolUse", "PostToolUseFailure"):
         key = f"{event}:{inp.get('tool_name')}"
+        first = handlers.get(f"{event}:*")
+        out = first and _safe(f"{event}:*", first, inp)
+        if out:
+            emit(out)
+            return
     h = handlers.get(key)
     if h is None and str(inp.get("tool_name", "")).startswith("mcp__"):
         h = handlers.get(f"{event}:mcp__")

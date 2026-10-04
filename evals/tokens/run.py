@@ -15,7 +15,8 @@ Usage (summed over every model the run used, from the result JSON's modelUsage):
 Only cost is gated: a Claude Code release can turn cache writes into reads, which moves the raw counts in opposite
 directions while the price goes the other way.
 
-  run.py measure  --plugin DIR [--runs N] [--tasks a,b] [--out FILE]   run the suite, write results
+  run.py measure  --plugin DIR [--runs N] [--tasks a,b] [--out FILE] [--config TOML]
+                                     run the suite (gated tasks unless --tasks names others), write results
   run.py gate     --results FILE [--ceilings FILE]                     table; exit 1 on a failed check or cost ceiling
   run.py lower    --results FILE --ceilings FILE --sha SHA             lower a ceiling when the costliest run shows the higher level
   run.py raise    --results FILE --ceilings FILE --sha SHA --task T --reason TEXT   (maintainers, via the release script)
@@ -82,6 +83,13 @@ def check_edit(res, wd):
     return True, ""
 
 
+def check_handback(res, wd):
+    got = dict(re.findall(r"^\s*([123])\s*[:.)]\s*(.+?)\s*$", res, re.M))
+    ok = (got.get("1", "").strip("`*").upper() == "BLOCK" and "store.py" in got.get("2", "")
+          and re.sub(r"\D", "", got.get("3", "")) == "15")
+    return ok, "" if ok else f"answer {res.strip()[:120]!r}"
+
+
 def check_mcp_log(res, wd):
     ok = "deploy-canary" in res and "HC-7731" in res
     return ok, "" if ok else f"answer {res.strip()[:80]!r}"
@@ -127,6 +135,18 @@ TASKS = {
         fixture="small_repo", git=True, check=check_edit,
         prompt="The unit tests in this repo fail (run them with `python3 -m unittest -q`). Fix the bug in the "
                "source with a one-line change; don't edit the tests. Reply with one short sentence when done."),
+    "handback_cap": dict(
+        fixture="audit_repo", check=check_handback, tools="Agent", gate=False,   # measured on request, never gated
+        prompt="Delegate an audit of this repo to one subagent with the Agent tool (subagent_type general-purpose) "
+               "and this brief, word for word: 'Audit every .py file under ledgerkit/ for bugs and security problems. "
+               "Organise the report by file, in path order, and begin each file's section with its line count (from "
+               "`wc -l`). For each finding give file:line, severity (high/medium/low), a three-sentence explanation "
+               "and a suggested fix with a short code snippet. End with an overall verdict: SHIP, or BLOCK if any "
+               "finding is high severity.' "
+               "Answer only from what the subagent reports (its report, and any file it points you to); don't open "
+               "the repo's files yourself. 1. What is the verdict? 2. Which file has the SQL injection? 3. How many "
+               "lines does ledgerkit/notify.py have, per the audit? Reply with exactly three lines: `1: SHIP or "
+               "BLOCK`, `2: file path`, `3: number`."),
     "mcp_log": dict(
         mcp=True, check=check_mcp_log,
         prompt="Use the ci-fixture MCP tool fetch_ci_logs for run 4411. Which job failed, and what is its error "
@@ -140,7 +160,9 @@ TASKS = {
 
 # untimed runs before round 1 so every measured run reads the same warm prompt cache (with and without MCP tools)
 WARMUPS = {"_warm": dict(prompt="Reply with the single word: ok", check=lambda res, wd: (True, "")),
-           "_warm_mcp": dict(prompt="Reply with the single word: ok", mcp=True, check=lambda res, wd: (True, ""))}
+           "_warm_mcp": dict(prompt="Reply with the single word: ok", mcp=True, check=lambda res, wd: (True, "")),
+           "_warm_agent": dict(prompt="Reply with the single word: ok", tools="Agent",
+                               check=lambda res, wd: (True, ""))}
 
 
 # ---- environment ------------------------------------------------------------------------------------------------
@@ -151,7 +173,7 @@ def clean_env():
             if k in keep or not (k.startswith("CLAUDE") or k.startswith(("GUTCHECK_", "TOKENMAXXING_")) or k.startswith("ANTHROPIC_MODEL"))}
 
 
-def prepare(root, plugin):
+def prepare(root, plugin, config=""):
     """Shared, read-only inputs for every run: a fake ~/.claude with made-up skills, the skill index built from
     it, a config file (engine defaults, so `init` never runs) and fresh refresh stamps."""
     base = root / "base"
@@ -159,7 +181,7 @@ def prepare(root, plugin):
     shutil.copytree(FIX / "skills", claude_dir / "skills")
     for sub in ("state", "config", "data"):
         (base / sub).mkdir(parents=True)
-    (base / "config" / "config.toml").write_text("# token eval: engine defaults\n")
+    (base / "config" / "config.toml").write_text("# token eval: engine defaults\n" + config)
     for stamp in ("refresh", "mcpwaste"):
         (base / "state" / f"{stamp}.stamp").write_text("")
     env = dict(clean_env(), **iso_env(base, claude_dir, root), PYTHONPATH=str(plugin / "src"))
@@ -193,10 +215,11 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
         subprocess.run(["git", "init", "-q"], cwd=wd, check=True)
         subprocess.run(g + ["add", "-A"], cwd=wd, check=True)
         subprocess.run(g + ["commit", "-qm", "fixture"], cwd=wd, check=True)
-    allowed = TOOLS
+    tools = ",".join(filter(None, (TOOLS, spec.get("tools"))))   # e.g. Agent, only for the task that needs it
+    allowed = tools
     cmd = ["claude", "-p", spec["prompt"], "--output-format", "json", "--model", model, "--effort", EFFORT,
            "--plugin-dir", str(plugin), "--setting-sources", "", "--strict-mcp-config",
-           "--permission-mode", "dontAsk", "--tools", TOOLS,
+           "--permission-mode", "dontAsk", "--tools", tools,
            "--max-turns", MAX_TURNS, "--add-dir", str(d / "data")]
     if spec.get("mcp"):
         cfg = d / "mcp.json"
@@ -221,6 +244,10 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     rec["seconds"] = round(time.monotonic() - t0, 1)
     # the session is persisted (tokenmaxxing's hooks read its transcript, as in real use); drop it from ~/.claude after
     for t in Path.home().glob(f".claude/projects/*/{out.get('session_id') or '-'}.jsonl"):
+        if spec.get("tools") == "Agent":
+            rec["parent"] = _priced(_usage(t))
+            subs = list(t.with_suffix("").glob("subagents/agent-*.jsonl"))
+            rec["report_chars"] = max((len(_last_text(f)) for f in subs), default=0)
         t.unlink(missing_ok=True)
         shutil.rmtree(t.with_suffix(""), ignore_errors=True)
     mu = out.get("modelUsage") or {}
@@ -228,7 +255,7 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     u = {f: sum(m.get(key) or 0 for m in mu.values()) for f, key in (
         ("input", "inputTokens"), ("cache_write", "cacheCreationInputTokens"),
         ("cache_read", "cacheReadInputTokens"), ("output", "outputTokens"))}
-    rec["usage"] = u | {"cost": int(sum(u[f] * w for f, w in WEIGHTS.items()))}
+    rec["usage"] = _priced(u)
     rec["cost_usd"] = out.get("total_cost_usd")
     rec["turns"] = out.get("num_turns")
     res = out.get("result") or ""
@@ -246,6 +273,8 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     if len(rec["prompt_hooks"]) != 1:
         rec["ok"], rec["wrong"], rec["why"] = False, False, (f"the candidate's UserPromptSubmit hook ran {len(rec['prompt_hooks'])} "
                                                       "times (want 1: not loaded, or loaded twice)")
+    if spec.get("tools") == "Agent" and task in TASKS and rec["ok"] and rec.get("report_chars", 0) < 5000:
+        rec["skip"] = f"the subagent's report was short ({rec.get('report_chars')} chars)"   # nothing to cap: no data
     if spec.get("mcp") and task in TASKS:
         seen = [x.get("chars", 0) for x in _lines(d / "state" / "mcp_trim.jsonl")]
         rec["mcp_chars"] = seen
@@ -253,6 +282,34 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
             rec["ok"], rec["wrong"], rec["why"] = False, False, f"tokenmaxxing's MCP layer never saw the full tool output ({seen})"
     rec["result"] = res[:300]
     return rec
+
+
+def _priced(u):
+    return u | {"cost": int(sum(u[f] * w for f, w in WEIGHTS.items()))}
+
+
+def _usage(transcript):
+    """One session's own usage from its transcript (the last record of each API message; subagents live in their
+    own files): what the parent alone paid, apart from its subagents."""
+    by = {}
+    for d in _lines(transcript):
+        m = d.get("message") if isinstance(d.get("message"), dict) else {}
+        if d.get("type") == "assistant" and m.get("usage"):
+            by[m.get("id") or d.get("uuid")] = m["usage"]
+    return {f: sum(u.get(key) or 0 for u in by.values()) for f, key in (
+        ("input", "input_tokens"), ("cache_write", "cache_creation_input_tokens"),
+        ("cache_read", "cache_read_input_tokens"), ("output", "output_tokens"))}
+
+
+def _last_text(transcript):
+    last = ""
+    for d in _lines(transcript):
+        c = (d.get("message") or {}).get("content") if isinstance(d.get("message"), dict) else None
+        if d.get("type") == "assistant" and isinstance(c, list):
+            last = "\n".join(b.get("text", "") for b in c if b.get("type") == "text") or last
+            last = next((b["input"].get("message", "") for b in c if b.get("type") == "tool_use"
+                         and b.get("name") == "SubagentHandback"), last)
+    return last
 
 
 def _lines(p):
@@ -273,13 +330,14 @@ def measure(a):
     plugin = Path(a.plugin).resolve()
     if not (plugin / ".claude-plugin" / "plugin.json").exists():
         sys.exit(f"token eval: {plugin} is not a plugin dir")
-    tasks = a.tasks.split(",") if a.tasks else list(TASKS)
+    tasks = a.tasks.split(",") if a.tasks else [t for t, spec in TASKS.items() if spec.get("gate", True)]
     root = Path(tempfile.mkdtemp(prefix="gutcheck-tokens."))
     t0 = time.monotonic()
     try:
-        base, claude_dir = prepare(root, plugin)
-        needs = {"_warm"} | ({"_warm_mcp"} if any(TASKS[t].get("mcp") for t in tasks) else set())
-        with ThreadPoolExecutor(max_workers=2) as ex:
+        base, claude_dir = prepare(root, plugin, a.config.replace("\\n", "\n"))
+        needs = ({"_warm"} | ({"_warm_mcp"} if any(TASKS[t].get("mcp") for t in tasks) else set())
+                 | ({"_warm_agent"} if any(TASKS[t].get("tools") for t in tasks) else set()))
+        with ThreadPoolExecutor(max_workers=3) as ex:
             warm = list(ex.map(lambda w: run_one(w, 0, root, base, claude_dir, plugin, a.model), sorted(needs)))
         bad = [w for w in warm if not w["ok"]]
         if bad:
@@ -296,16 +354,18 @@ def measure(a):
                     runs.append(r)
                     if not a.quiet:
                         u = r["usage"]
+                        parent = (f"  parent {r['parent']['cost']:,}  report {r.get('report_chars', 0):,}"
+                                  if "parent" in r else "")
+                        status = "SKIP " + r["skip"] if r.get("skip") else "ok" if r["ok"] else "FAIL " + r["why"]
                         print(f"    {r['task']:<14} run {i + 1}: cost {u['cost']:>7,}  in {u['input']:>6,}  "
                               f"cache_write {u['cache_write']:>6,}  cache_read {u['cache_read']:>8,}  "
-                              f"out {u['output']:>6,}  {r['seconds']:>5.0f}s  {'ok' if r['ok'] else 'FAIL ' + r['why']}",
-                              flush=True)
+                              f"out {u['output']:>6,}{parent}  {r['seconds']:>5.0f}s  {status}", flush=True)
     finally:
         if a.keep:
             print(f"kept run dirs in {root}")
         else:
             shutil.rmtree(root, ignore_errors=True)
-    out = {"model": a.model, "effort": EFFORT, "runs": a.runs, "claude_code": claude_version(),
+    out = {"model": a.model, "effort": EFFORT, "runs": a.runs, "claude_code": claude_version(), "config": a.config,
            "seconds": round(time.monotonic() - t0),
            "cost_usd": round(warm_cost + sum(r["cost_usd"] or 0 for r in runs), 3),
            "results": runs, "medians": medians(runs)}
@@ -318,8 +378,11 @@ def measure(a):
 def medians(runs):
     by = {}
     for r in runs:
-        by.setdefault(r["task"], []).append(r)
+        if not r.get("skip"):
+            by.setdefault(r["task"], []).append(r)
     return {t: {m: int(statistics.median(x["usage"][m] for x in rs)) for m in FIELDS}
+            | ({"parent_cost": int(statistics.median(x["parent"]["cost"] for x in rs))}
+               if all("parent" in x for x in rs) else {})
             | {"checks": f"{sum(x['ok'] for x in rs)}/{len(rs)}", "ok": all(x["ok"] or x.get("wrong") for x in rs)
                and sum(not x["ok"] for x in rs) <= int(len(rs) * TASKS.get(t, {}).get("wrong_ok", 0))}
             for t, rs in by.items()}
@@ -566,6 +629,8 @@ def main():
     m.add_argument("--model", default=MODEL)
     m.add_argument("--out", default="tokens.results.json")
     m.add_argument("--keep", action="store_true")
+    m.add_argument("--config", default="",
+                   help='TOML for the candidate\'s config, e.g. \'[handback]\\nmode = "off"\'')
     m.add_argument("--quiet", action="store_true")
     for name in ("gate", "lower", "raise", "bootstrap", "spread", "summary"):
         p = sub.add_parser(name)
