@@ -24,6 +24,7 @@ import time
 from pathlib import Path
 
 from gutcheck_core import config, jev, secretscan
+
 from . import jobs, relevance
 
 LOG = config.STATE_DIR / "reviews.jsonl"

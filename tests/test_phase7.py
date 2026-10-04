@@ -10,8 +10,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing",
 tmp_state = tempfile.mkdtemp()
 os.environ["TOKENMAXXING_STATE_DIR"] = tmp_state
 os.environ["TOKENMAXXING_CONFIG_DIR"] = tempfile.mkdtemp()
-from tokenmaxxing import evidence as ev, explain, jobs, relevance as rel  # noqa: E402
-
+from tokenmaxxing import evidence as ev  # noqa: E402
+from tokenmaxxing import explain, jobs
+from tokenmaxxing import relevance as rel
 
 # ---- evidence: claim parsing -------------------------------------------------------------------
 c = ev.claims("- The limiter caps reads at 20 per window (`src/limits.py:12-18`, `:40`).\n```\nx.py:1\n```\nplain line")

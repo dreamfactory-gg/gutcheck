@@ -39,8 +39,9 @@ write(CL / "plugins/installed_plugins.json", json.dumps({"version": 2, "plugins"
     "off@market": [{"scope": "user", "installPath": str(TMP / "plugins/off")}]}}))
 write(CL / "settings.json", json.dumps({"enabledPlugins": {"off@market": False}}))
 
-from tokenmaxxing import ctxload, router, skills  # noqa: E402
 from gutcheck_core import config, jev  # noqa: E402
+
+from tokenmaxxing import ctxload, router, skills  # noqa: E402
 
 # ---- skill index ---------------------------------------------------------------------------------------------
 idx, new = skills.build()
@@ -195,6 +196,7 @@ jev.call = real
 
 # an index from before the full-text table is started over rather than read
 import sqlite3  # noqa: E402
+
 old_db = skills.data_dir() / "context.db"
 con = sqlite3.connect(old_db)
 con.execute("pragma user_version = 1")

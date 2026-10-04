@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 from gutcheck_core import config, secretscan
+
 from . import jobs, relevance
 
 PROMPT = Path(__file__).with_name("prompts") / "explain-diff.md"

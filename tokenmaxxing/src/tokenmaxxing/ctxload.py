@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 
 from gutcheck_core import config
+
 from . import skills
 
 DEFAULTS = {
@@ -346,6 +347,7 @@ def candidates(db, root, prompt, context, k):
 def route(root, prompt, context="", deadline=None, seen=()):
     """Returns {"sections": [...], "files": [...], ...}. Sections carry path, lines, heading, text, p."""
     from concurrent.futures import ThreadPoolExecutor, wait
+
     from gutcheck_core import jev
     st = settings()
     t0 = time.monotonic()

@@ -288,7 +288,9 @@ def activity(path, offset, cwd):
             elif name == "Bash":
                 try:
                     from gutcheck_core import commands
-                    cfg = cfg or config.load()
+                    # aliases and learned ask patterns are gutcheck's settings: the same command reads as a change
+                    cfg = cfg or {**config.load(), **{k: v for k, v in config.other_config("gutcheck").items()
+                                                       if k in ("aliases", "bash_check")}}
                     if not commands.analyze(ti.get("command", ""), rec.get("cwd") or cwd, cfg).readonly:
                         changes += 1
                 except Exception:

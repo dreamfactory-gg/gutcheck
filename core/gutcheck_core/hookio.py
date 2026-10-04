@@ -4,6 +4,7 @@ nothing). Every hook fails open: any exception means no output, and the error is
 import json
 import os
 import sys
+import threading
 import time
 import traceback
 
@@ -40,8 +41,52 @@ def read_log(name, since=0):
     return out
 
 
+def report_since(args):
+    """(days, since epoch) for `<plugin> report [DAYS]` (default 7)."""
+    days = int(args[0]) if args and args[0].isdigit() else 7
+    return days, time.time() - days * 86400
+
+
+def errors_notice():
+    """The SessionStart line when the hooks failed often this week, else None."""
+    errs = read_log("hook_errors", time.time() - 7 * 86400)
+    if len(errs) >= 20:
+        return f"{config.APP}: {len(errs)} hook errors this week; see {config.STATE_DIR / 'hook_errors.jsonl'}"
+    return None
+
+
+def print_errors(since):
+    errs = read_log("hook_errors", since)
+    if errs:
+        print(f"Hook errors: {len(errs)}; latest: {errs[-1]['event']}: {errs[-1]['error'][:120]}")
+
+
 def emit(obj):
     sys.stdout.write(json.dumps(obj))
+
+
+def time_left():
+    """Seconds left of the prompt hook's deadline, measured from process start."""
+    return max(0.0, PROMPT_DEADLINE - (time.monotonic() - _T0))
+
+
+def within_deadline(fn, *args):
+    """Run fn in a worker thread until the prompt deadline; True when it was still running then. A slow Jev never
+    delays the prompt: whatever isn't ready is dropped and end_prompt exits at once."""
+    w = threading.Thread(target=fn, args=args, daemon=True)
+    w.start()
+    w.join(time_left())
+    return w.is_alive()
+
+
+def end_prompt(inp, out, timed_out):
+    """Log the prompt hook, print its output, and exit without waiting for Jev worker threads still in flight."""
+    log("prompt_hook", {"session": inp.get("session_id"), "ms": int((time.monotonic() - _T0) * 1000),
+                        "timed_out": timed_out})
+    if out:
+        emit(out)
+    sys.stdout.flush()
+    os._exit(0)
 
 
 def _safe(name, fn, *args):

@@ -4,16 +4,16 @@ Every hook fails open: any exception means no output, and the error is logged.
 """
 import json
 import os
-import sys
 import time
 
 from gutcheck_core import config, hookio
-from gutcheck_core.hookio import PROMPT_DEADLINE, _safe, _T0, emit, log
+from gutcheck_core.hookio import _safe, emit, log
 
 
 # ---- PreToolUse: Bash ----------------------------------------------------------------------------
 def pre_bash(inp):
     from gutcheck_core import secretscan, transcripts
+
     from . import bashcheck
     cmd = (inp.get("tool_input") or {}).get("command", "")
     cfg = config.load()
@@ -137,7 +137,7 @@ def post_bash(inp):
 
 # ---- UserPromptSubmit: pasted keys ---------------------------------------------------------------
 def prompt_submit(inp):
-    from gutcheck_core import messages, secretscan, secrets
+    from gutcheck_core import messages, secrets, secretscan
     cfg = config.load()
     warn_msg = delivered = None
     prompt = inp.get("prompt") or ""
@@ -170,53 +170,14 @@ def prompt_submit(inp):
     # Standing-rules capture (the don't-delete guard reads it) may call Jev. It runs in a worker thread under a hard
     # deadline measured from process start, so a slow Jev never delays the prompt: whatever isn't classified by then
     # stays pending (backfilled at Stop) and the process exits at once.
-    import threading
     from gutcheck_core import rules
-    w = threading.Thread(target=_safe, args=("rules capture", rules.on_user_prompt, inp), daemon=True)
-    w.start()
-    w.join(max(0.0, PROMPT_DEADLINE - (time.monotonic() - _T0)))
-    timed_out = w.is_alive()
+    timed_out = hookio.within_deadline(_safe, "rules capture", rules.on_user_prompt, inp)
     out = {}
     if warn_msg:
         out["systemMessage"] = warn_msg
     if delivered:
         out["hookSpecificOutput"] = {"hookEventName": "UserPromptSubmit", "additionalContext": delivered}
-    log("prompt_hook", {"session": inp.get("session_id"), "ms": int((time.monotonic() - _T0) * 1000),
-                        "timed_out": timed_out})
-    if out:
-        emit(out)
-    sys.stdout.flush()
-    os._exit(0)  # don't wait for Jev worker threads still in flight
-
-
-def _block_file():
-    return config.STATE_DIR / "keyblock_last.json"
-
-
-def _remember_block(prompt):
-    """Store only a hash of the blocked prompt (never its text) and when it was blocked."""
-    import hashlib
-    try:
-        config.STATE_DIR.mkdir(parents=True, exist_ok=True)
-        _block_file().write_text(json.dumps({"h": hashlib.sha256(prompt.encode()).hexdigest(), "t": time.time()}))
-        os.chmod(_block_file(), 0o600)
-    except OSError:
-        pass
-
-
-def _resent_within(prompt, secs):
-    import hashlib
-    try:
-        d = json.loads(_block_file().read_text())
-    except (OSError, ValueError):
-        return False
-    same = d.get("h") == hashlib.sha256(prompt.encode()).hexdigest() and time.time() - d.get("t", 0) <= secs
-    if same:
-        try:
-            _block_file().unlink()  # one override per block
-        except OSError:
-            pass
-    return same
+    hookio.end_prompt(inp, out, timed_out)
 
 
 def _block_file():

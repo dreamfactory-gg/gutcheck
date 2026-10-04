@@ -99,6 +99,7 @@ def install_rules(projects, backup_root=None, dry_run=False, refresh_only=False)
     """Add (or refresh) a marked rules block in each project's CLAUDE.md, backing the file up first. Only the
     marked block changes; refresh_only leaves projects without a block alone."""
     import shutil
+
     from gutcheck_core import config
     backup_root = Path(backup_root or config.STATE_DIR / "backups" / "project-files")
     done = []

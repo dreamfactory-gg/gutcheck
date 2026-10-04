@@ -20,6 +20,7 @@ import time
 from datetime import datetime
 
 from gutcheck_core import config
+
 from . import mcpout
 
 CALLS = "mcp_calls.jsonl"
@@ -107,6 +108,7 @@ def _simulate(tool, full, kind, used, routine, cfg):
 def scan(since=0.0, known=None):
     """New per-call records from transcripts modified after `since` (deduplicated by tool_use id)."""
     from gutcheck_core import transcripts
+
     from . import adapters
     known = known if known is not None else set()
     cfg = config.load().get("mcp_trim", {})

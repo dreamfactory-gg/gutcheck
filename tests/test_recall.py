@@ -21,8 +21,9 @@ os.environ.update(TOKENMAXXING_STATE_DIR=str(TMP / "state"), TOKENMAXXING_CONFIG
                   GUTCHECK_GIT_ROOT=str(TMP / "none"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
 
-from tokenmaxxing import index, recall  # noqa: E402
 from gutcheck_core import jev  # noqa: E402
+
+from tokenmaxxing import index, recall  # noqa: E402
 
 FAKE_KEY = "sk-ant-" + "abcDEF123456" * 4
 

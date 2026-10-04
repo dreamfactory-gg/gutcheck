@@ -31,6 +31,7 @@ from datetime import datetime
 from pathlib import Path
 
 from gutcheck_core import config
+
 from . import checkpoint
 from .stopcheck import DONE_RE, OPEN_RE
 
@@ -185,6 +186,7 @@ def write_now(s, tasks, timeout=40):
     """The backup writer: one Opus low-effort turn over the transcript tail -> the Now block (also written into
     TASKS.md when there is one, replacing the old block whole). Returns (block, cost meta)."""
     from gutcheck_core import secretscan
+
     from . import evidence, stopcheck
     jobs = [f"- {v['kind']} `{k}`: {checkpoint._short(v.get('desc') or '', 110)}" for k, v in checkpoint.running(s)]
     items = stopcheck.task_items(Path(tasks))[0] if tasks else []
@@ -210,6 +212,7 @@ def prepare(inp, s):
     """Before a checkpoint: move ticked items, then return the Now block (backed up when missing or stale), or None.
     Fails open."""
     from gutcheck_core.hookio import _safe, log
+
     from .stopcheck import find_tasks
     if not _on():
         return None

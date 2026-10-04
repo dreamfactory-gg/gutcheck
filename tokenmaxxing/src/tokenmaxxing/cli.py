@@ -119,8 +119,10 @@ def main(argv=None):
             from . import savings
             savings.main(args)
         elif cmd in ("init", "refresh"):
+            from gutcheck_core import health
+
             from . import init
-            init.main(cmd, args)
+            health.init(cmd, args, init.run)
         elif cmd == "mcp":
             from . import mcpload
             mcpload.main(args)

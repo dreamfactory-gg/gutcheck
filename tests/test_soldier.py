@@ -16,8 +16,9 @@ os.environ["CLAUDE_PLUGIN_DATA"] = _TMP + "/data"
 Path(_TMP, "cfg").mkdir()
 Path(_TMP, "cfg", "config.toml").write_text('[soldier.agents.bigctx]\nmax_context_tokens = 500000\n')
 
-from tokenmaxxing import hooks, soldier  # noqa: E402
 from gutcheck_core import config  # noqa: E402
+
+from tokenmaxxing import hooks, soldier  # noqa: E402
 
 config.load(refresh=True)
 PROJ = Path(_TMP, "proj")

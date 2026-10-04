@@ -1,5 +1,7 @@
 """Fixtures are made up. Run: python3 tests/test_secretscan.py"""
-import os, sys
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gutcheck", "src"))
 from gutcheck_core import secretscan as s
 

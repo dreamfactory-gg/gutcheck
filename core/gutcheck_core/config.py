@@ -6,14 +6,19 @@ engine; init writes the personal file.
 """
 import copy
 import os
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 HOME = Path.home()
 # The one venv both plugins share; also holds what both plugins read and write (the standing-rules store).
 SHARED_HOME = Path(os.environ.get("GUTCHECK_HOME", HOME / ".local" / "share" / "gutcheck"))
 RULES_DIR = Path(os.environ.get("GUTCHECK_RULES_DIR", SHARED_HOME / "rules"))
 CORE_DEFAULTS = {"keys": {"typesafe_service": "typesafe", "gateway_service": "ai-gateway"}}
+
+
+def _config_dir(app):
+    return Path(os.environ.get(f"{app.upper()}_CONFIG_DIR", HOME / ".config" / app))
 
 
 def configure(app, defaults):
@@ -23,7 +28,7 @@ def configure(app, defaults):
     global APP, CONFIG_DIR, CONFIG_PATH, STATE_DIR, DATA_DIR_OVERRIDE, DEFAULTS
     env = app.upper()
     APP = app
-    CONFIG_DIR = Path(os.environ.get(f"{env}_CONFIG_DIR", HOME / ".config" / app))
+    CONFIG_DIR = _config_dir(app)
     CONFIG_PATH = CONFIG_DIR / "config.toml"
     STATE_DIR = Path(os.environ.get(f"{env}_STATE_DIR", HOME / ".local" / "state" / app))
     DATA_DIR_OVERRIDE = os.environ.get(f"{env}_DATA_DIR") or None
@@ -96,6 +101,14 @@ def save(d):
     tmp.write_text(f"# {APP} personal config (written by `{APP} init`; safe to edit)\n" + dumps(d))
     tmp.replace(CONFIG_PATH)
     load(refresh=True)
+
+
+def other_config(app):
+    """Another plugin's personal settings (its config file only, no defaults); {} when it has none."""
+    try:
+        return tomllib.loads((_config_dir(app) / "config.toml").read_text())
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
 
 
 def user_config():

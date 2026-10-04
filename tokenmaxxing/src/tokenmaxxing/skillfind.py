@@ -24,8 +24,9 @@ def main(args):
         router.context_log(args[1])
         return
     if args[0] == "--index-context":
-        from . import ctxload
         import os
+
+        from . import ctxload
         root = ctxload.project_root(args[1] if len(args) > 1 else os.getcwd())
         n = ctxload.index_project(root)
         print(f"context: {n} files (re)indexed for {root}")

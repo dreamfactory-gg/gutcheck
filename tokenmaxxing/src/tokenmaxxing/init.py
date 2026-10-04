@@ -8,6 +8,7 @@ import time
 from gutcheck_core import config, secrets
 from gutcheck_core.health import _touch
 
+
 def _index_context():
     """Skill index, project doc/memory index, and old per-session router state (Phase 6)."""
     new, n = [], 0
@@ -86,7 +87,7 @@ def _measure_mcp(kind):
 def run(kind, quiet=False):
     from gutcheck_core import jev
     user = config.user_config()
-    user.setdefault("keys", {"typesafe_service": "typesafe", "gateway_service": "ai-gateway"})
+    user.setdefault("keys", dict(config.CORE_DEFAULTS["keys"]))
     if "adapters" not in user:  # MCP adapters for servers configured here; later edits by the user are kept
         try:
             from . import adapters
@@ -123,9 +124,3 @@ def run(kind, quiet=False):
         from . import mcpload
         mcpload.main([])   # table only; the probes ran above
 
-
-def main(kind, args):
-    if kind == "init" and "--quiet" not in args and not secrets.get("typesafe") and not secrets.get("ai-gateway"):
-        print("No TypeSafe or AI Gateway key found. Store one (you'll be prompted for the value):")
-        print("  " + secrets.store_hint("typesafe"))
-    run(kind, quiet="--quiet" in args)

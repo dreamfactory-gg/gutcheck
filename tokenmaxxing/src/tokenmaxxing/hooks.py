@@ -5,12 +5,11 @@ Every hook fails open: any exception means no output, and the error is logged.
 import json
 import os
 import re
-import sys
 import time
 import traceback
 
 from gutcheck_core import config, hookio
-from gutcheck_core.hookio import PROMPT_DEADLINE, _safe, _T0, emit, log
+from gutcheck_core.hookio import _T0, _safe, emit, log
 
 
 # ---- PreToolUse: Bash ------------------------------------------------------------------------
@@ -246,6 +245,7 @@ def post_tool_trim(inp):
     mode isn't on)."""
     import shlex
     from pathlib import Path
+
     from . import mcpout
     cfg = config.load().get("tool_trim", {})
     mode = cfg.get("mode", "on")
@@ -406,26 +406,19 @@ def prompt_submit(inp):
 
     def work():
         from gutcheck_core import rules as _rules
+
         from . import router
         t = threading.Thread(target=_safe, args=("rules capture", _rules.on_user_prompt, inp), daemon=True)
         t.start()
         res["extra"] = _safe("router", router.for_prompt, inp)
-        t.join(max(0.0, PROMPT_DEADLINE - (time.monotonic() - _T0)))
+        t.join(hookio.time_left())
 
-    w = threading.Thread(target=work, daemon=True)
-    w.start()
-    w.join(max(0.0, PROMPT_DEADLINE - (time.monotonic() - _T0)))
-    timed_out = w.is_alive()
+    timed_out = hookio.within_deadline(work)
     out = {}
     extra = None if timed_out else res.get("extra")
     if extra:
         out["hookSpecificOutput"] = {"hookEventName": "UserPromptSubmit", "additionalContext": extra}
-    log("prompt_hook", {"session": inp.get("session_id"), "ms": int((time.monotonic() - _T0) * 1000),
-                        "timed_out": timed_out})
-    if out:
-        emit(out)
-    sys.stdout.flush()
-    os._exit(0)  # don't wait for Jev worker threads still in flight
+    hookio.end_prompt(inp, out, timed_out)
 
 
 # ---- SessionStart ------------------------------------------------------------------------------

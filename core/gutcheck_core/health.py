@@ -26,6 +26,15 @@ def _touch(name):
     (config.STATE_DIR / f"{name}.stamp").write_text(time.strftime("%Y-%m-%dT%H:%M:%S"))
 
 
+def init(kind, args, run):
+    """`<plugin> init | refresh [--quiet]`: run(kind, quiet), after saying how to store a key when there's none."""
+    from . import secrets
+    if kind == "init" and "--quiet" not in args and not secrets.get("typesafe") and not secrets.get("ai-gateway"):
+        print("No TypeSafe or AI Gateway key found. Store one (you'll be prompted for the value):")
+        print("  " + secrets.store_hint("typesafe"))
+    run(kind, quiet="--quiet" in args)
+
+
 def start(inp):
     """(done, notice): done when there is nothing more to do this start (a nested probe, or no Jev key, then with
     the notice); else init or refresh is started in the background as due."""

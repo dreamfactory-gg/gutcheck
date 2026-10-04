@@ -39,8 +39,10 @@ def main(argv=None):
             from . import report
             report.main(args)
         elif cmd in ("init", "refresh"):
+            from gutcheck_core import health
+
             from . import init
-            init.main(cmd, args)
+            health.init(cmd, args, init.run)
         elif cmd == "house-rules":
             from . import pushcheck
             pushcheck.main(args)

@@ -55,7 +55,7 @@ def call(state, questions, timeout=60, deadline=None):
     """One Jev request. `deadline` (seconds, total) bounds retries and fallbacks for hooks."""
     start = time.monotonic()
     errors = []
-    waf_routes, answered_routes = 0, 0
+    waf_routes = 0
     for service, url, model in routes():
         k = _key(service)
         if not k:

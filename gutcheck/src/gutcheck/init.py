@@ -92,7 +92,7 @@ def run(kind, quiet=False):
     user = config.user_config()
     since = 0 if kind == "init" else _stamp("refresh")
     stats = mine(since)
-    user.setdefault("keys", {"typesafe_service": "typesafe", "gateway_service": "ai-gateway"})
+    user.setdefault("keys", dict(config.CORE_DEFAULTS["keys"]))
     bc = user.setdefault("bash_check", {})
     bc.setdefault("mode", "log")
     # misses -> ask patterns (tightening is always safe)
@@ -130,9 +130,3 @@ def run(kind, quiet=False):
         print(f"  probable misses turned into ask patterns: {len(stats['misses'])}")
         print(f"  config: {config.CONFIG_PATH}")
 
-
-def main(kind, args):
-    if kind == "init" and "--quiet" not in args and not secrets.get("typesafe") and not secrets.get("ai-gateway"):
-        print("No TypeSafe or AI Gateway key found. Store one (you'll be prompted for the value):")
-        print("  " + secrets.store_hint("typesafe"))
-    run(kind, quiet="--quiet" in args)

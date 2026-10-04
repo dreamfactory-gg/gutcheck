@@ -11,6 +11,7 @@ import sys
 import time
 
 from gutcheck_core import config, jev, secretscan
+
 from . import index
 
 STOP = set("""a an the and or of to in on for with from by at as is are was were be been it this that these those

@@ -1,14 +1,19 @@
 """Studio soldiers: no reuse; fresh agent per task above ~100k main context. General soldiers unchanged. Made-up data."""
-import json, os, sys, tempfile
+import json
+import os
+import sys
+import tempfile
 from pathlib import Path
+
 d = Path(tempfile.mkdtemp())
 os.environ["TOKENMAXXING_STATE_DIR"] = str(d)
 os.environ["TOKENMAXXING_CONFIG_DIR"] = str(d / "cfg")
 (d / "cfg").mkdir()
 (d / "cfg" / "config.toml").write_text('adapters = ["roblox_studio"]\n')
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
-from tokenmaxxing import soldier  # noqa: E402
 from tokenmaxxing.adapters import roblox_studio as rs  # noqa: E402
+
+from tokenmaxxing import soldier  # noqa: E402
 
 assert soldier.policy("studio", "studio")["reuse"] is False
 assert soldier.policy("builder", "general-purpose")["reuse"] is True

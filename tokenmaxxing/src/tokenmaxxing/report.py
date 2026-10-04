@@ -1,8 +1,7 @@
 """What tokenmaxxing's hooks did. `tokenmaxxing report` prints a summary; attention_line() is the one-line SessionStart notice."""
-import time
 from collections import Counter
 
-from gutcheck_core import config
+from gutcheck_core import hookio
 from gutcheck_core.hookio import read_log as _read
 
 
@@ -30,18 +29,11 @@ def attention_line():
                     f"context this week and can't be trimmed further without hiding lines it uses; see `tokenmaxxing report`")
     except Exception:
         pass
-    week = time.time() - 7 * 86400
-    errs = _read("hook_errors", week)
-    if len(errs) >= 20:
-        return f"{config.APP}: {len(errs)} hook errors this week; see {config.STATE_DIR / 'hook_errors.jsonl'}"
-    return None
+    return hookio.errors_notice()
 
 
 def main(args):
-    days = 7
-    if args and args[0].isdigit():
-        days = int(args[0])
-    since = time.time() - days * 86400
+    days, since = hookio.report_since(args)
     print(f"tokenmaxxing report, last {days} days")
     router_report(since)
     st = _read("stops", since)
@@ -75,9 +67,7 @@ def main(args):
     if li:
         print(f"Edit check: {len(li)} runs, {len({d['file'] for d in li if d.get('findings')})} files with findings; "
               f"by tool {dict(sum((Counter(d.get('by_tool')) for d in li), Counter()))}")
-    errs = _read("hook_errors", since)
-    if errs:
-        print(f"Hook errors: {len(errs)}; latest: {errs[-1]['event']}: {errs[-1]['error'][:120]}")
+    hookio.print_errors(since)
 
 
 def router_report(since):
@@ -110,7 +100,7 @@ def mcp_report(since, days):
         rows = []
         print(f"MCP waste: unavailable ({type(e).__name__}: {e})")
     if rows:
-        print(f"MCP output waste per tool (unused = never referenced afterwards; the policy tightens as it rises):")
+        print("MCP output waste per tool (unused = never referenced afterwards; the policy tightens as it rises):")
         for _, line in rows[:25]:
             print(f"  {line}")
     trims = [d for d in _read("mcp_trim", since) if d.get("out_chars") is not None]

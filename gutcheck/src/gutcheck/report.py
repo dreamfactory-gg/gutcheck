@@ -2,7 +2,7 @@
 import time
 from collections import Counter
 
-from gutcheck_core import config
+from gutcheck_core import hookio
 from gutcheck_core.hookio import read_log as _read
 
 
@@ -27,17 +27,11 @@ def attention_line():
                 f"run `gutcheck report` to tune")
     if s["checked"] >= 50 and s["failed_open"] / s["checked"] > 0.2:
         return f"gutcheck: the Jev check failed open on {s['failed_open']} of {s['checked']} commands this week (outage?)"
-    errs = _read("hook_errors", week)
-    if len(errs) >= 20:
-        return f"{config.APP}: {len(errs)} hook errors this week; see {config.STATE_DIR / 'hook_errors.jsonl'}"
-    return None
+    return hookio.errors_notice()
 
 
 def main(args):
-    days = 7
-    if args and args[0].isdigit():
-        days = int(args[0])
-    since = time.time() - days * 86400
+    days, since = hookio.report_since(args)
     s = bash_stats(since)
     print(f"gutcheck report, last {days} days")
     print(f"Bash check: {s['checked']} commands checked; stages {dict(s['stages'])}")
@@ -50,6 +44,4 @@ def main(args):
     print(f"Key blocker: {len(blocked)} prompts blocked"
           + (f" ({dict(Counter(k for d in blocked for k in d['kinds']))})" if blocked else "")
           + (f", {warned} warnings" if warned else ""))
-    errs = _read("hook_errors", since)
-    if errs:
-        print(f"Hook errors: {len(errs)}; latest: {errs[-1]['event']}: {errs[-1]['error'][:120]}")
+    hookio.print_errors(since)

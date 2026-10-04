@@ -15,9 +15,10 @@ os.environ["CLAUDE_PLUGIN_DATA"] = _TMP + "/data"
 Path(_TMP, "cfg").mkdir()
 Path(_TMP, "cfg", "config.toml").write_text('adapters = ["roblox_studio"]\n')
 
-from tokenmaxxing import hooks, mcpout  # noqa: E402
 from gutcheck_core import config  # noqa: E402
 from tokenmaxxing.adapters import roblox_studio as rs  # noqa: E402
+
+from tokenmaxxing import hooks, mcpout  # noqa: E402
 
 CFG = config.load(refresh=True)["mcp_trim"]
 

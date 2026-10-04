@@ -1,6 +1,11 @@
 """Doc/memory loading switches on only when its logged background runs are fast and rarely fail. Made-up logs."""
-import json, os, sys, tempfile, time
+import json
+import os
+import sys
+import tempfile
+import time
 from pathlib import Path
+
 d = Path(tempfile.mkdtemp())
 os.environ["TOKENMAXXING_STATE_DIR"] = str(d)
 os.environ["TOKENMAXXING_CONFIG_DIR"] = str(d / "cfg")

@@ -23,7 +23,15 @@ from collections import OrderedDict
 from pathlib import Path
 
 from gutcheck_core import config
-from gutcheck_core.messages import _HEUR, _SENT_RE, _clean, _fmt_ts, _texts, est_tokens, owner_source
+from gutcheck_core.messages import (
+    _HEUR,
+    _SENT_RE,
+    _clean,
+    _fmt_ts,
+    _texts,
+    est_tokens,
+    owner_source,
+)
 
 CAP_TOKENS = 4800            # the spec's ceiling is ~5k; keep a margin for the estimate
 JEV_DEADLINE = 25.0
@@ -576,6 +584,7 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
 def write(inp, deadline=JEV_DEADLINE, source=None, s=None):
     """PreCompact and SessionEnd: build and write the checkpoint, Now block first (transitions.py). Returns meta."""
     from gutcheck_core import secretscan
+
     from . import transitions
     session, tp = inp.get("session_id"), inp.get("transcript_path") or ""
     s = s or scan(tp)

@@ -39,7 +39,7 @@ Everything here only reads, runs in the background, and never gates. Start it, k
    Codex writes one self-contained HTML page (background, intuition with toy data and diagrams, code walkthrough, 5-question quiz) to `~/Documents/gutcheck-explainers/YYYY-MM-DD-<slug>.html`, outside the repo. Link it from REPORT.md and the end-of-run notification. If the owner wants it on their phone or shared, offer to publish it as an artifact.
 
 ## Before `git push`
-The house-rules hook checks the unpushed diff against the project's CLAUDE.md rules (secrets, conflict markers, "never `X`" literals, then Jev over rule x hunk). It logs by default; when switched on it asks, never blocks. Dry run, with the gutcheck plugin: `gutcheck house-rules [--base REF]`.
+Only when the gutcheck plugin is installed: its house-rules hook checks the unpushed diff against the project's CLAUDE.md rules (secrets, conflict markers, "never `X`" literals, then Jev over rule x hunk). It logs by default; when switched on it asks, never blocks. Dry run: `gutcheck house-rules [--base REF]`. Without gutcheck, skip this.
 
 ## Reports teach
 A unit's report says what was done **and** how the system works now, in plain language, so the owner can steer the next step. When the owner is struggling with a system, offer a small interactive tool (a step-through view, a side-by-side panel) instead of more prose.

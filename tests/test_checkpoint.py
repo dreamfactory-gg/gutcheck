@@ -13,8 +13,10 @@ os.environ["GUTCHECK_RULES_DIR"] = str(tmp / "rules")
 os.environ["TOKENMAXXING_CONFIG_DIR"] = str(tmp / "cfg")
 os.environ["CLAUDE_PLUGIN_DATA"] = str(tmp / "plugin-data")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
-from tokenmaxxing import checkpoint as C, evidence, hooks  # noqa: E402
 from gutcheck_core import jev  # noqa: E402
+
+from tokenmaxxing import checkpoint as C  # noqa: E402
+from tokenmaxxing import evidence, hooks
 
 evidence._claude = lambda *a, **k: ("- Goal: ship the parser\n- In progress: parser", {"cost_usd": 0})
 
@@ -144,6 +146,7 @@ jev.call = fake_call
 
 # ---- capture as stated: UserPromptSubmit handler, fast path, rules file written; Stop catch-up is idempotent ----
 from gutcheck_core import rules as R  # noqa: E402
+
 R.on_user_prompt({"session_id": "sess-4", "prompt": "never run migrations on prod"})
 R.on_user_prompt({"session_id": "sess-4", "prompt": "what time is it?"})
 R.on_user_prompt({"session_id": "sess-4", "prompt": '<teammate-message teammate_id="team-lead">Always report in '
@@ -170,6 +173,7 @@ def run_hook(event, inp):
 
 
 import tokenmaxxing.health as health  # noqa: E402
+
 health.session_start = lambda inp: None
 assert run_hook("PreCompact", {"session_id": "sess-1", "transcript_path": str(tp), "cwd": str(proj),
                                "hook_event_name": "PreCompact", "trigger": "auto"}) == ""
@@ -197,6 +201,7 @@ print("checkpoint tests: ok")
 
 # ---- cache writes from parallel classifiers merge instead of overwriting ----
 import threading  # noqa: E402
+
 cpath = C._cache_path("sess-race")
 ths = [threading.Thread(target=C._cache_merge, args=(cpath, {f"k{i}-{j}": 0.5 for j in range(50)})) for i in range(8)]
 [t.start() for t in ths]
