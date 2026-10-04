@@ -113,6 +113,11 @@ def run(kind, quiet=False):
     hist, hist_s = _index_history()
     _touch("refresh")
     _measure_mcp(kind)
+    try:
+        from . import mcpload
+        mcpload.record_use()
+    except Exception as e:
+        (config.STATE_DIR / "background.log").open("a").write(f"{kind}: MCP use count failed: {e}\n")
     if not quiet:
         print(f"tokenmaxxing {kind}:")
         print(f"  key: {'found' if jev.have_key() else 'MISSING - ' + secrets.store_hint('typesafe')}")

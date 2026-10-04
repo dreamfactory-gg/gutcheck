@@ -101,6 +101,10 @@ def check_long_loop(res, wd):
     return right == 3, f"{right}/3 facts" + ("" if right == 3 else f": {res.strip()[:120]!r}")
 
 
+def check_prefix(res, wd):
+    return "pong" in res.lower(), f"answer {res.strip()[:80]!r}"
+
+
 def check_mcp_log(res, wd):
     ok = "deploy-canary" in res and "HC-7731" in res
     return ok, "" if ok else f"answer {res.strip()[:80]!r}"
@@ -147,7 +151,7 @@ TASKS = {
         prompt="The unit tests in this repo fail (run them with `python3 -m unittest -q`). Fix the bug in the "
                "source with a one-line change; don't edit the tests. Reply with one short sentence when done."),
     "handback_cap": dict(
-        fixture="audit_repo", check=check_handback, tools="Agent", gate=False,   # measured on request, never gated
+        fixture="audit_repo", check=check_handback, tools="Agent", gate=False, min_report=5000,   # never gated
         prompt="Delegate an audit of this repo to one subagent with the Agent tool (subagent_type general-purpose) "
                "and this brief, word for word: 'Audit every .py file under ledgerkit/ for bugs and security problems. "
                "Organise the report by file, in path order, and begin each file's section with its line count (from "
@@ -172,13 +176,19 @@ TASKS = {
                 + ["Without using any tools, from memory: what did init.py print? Reply with exactly three lines: "
                    "`1: codename`, `2: build number`, `3: checksum`."]),
     "mcp_log": dict(
-        mcp=True, check=check_mcp_log,
+        mcp=True, mcp_floor=40_000, check=check_mcp_log,
         prompt="Use the ci-fixture MCP tool fetch_ci_logs for run 4411. Which job failed, and what is its error "
                "code? Reply exactly as `job: code`."),
     "mcp_json": dict(
-        mcp=True, check=check_mcp_json,
+        mcp=True, mcp_floor=40_000, check=check_mcp_json,
         prompt="Use the ci-fixture MCP tool list_orders for region \"north\". Which order has status \"stuck\"? "
                "Reply with only its id."),
+    # Lever 3 (fixed prefix): run with '[prefix]\nmode = "on"' against '"off"'. Pass: the subagent's first-request
+    # cache_creation (sub_first) drops by 30% or more.
+    "prefix": dict(
+        mcp=True, tools="Agent", check=check_prefix, gate=False,
+        prompt="Use the Agent tool once (subagent_type general-purpose) with this prompt, word for word: 'Reply with "
+               "the single word: pong'. Then reply with only the word the subagent replied."),
 }
 
 
@@ -280,6 +290,7 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
             rec["parent"] = _priced(_usage(t))
             subs = list(t.with_suffix("").glob("subagents/agent-*.jsonl"))
             rec["report_chars"] = max((len(_last_text(f)) for f in subs), default=0)
+            rec["sub_first"] = next((_priced(_usage(f, first=True)) for f in subs), None)
         t.unlink(missing_ok=True)
         shutil.rmtree(t.with_suffix(""), ignore_errors=True)
     mu = out.get("modelUsage") or {}
@@ -311,12 +322,12 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     if prompts:
         rec["mod_compactions"] = _lines(d / "state" / "compact.jsonl")
         rec["checkpoint_injects"] = _lines(d / "state" / "checkpoint_inject.jsonl")
-    if spec.get("tools") == "Agent" and task in TASKS and rec["ok"] and rec.get("report_chars", 0) < 5000:
+    if spec.get("min_report") and rec["ok"] and rec.get("report_chars", 0) < spec["min_report"]:
         rec["skip"] = f"the subagent's report was short ({rec.get('report_chars')} chars)"   # nothing to cap: no data
-    if spec.get("mcp") and task in TASKS:
+    if spec.get("mcp_floor"):
         seen = [x.get("chars", 0) for x in _lines(d / "state" / "mcp_trim.jsonl")]
         rec["mcp_chars"] = seen
-        if not any(c >= 40_000 for c in seen):
+        if not any(c >= spec["mcp_floor"] for c in seen):
             rec["ok"], rec["wrong"], rec["why"] = False, False, f"tokenmaxxing's MCP layer never saw the full tool output ({seen})"
     rec["result"] = res[:300]
     return rec
@@ -370,13 +381,15 @@ def _priced(u):
                 "cost_prod": int(sum(u[f] * w for f, w in PROD_WEIGHTS.items()))}
 
 
-def _usage(transcript):
+def _usage(transcript, first=False):
     """One session's own usage from its transcript (the last record of each API message; subagents live in their
-    own files): what the parent alone paid, apart from its subagents."""
+    own files): what the parent alone paid, apart from its subagents. first: its first request alone."""
     by = {}
     for d in _lines(transcript):
         m = d.get("message") if isinstance(d.get("message"), dict) else {}
         if d.get("type") == "assistant" and m.get("usage"):
+            if first and by and (m.get("id") or d.get("uuid")) not in by:
+                break
             by[m.get("id") or d.get("uuid")] = m["usage"]
     return {f: sum(u.get(key) or 0 for u in by.values()) for f, key in (
         ("input", "input_tokens"), ("cache_write", "cache_creation_input_tokens"),
@@ -438,6 +451,8 @@ def measure(a):
                         u = r["usage"]
                         parent = (f"  parent {r['parent']['cost']:,}  report {r.get('report_chars', 0):,}"
                                   if "parent" in r else "")
+                        if r.get("sub_first"):
+                            parent += f"  sub_first write {r['sub_first']['cache_write']:,} read {r['sub_first']['cache_read']:,}"
                         status = "SKIP " + r["skip"] if r.get("skip") else "ok" if r["ok"] else "FAIL " + r["why"]
                         print(f"    {r['task']:<14} run {i + 1}: cost {u['cost']:>7,}  prod {u['cost_prod']:>7,}  "
                               f"turns {r['turns']}  in {u['input']:>6,}  "

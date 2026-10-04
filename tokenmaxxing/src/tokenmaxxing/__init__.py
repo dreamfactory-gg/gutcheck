@@ -28,5 +28,8 @@ config.configure("tokenmaxxing", {
     # Compact the main session between turns once its context passes main_tokens (hooks/register.ts), at most once
     # every 3 turns. Absolute, not a share of the window: what a token costs doesn't depend on the window's size.
     "compact": {"mode": "log", "main_tokens": 400_000},
+    # Fixed prefix (hooks/register.ts), decided once per session: no total_tokens_reminder, no skill listing in
+    # subagents, no MCP instructions of servers no session called in 30 days (as the last refresh counted).
+    "prefix": {"mode": "on"},
     "transitions": {"mode": "on"},  # Now-block backup, ticked-item move, /clear and restart pickup (transitions.py)
 })

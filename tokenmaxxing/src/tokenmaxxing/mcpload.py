@@ -4,6 +4,7 @@ sessions called it, and a default-off list applied per project (Claude Code only
   tokenmaxxing mcp [--measure]     table + suggestions; --measure re-runs the probes (one `claude -p` turn per server
                                plus a baseline, --strict-mcp-config, about $0.10 each on the default model)
   tokenmaxxing mcp off|on NAME...  edit `[mcp_servers] default_off` and every project in ~/.claude.json
+  tokenmaxxing mcp used            JSON: server slugs called in the window (as the last refresh counted), or null
 SessionStart applies default_off once to each project it hasn't seen, so a later /mcp re-enable there sticks.
 """
 import json
@@ -20,6 +21,7 @@ from gutcheck_core import config, transcripts
 
 CLAUDE_JSON = Path.home() / ".claude.json"
 LOAD = config.STATE_DIR / "mcp_load.json"
+USE = config.STATE_DIR / "mcp_use.json"   # {server slug: sessions that called it}, written at init/refresh
 APPLIED = config.STATE_DIR / "mcp_applied.json"   # {project: [servers tokenmaxxing disabled there]}
 MEASURE_DIR = config.STATE_DIR / "mcp-measure"
 USE_DAYS = 30
@@ -103,17 +105,22 @@ def _forget_measure_project():
 
 
 def usage(days=USE_DAYS):
-    """(sessions that called each server's tools, main sessions) in the window; subagent calls count for their session."""
+    """(sessions that called each server's tools, by server slug; main sessions) in the window; subagent calls count
+    for their session."""
     files = [str(f) for f in transcripts.files(time.time() - days * 86400) if MEASURE_DIR.name not in str(f)]
     main = sum(Path(f).parent.parent == transcripts.PROJECTS for f in files)
-    hits = subprocess.run(["grep", "-oHE", CALL_RE, *files], capture_output=True, text=True, check=False).stdout if files else ""
+    hits = "".join(subprocess.run(["grep", "-oHE", CALL_RE, *files[i:i + 500]], capture_output=True, text=True,
+                                  check=False).stdout for i in range(0, len(files), 500))   # argv stays under ARG_MAX
     seen = set()
     for line in hits.splitlines():
         path, call = line.split(':"type"', 1)
         session = Path(path).relative_to(transcripts.PROJECTS).parts[1].removesuffix(".jsonl")
         seen.add((call.rsplit('"name":"mcp__', 1)[1][:-2], session))
-    used = Counter(slug for slug, _ in seen)
-    return {n: used[_slug(n)] for n in user_servers()}, main
+    return Counter(slug for slug, _ in seen), main
+
+
+def record_use():
+    _write(USE, dict(usage()[0]))
 
 
 def table(remeasure=False):
@@ -123,9 +130,9 @@ def table(remeasure=False):
     rows = []
     for name in user_servers():
         m = load.get(name, {})
-        share = used[name] / n if n else 0
+        share = used[_slug(name)] / n if n else 0
         suggest = "off" if (m.get("tokens") or 0) > 0 and share < RARE else "keep"
-        rows.append((name, m.get("status"), m.get("tools"), m.get("tokens"), used[name], n,
+        rows.append((name, m.get("status"), m.get("tools"), m.get("tokens"), used[_slug(name)], n,
                      "off" if name in off else "on", suggest))
     return rows
 
@@ -220,6 +227,8 @@ def apply(cwd):
 
 
 def main(args):
+    if args[:1] == ["used"]:
+        return print(json.dumps(None if (used := _read(USE, None)) is None else sorted(used)))
     if args[:1] == ["apply"]:
         return apply(args[1])
     if args[:1] in (["off"], ["on"]):
