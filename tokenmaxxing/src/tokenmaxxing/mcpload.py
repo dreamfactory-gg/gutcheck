@@ -4,7 +4,8 @@ sessions called it, and a default-off list applied per project (Claude Code only
   tokenmaxxing mcp [--measure]     table + suggestions; --measure re-runs the probes (one `claude -p` turn per server
                                plus a baseline, --strict-mcp-config, about $0.10 each on the default model)
   tokenmaxxing mcp off|on NAME...  edit `[mcp_servers] default_off` and every project in ~/.claude.json
-  tokenmaxxing mcp used            JSON: server slugs called in the window (as the last refresh counted), or null
+  tokenmaxxing mcp unused          JSON: slugs of servers known for USE_DAYS and called in no session since
+  tokenmaxxing mcp seen SLUG...    record servers whose instructions a session was given (the mod, once per session)
 SessionStart applies default_off once to each project it hasn't seen, so a later /mcp re-enable there sticks.
 """
 import json
@@ -21,7 +22,10 @@ from gutcheck_core import config, transcripts
 
 CLAUDE_JSON = Path.home() / ".claude.json"
 LOAD = config.STATE_DIR / "mcp_load.json"
-USE = config.STATE_DIR / "mcp_use.json"   # {server slug: sessions that called it}, written at init/refresh
+# {server slug: {first_seen, last_seen, sessions}}: seen = the mod saw its instructions (first_seen restarts after a
+# gap of SEEN_GAP days, e.g. a server turned back on), sessions = sessions that called it, counted at init/refresh
+USE = config.STATE_DIR / "mcp_use.json"
+SEEN_GAP = 3 * 86400
 APPLIED = config.STATE_DIR / "mcp_applied.json"   # {project: [servers tokenmaxxing disabled there]}
 MEASURE_DIR = config.STATE_DIR / "mcp-measure"
 USE_DAYS = 30
@@ -119,13 +123,31 @@ def usage(days=USE_DAYS):
     return Counter(slug for slug, _ in seen), main
 
 
-def record_use():
-    _write(USE, dict(usage()[0]))
+def record_use(counts):
+    now, d = time.time(), _read(USE, {})
+    for name in set(d) | set(counts):
+        d.setdefault(name, {"first_seen": now, "last_seen": now})["sessions"] = counts.get(name, 0)
+    _write(USE, d)
 
 
-def table(remeasure=False):
+def seen(names):
+    now, d = time.time(), _read(USE, {})
+    for name in names:
+        r = d.get(name)
+        if r is None or now - r["last_seen"] > SEEN_GAP:
+            r = d[name] = {"first_seen": now, "sessions": (r or {}).get("sessions", 0)}
+        r["last_seen"] = now
+    _write(USE, d)
+
+
+def unused():
+    cut = time.time() - USE_DAYS * 86400
+    return sorted(n for n, r in _read(USE, {}).items() if r["sessions"] == 0 and r["first_seen"] <= cut)
+
+
+def table(remeasure=False, use=None):
     load = measure() if remeasure or not LOAD.exists() else _read(LOAD, {}).get("servers", {})
-    used, n = usage()
+    used, n = use or usage()
     off = default_off()
     rows = []
     for name in user_servers():
@@ -227,15 +249,20 @@ def apply(cwd):
 
 
 def main(args):
-    if args[:1] == ["used"]:
-        return print(json.dumps(None if (used := _read(USE, None)) is None else sorted(used)))
+    if args[:1] == ["unused"]:
+        return print(json.dumps(unused()))
+    if args[:1] == ["seen"]:
+        return seen(args[1:])
     if args[:1] == ["apply"]:
         return apply(args[1])
     if args[:1] in (["off"], ["on"]):
         if len(args) < 2:
             sys.exit(__doc__)
         return set_default(args[1:], args[0] == "off")
-    rows = table("--measure" in args)
+    print_table(table("--measure" in args))
+
+
+def print_table(rows):
     meta = _read(LOAD, {})
     print(f"MCP servers (user scope). Baseline request without MCPs: {meta.get('baseline')} tokens "
           f"(measured {meta.get('at')}); tokens below ride on every request.")

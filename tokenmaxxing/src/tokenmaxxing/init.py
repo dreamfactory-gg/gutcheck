@@ -113,9 +113,11 @@ def run(kind, quiet=False):
     hist, hist_s = _index_history()
     _touch("refresh")
     _measure_mcp(kind)
+    from . import mcpload
+    use = None
     try:
-        from . import mcpload
-        mcpload.record_use()
+        use = mcpload.usage()
+        mcpload.record_use(use[0])
     except Exception as e:
         (config.STATE_DIR / "background.log").open("a").write(f"{kind}: MCP use count failed: {e}\n")
     if not quiet:
@@ -126,6 +128,5 @@ def run(kind, quiet=False):
             print(f"  recall index: re-read {hist['claude']} transcripts, {hist['memory']} memory files, "
                   f"{hist['codex']} Codex runs, checked {hist['git']} git repos ({hist_s:.0f}s)")
         print(f"  config: {config.CONFIG_PATH}")
-        from . import mcpload
-        mcpload.main([])   # table only; the probes ran above
+        mcpload.print_table(mcpload.table(use=use))   # the probes ran above
 

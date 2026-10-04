@@ -34,8 +34,8 @@ config.configure("tokenmaxxing", {
     # Long tool inputs (hooks/register.ts): a Bash command or Write content over these sizes is kept in the transcript
     # as a stub naming its saved copy; the call itself runs with the original.
     "long_input": {"mode": "log", "bash_chars": 2000, "write_chars": 4000},
-    # Messages from other sessions and agents, and task notifications (hooks/register.ts): over max_chars, the model
-    # reads the head and the saved path of the whole.
-    "messages": {"mode": "on", "max_chars": 2000},
+    # Long deliveries (hooks/register.ts): over max_chars, the model reads the head and the saved path of the whole.
+    # Task notifications only by default: `peer` also carries every auto-mode subagent hand-back.
+    "messages": {"mode": "log", "max_chars": 8000, "origins": ["task-notification"]},
     "transitions": {"mode": "on"},  # Now-block backup, ticked-item move, /clear and restart pickup (transitions.py)
 })
