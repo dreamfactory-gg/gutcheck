@@ -80,7 +80,7 @@ Everything lives in `~/.config/tokenmaxxing/config.toml`. `tokenmaxxing init` wr
 | `[loop_nudge] mode`, `[soldier] mode` | helper-agent nudges | `on` |
 | `[handback] mode` | report-shape line in subagent briefs; the part before `## Details` + saved path for long reports (`log`: record only) | `on` |
 | `[subagent_cap] mode`, `tokens` | subagents past this context may only hand back (`log`: record `would-deny` only, `on`: enforce) | `log`, `250000` |
-| `[compact] mode`, `main_tokens` | compact the main session between turns past this context (`log`: record `would-compact` only) | `on`, `400000` |
+| `[compact] mode`, `main_tokens` | compact the main session between turns past this context (`log`: record `would-compact` only) | `log`, `400000` |
 | `[transitions] mode` | Now-block backup, ticked-item move, re-inject after `/clear` and restart (`off`: compaction checkpoint only) | `on` |
 | `[recall] seen_error`, `[recall] dedup` | "seen this before" hints | `on` |
 | `[mcp_servers] default_off` | MCP servers kept off in every project (`tokenmaxxing mcp off NAME`, `on NAME`) | empty |
