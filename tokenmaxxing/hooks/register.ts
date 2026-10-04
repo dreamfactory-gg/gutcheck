@@ -22,6 +22,12 @@ const LONG = { Bash: 'command', Write: 'content' } as const
 const originals = new Map<string, string>()   // tool_use_id -> the input a stub stands for, until the call runs
 const STUB = /\[the \d[\d,]*-char (?:command|content) of this call, run as written; saved at ([^\]\s]+)\]/
 
+// Messages: another session's or agent's message, or a task notification, over max_chars reaches the model as its
+// head plus the saved path of the whole. Only those origins: what the person typed is never touched.
+let messages: { mode: Mode; max_chars: number } = { mode: 'off', max_chars: 0 }
+const MESSAGE_ORIGINS = new Set(['peer', 'peer-send-message', 'task-notification'])
+const HEAD = 1500
+
 const cli = ($: EngineInterface, args: string[], stdin?: string) =>
   $.process.run([`${$.plugin.root}/bin/tokenmaxxing`, ...args], { stdin })
 const json = async ($: EngineInterface, args: string[]) => {
@@ -49,6 +55,7 @@ export const register: Register = (on) => {
     compact = (await json($, ['config', 'compact'])) ?? compact
     prefix = (await json($, ['config', 'prefix'])) ?? prefix
     longInput = (await json($, ['config', 'long_input'])) ?? longInput
+    messages = (await json($, ['config', 'messages'])) ?? messages
     const used: string[] | null | undefined = await json($, ['mcp', 'used'])
     usedServers = used ? new Set(used) : undefined
     return next(e)
@@ -106,6 +113,23 @@ export const register: Register = (on) => {
       return { deny: `That bracketed text is tokenmaxxing's placeholder for an earlier call's input, not a value. The full text is in ${stub[1]}: read it, or use that file.` }
     }
     return next(e)
+  })
+
+  on('prompt.submit', async ($, e, next) => {
+    if (messages.mode === 'off' || !MESSAGE_ORIGINS.has(e.origin.kind) || e.text.length <= messages.max_chars ||
+        e.text.includes('/mcp-out/handback-')) return next(e)   // a report the hand-back cap already shaped
+    const rec = { mode: messages.mode, origin: e.origin.kind, chars: e.text.length }
+    if (messages.mode !== 'on') {
+      await log($, 'messages', { ...rec, decision: 'would-cut' })
+      return next(e)
+    }
+    const saved = await cli($, ['save', `message-${e.origin.kind}`, '.md'], e.text)
+    if (saved.exitCode !== 0) return next(e)
+    const cut = e.text.lastIndexOf('\n', HEAD)
+    const text = `${e.text.slice(0, cut > 0 ? cut : HEAD).trimEnd()}\n\n(tokenmaxxing cut this ` +
+      `${e.text.length.toLocaleString('en-US')}-char message here; the whole of it is saved at ${saved.stdout.trim()}.)`
+    await log($, 'messages', { ...rec, decision: 'cut', out_chars: text.length })
+    return next({ ...e, text })
   })
 
   on('turn.complete', async ($, e, next) => {

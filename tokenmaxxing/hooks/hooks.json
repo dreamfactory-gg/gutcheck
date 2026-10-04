@@ -1,5 +1,5 @@
 {
-  "description": "tokenmaxxing: MCP and Bash output trims, Read gate, fork guard, subagent context cap, hand-back report cap, nudges, skill hints, evidence check, recall, durable transitions, long-run stop check; mod: compact earlier, fixed prefix, long tool inputs",
+  "description": "tokenmaxxing: MCP and Bash output trims, Read gate, fork guard, subagent context cap, hand-back report cap, nudges, skill hints, evidence check, recall, durable transitions, long-run stop check; mod: compact earlier, fixed prefix, long tool inputs, long messages",
   "modules": ["register.ts"],
   "hooks": {
     "PreToolUse": [
