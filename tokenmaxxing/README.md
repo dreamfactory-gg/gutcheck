@@ -46,7 +46,7 @@ All numbers come from one maintainer's own Claude Code history on macOS: about t
 - `tokenmaxxing skill-find "task"`: the installed skill to read for a task.
 - `tokenmaxxing mcp`: what each of your MCP servers adds to every request just by being connected, and how many recent sessions used it. `tokenmaxxing mcp off NAME...` keeps a server off in every project (Claude Code only disables servers per project; tokenmaxxing applies the list to each new project once, so turning one back on with `/mcp` sticks). `tokenmaxxing init` measures it (one short `claude -p` turn per server, about $0.10 each) and asks.
 - `tokenmaxxing review`, `relevance`, `evidence`, `explain`: background checks on a finished change (Codex review, test gaps, duplication and complexity, docs drift), a cited-evidence check on any report, and an explainer page.
-- Skills: `tokenmaxxing:jev`, `tokenmaxxing:build-units` (plan and check parallel work), `tokenmaxxing:soldiers` (reuse or retire helper agents), `tokenmaxxing:handoff` (tidy TASKS.md before a restart or `/clear`).
+- Skills: `tokenmaxxing:jev`, `tokenmaxxing:build-units` (plan and check parallel work), `tokenmaxxing:soldiers` (reuse or retire helper agents), `tokenmaxxing:handoff` (tidy TASKS.md before a restart or `/clear`), `/tokenmaxxing:lint-pair DIR` (turn copied code into one helper plus an ast-grep rule that bans the next copy).
 - Agents: `tokenmaxxing:explorer` (answers "where is X?" with file and line citations only) and `tokenmaxxing:grader` (an independent check of finished work).
 - Slash commands that cost nothing until you type them: `/tokenmaxxing:report [days]`, `/tokenmaxxing:recall QUESTION`, `/tokenmaxxing:init`.
 
