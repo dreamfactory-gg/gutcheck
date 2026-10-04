@@ -1,4 +1,4 @@
-import type { Register, EngineInterface } from 'claude-code'
+import type { Register, EngineInterface, TurnStepChunk, TurnStepInputChunk } from 'claude-code'
 
 // Compact earlier: once the main session's context passes [compact] main_tokens, compact between turns, at most once
 // every GAP turns (the gap stops a loop when the prefix plus the re-injected checkpoint sit near the threshold).
@@ -14,7 +14,16 @@ let turns = GAP
 let prefix: { mode: Mode } = { mode: 'off' }
 let usedServers: Set<string> | undefined   // MCP server slugs called in the last 30 days; unknown before a refresh
 
-const cli = ($: EngineInterface, args: string[]) => $.process.run([`${$.plugin.root}/bin/tokenmaxxing`, ...args])
+// Long tool inputs: a long Bash command or Write content is recorded as a stub naming its saved copy (at turn.step,
+// the one place the recorded input can change), and the call runs with the original (restored at tool.call, above
+// the permission checks). Only named tools: the engine reads some tool inputs back.
+let longInput: { mode: Mode; bash_chars: number; write_chars: number } = { mode: 'off', bash_chars: 0, write_chars: 0 }
+const LONG = { Bash: 'command', Write: 'content' } as const
+const originals = new Map<string, string>()   // tool_use_id -> the input a stub stands for, until the call runs
+const STUB = /\[the \d[\d,]*-char (?:command|content) of this call, run as written; saved at ([^\]\s]+)\]/
+
+const cli = ($: EngineInterface, args: string[], stdin?: string) =>
+  $.process.run([`${$.plugin.root}/bin/tokenmaxxing`, ...args], { stdin })
 const json = async ($: EngineInterface, args: string[]) => {
   const r = await cli($, args)
   return r.exitCode === 0 ? JSON.parse(r.stdout) : undefined
@@ -39,6 +48,7 @@ export const register: Register = (on) => {
   on('session.start', async ($, e, next) => {
     compact = (await json($, ['config', 'compact'])) ?? compact
     prefix = (await json($, ['config', 'prefix'])) ?? prefix
+    longInput = (await json($, ['config', 'long_input'])) ?? longInput
     const used: string[] | null | undefined = await json($, ['mcp', 'used'])
     usedServers = used ? new Set(used) : undefined
     return next(e)
@@ -52,6 +62,50 @@ export const register: Register = (on) => {
     await log($, 'prefix', { mode: prefix.mode, type: e.type, agent: e.agentId ?? null, chars: out.text.length,
                              out_chars: text?.length ?? 0 })
     return prefix.mode === 'on' ? { text } : out
+  })
+
+  on('turn.step', async function* ($, e, next) {
+    if (longInput.mode === 'off') return yield* next(e)
+    const calls = new Map<number, { id: string; tool: keyof typeof LONG; json: string }>()
+    const held: TurnStepChunk[] = []   // in `on` mode, everything from a named tool's start, until the input is whole
+    for await (const c of next(e)) {
+      if (c.kind === 'tool' && (c.name === 'Bash' || c.name === 'Write')) calls.set(c.index, { id: c.id, tool: c.name, json: '' })
+      const call = c.kind === 'input' ? calls.get(c.index) : undefined
+      if (call && c.kind === 'input') call.json += c.json
+      if (longInput.mode === 'on' && calls.size) held.push(c)
+      else yield c
+    }
+    for (const [index, call] of calls) {
+      let input: Record<string, unknown>
+      try { input = JSON.parse(call.json) } catch { continue }
+      const value = input[LONG[call.tool]]
+      if (typeof value !== 'string' || value.length <= (call.tool === 'Bash' ? longInput.bash_chars : longInput.write_chars)) continue
+      const rec = { mode: longInput.mode, tool: call.tool, agent: e.agentId ?? null, chars: value.length }
+      if (longInput.mode !== 'on') { await log($, 'long_input', { ...rec, decision: 'would-stub' }); continue }
+      const ext = call.tool === 'Bash' ? '.sh' : (String(input.file_path).match(/\.\w+$/)?.[0] ?? '.txt')
+      const saved = await cli($, ['save', `${call.tool.toLowerCase()}-input`, ext], value)
+      if (saved.exitCode !== 0) continue
+      const stub = `[the ${value.length.toLocaleString('en-US')}-char ${LONG[call.tool]} of this call, run as written; saved at ${saved.stdout.trim()}]`
+      originals.set(call.id, value)
+      const parts = held.filter((c): c is TurnStepInputChunk => c.kind === 'input' && c.index === index)
+      held.splice(held.indexOf(parts[0]!), 1, { ...parts[0]!, json: JSON.stringify({ ...input, [LONG[call.tool]]: call.tool === 'Bash' ? `# ${stub}` : stub }) })
+      for (const part of parts.slice(1)) held.splice(held.indexOf(part), 1)
+      await log($, 'long_input', { ...rec, decision: 'stub', out_chars: stub.length })
+    }
+    yield* held
+  })
+
+  on('tool.call', async ($, e, next) => {
+    const original = originals.get(e.tool_use_id)
+    originals.delete(e.tool_use_id)
+    if (original !== undefined && e.tool === 'Bash') return next({ ...e, command: original })
+    if (original !== undefined && e.tool === 'Write') return next({ ...e, content: original })
+    const stub = JSON.stringify(e).match(STUB)
+    if (stub) {
+      await log($, 'long_input', { tool: e.tool, agent: e.agentId ?? null, decision: 'deny-stub' })
+      return { deny: `That bracketed text is tokenmaxxing's placeholder for an earlier call's input, not a value. The full text is in ${stub[1]}: read it, or use that file.` }
+    }
+    return next(e)
   })
 
   on('turn.complete', async ($, e, next) => {

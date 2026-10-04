@@ -105,6 +105,15 @@ def check_prefix(res, wd):
     return "pong" in res.lower(), f"answer {res.strip()[:80]!r}"
 
 
+def check_heredoc_iter(res, wd):
+    rows = [line.split(",") for line in (wd / "sales.csv").read_text().splitlines()[1:]]
+    want = str(sum(int(q) * int(c) for *_, q, c in rows if int(q) > 0))
+    run = subprocess.run([sys.executable, "report.py"], cwd=wd, capture_output=True, text=True, timeout=60).stdout
+    got = re.findall(r"GRAND TOTAL: (\d+)", run)
+    ok = want in re.sub(r"[,_]", "", res) and got[-1:] == [want]
+    return ok, "" if ok else f"answer {res.strip()[:80]!r}, report.py prints {got}, want {want}"
+
+
 def check_mcp_log(res, wd):
     ok = "deploy-canary" in res and "HC-7731" in res
     return ok, "" if ok else f"answer {res.strip()[:80]!r}"
@@ -175,6 +184,21 @@ TASKS = {
                    f"in the two files." for a in range(2, 14, 2)]
                 + ["Without using any tools, from memory: what did init.py print? Reply with exactly three lines: "
                    "`1: codename`, `2: build number`, `3: checksum`."]),
+    # Lever 4 (long tool inputs): run with '[long_input]\nmode = "on"' against '"off"'. Pass: the fix lands, turns <=
+    # off + 1, cost_prod lower.
+    "heredoc_iter": dict(
+        fixture="heredoc_iter", check=check_heredoc_iter, gate=False, last_tools=True,
+        prompts=["Write report.py and run it in ONE Bash call: a heredoc that creates the file (cat > report.py <<'EOF' "
+                 "... EOF) followed by `&& python3 report.py`. report.py reads sales.csv (columns date, region, customer, "
+                 "product, qty, unit_price_cents) with the csv module and prints, each under its own heading: totals per "
+                 "region, totals per product, totals per month, the top 5 customers by amount, and the 3 largest single "
+                 "rows; amounts are qty * unit_price_cents, in cents. Give every function a docstring, validate each row "
+                 "(six fields, integer qty and price, ISO date) with a clear error message, and keep the formatting "
+                 "helpers separate from the totals. Its last line must be `GRAND TOTAL: <cents>`, the sum over all rows. "
+                 "Reply with one line: the grand total.",
+                 "Bug report: report.py counts refund rows (negative qty) in every total, and refunds must be skipped "
+                 "everywhere. Fix report.py with the smallest change, run it again, and reply with only the new grand "
+                 "total."]),
     "mcp_log": dict(
         mcp=True, mcp_floor=40_000, check=check_mcp_log,
         prompt="Use the ci-fixture MCP tool fetch_ci_logs for run 4411. Which job failed, and what is its error "
@@ -317,11 +341,12 @@ def run_one(task, i, root, base, claude_dir, plugin, model):
     if len(rec["prompt_hooks"]) != want:
         rec["ok"], rec["wrong"], rec["why"] = False, False, (f"the candidate's UserPromptSubmit hook ran {len(rec['prompt_hooks'])} "
                                                       f"times (want {want}: not loaded, or loaded twice)")
-    if prompts and rec["ok"] and rec["last_turns"] != 1:
+    if prompts and rec["ok"] and rec["last_turns"] != 1 and not spec.get("last_tools"):
         rec["ok"], rec["why"] = False, f"the last prompt took {rec['last_turns']} turns (tools used to answer it)"
     if prompts:
         rec["mod_compactions"] = _lines(d / "state" / "compact.jsonl")
         rec["checkpoint_injects"] = _lines(d / "state" / "checkpoint_inject.jsonl")
+        rec["long_inputs"] = _lines(d / "state" / "long_input.jsonl")
     if spec.get("min_report") and rec["ok"] and rec.get("report_chars", 0) < spec["min_report"]:
         rec["skip"] = f"the subagent's report was short ({rec.get('report_chars')} chars)"   # nothing to cap: no data
     if spec.get("mcp_floor"):
@@ -451,6 +476,8 @@ def measure(a):
                         u = r["usage"]
                         parent = (f"  parent {r['parent']['cost']:,}  report {r.get('report_chars', 0):,}"
                                   if "parent" in r else "")
+                        if r.get("long_inputs"):
+                            parent += "  long_inputs " + ",".join(x["decision"] for x in r["long_inputs"])
                         if r.get("sub_first"):
                             parent += f"  sub_first write {r['sub_first']['cache_write']:,} read {r['sub_first']['cache_read']:,}"
                         status = "SKIP " + r["skip"] if r.get("skip") else "ok" if r["ok"] else "FAIL " + r["why"]

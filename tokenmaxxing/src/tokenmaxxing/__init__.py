@@ -31,5 +31,8 @@ config.configure("tokenmaxxing", {
     # Fixed prefix (hooks/register.ts), decided once per session: no total_tokens_reminder, no skill listing in
     # subagents, no MCP instructions of servers no session called in 30 days (as the last refresh counted).
     "prefix": {"mode": "on"},
+    # Long tool inputs (hooks/register.ts): a Bash command or Write content over these sizes is kept in the transcript
+    # as a stub naming its saved copy; the call itself runs with the original.
+    "long_input": {"mode": "log", "bash_chars": 2000, "write_chars": 4000},
     "transitions": {"mode": "on"},  # Now-block backup, ticked-item move, /clear and restart pickup (transitions.py)
 })

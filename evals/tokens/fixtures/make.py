@@ -187,6 +187,20 @@ for n in sys.argv[1:]:
 ''')
 
 
+
+def sales(n=80):
+    """heredoc_iter: a sales ledger with a few refunds (negative qty), which the task's bug report says to skip."""
+    r = random.Random(5150)
+    d = HERE / "heredoc_iter"
+    d.mkdir(exist_ok=True)
+    rows = ["date,region,customer,product,qty,unit_price_cents"]
+    for i in range(n):
+        qty = -r.randint(1, 3) if i % 11 == 7 else r.randint(1, 12)
+        rows.append(f"2026-0{r.randint(1, 9)}-{r.randint(10, 28)},{r.choice(['north', 'south', 'east', 'west'])},"
+                    f"cust-{r.randint(100, 140)},{r.choice(['anvil', 'bolt', 'crate', 'drill', 'easel'])},{qty},"
+                    f"{r.randint(150, 9900)}")
+    (d / "sales.csv").write_text("\n".join(rows) + "\n")
+
 if __name__ == "__main__":
     (HERE / "ci_log").mkdir(exist_ok=True)
     (HERE / "big_source").mkdir(exist_ok=True)
@@ -195,4 +209,5 @@ if __name__ == "__main__":
     freeze()
     freeze(270, "freeze_small")
     long_loop()
+    sales()
     print("fixtures written")
