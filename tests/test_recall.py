@@ -4,7 +4,16 @@ import json
 import os
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+# fixture days relative to today: recall searches a rolling window (30 days)
+BASE = datetime.now(timezone.utc) - timedelta(days=5)
+
+
+def day(n):
+    return (BASE + timedelta(days=n)).strftime("%Y-%m-%d")
+
 
 TMP = Path(tempfile.mkdtemp(prefix="gc-recall-")).resolve()
 os.environ.update(GUTCHECK_STATE_DIR=str(TMP / "state"), GUTCHECK_CONFIG_DIR=str(TMP / "config"),
@@ -38,24 +47,24 @@ def result(tid, text, ts, err=False):
 proj = TMP / "claude" / "projects" / "-work-proj"
 S1 = "11111111-aaaa-bbbb-cccc-000000000001"
 jl(proj / f"{S1}.jsonl", [
-    user("why does the widget cache return stale prices?", "2026-09-01T10:00:00Z"),
+    user("why does the widget cache return stale prices?", f"{day(1)}T10:00:00Z"),
     asst([{"type": "text", "text": "The widget cache keyed on sku only, so currency changes were ignored. "
                                     f"Fixed by adding currency to the cache key. token {FAKE_KEY}"}],
-         "2026-09-01T10:01:00Z"),
+         f"{day(1)}T10:01:00Z"),
     asst([{"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "pytest -q tests/test_cache.py"}}],
-         "2026-09-01T10:02:00Z"),
-    result("t1", "Exit code 1\nE   ModuleNotFoundError: No module named 'frobnicate'", "2026-09-01T10:02:05Z", True),
+         f"{day(1)}T10:02:00Z"),
+    result("t1", "Exit code 1\nE   ModuleNotFoundError: No module named 'frobnicate'", f"{day(1)}T10:02:05Z", True),
     asst([{"type": "text", "text": "The test venv lacks the optional frobnicate extra; installing it with "
-                                    "`pip install .[frob]` fixes the import."}], "2026-09-01T10:03:00Z"),
+                                    "`pip install .[frob]` fixes the import."}], f"{day(1)}T10:03:00Z"),
     asst([{"type": "tool_use", "id": "t2", "name": "Bash", "input": {"command": "pip install .[frob]"}}],
-         "2026-09-01T10:03:10Z"),
-    result("t2", "ok", "2026-09-01T10:03:20Z"),
+         f"{day(1)}T10:03:10Z"),
+    result("t2", "ok", f"{day(1)}T10:03:20Z"),
 ])
 jl(proj / S1 / "subagents" / "agent-x1.jsonl", [
     user("Audit the billing module for rounding bugs in invoice totals and report file:line findings.",
-         "2026-09-02T09:00:00Z"),
+         f"{day(2)}T09:00:00Z"),
     asst([{"type": "text", "text": "Found one: invoice.py:88 rounds each line before summing."}],
-         "2026-09-02T09:05:00Z"),
+         f"{day(2)}T09:05:00Z"),
 ])
 mem = proj / "memory"
 mem.mkdir(parents=True)
@@ -65,18 +74,18 @@ mem.mkdir(parents=True)
 (mem / "archive" / "old-queue.md").write_text("We moved the job queue from Redis to Postgres SKIP LOCKED because "
                                               "Redis lost jobs on failover.\n")
 jl(TMP / "codex" / "sessions" / "2026" / "09" / "03" / "rollout-2026-09-03T01-00-00-x.jsonl", [
-    {"type": "session_meta", "payload": {"cwd": "/work/proj", "timestamp": "2026-09-03T01:00:00Z"}},
-    {"type": "response_item", "timestamp": "2026-09-03T01:00:01Z", "payload": {
+    {"type": "session_meta", "payload": {"cwd": "/work/proj", "timestamp": f"{day(3)}T01:00:00Z"}},
+    {"type": "response_item", "timestamp": f"{day(3)}T01:00:01Z", "payload": {
         "type": "message", "role": "user", "content": [{"type": "input_text", "text":
             "Implement retry with jitter for the webhook sender in /work/proj/webhooks.py; add tests."}]}},
-    {"type": "event_msg", "timestamp": "2026-09-03T01:01:00Z", "payload": {"type": "item_completed", "item": {
+    {"type": "event_msg", "timestamp": f"{day(3)}T01:01:00Z", "payload": {"type": "item_completed", "item": {
         "type": "CommandExecution", "command": ["/bin/zsh", "-lc", "cargo build"], "exit_code": 101,
         "stdout": "", "stderr": "error: package collision in the lockfile: packages foo v0.1.0 and foo v0.1.0"}}},
-    {"type": "response_item", "timestamp": "2026-09-03T01:02:00Z", "payload": {
+    {"type": "response_item", "timestamp": f"{day(3)}T01:02:00Z", "payload": {
         "type": "message", "role": "assistant", "content": [{"type": "output_text", "text":
             "Cargo rejects symlinked path dependencies as distinct lockfile packages; pointing the manifest at "
             "the original paths fixed it."}]}},
-    {"type": "event_msg", "timestamp": "2026-09-03T01:09:00Z", "payload": {
+    {"type": "event_msg", "timestamp": f"{day(3)}T01:09:00Z", "payload": {
         "type": "task_complete", "last_agent_message": "Retry with jitter added; 6 tests pass."}},
 ])
 
