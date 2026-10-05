@@ -42,7 +42,7 @@ def _read(p, default):
 
 def _write(p, d):
     p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(p.name + ".gutcheck.tmp")
+    tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")  # per process: concurrent writers collided on one name
     tmp.write_text(json.dumps(d, indent=2))
     tmp.replace(p)
 

@@ -296,11 +296,17 @@ def post_tool_trim(inp):
     resp = inp["tool_response"]
     if resp.get("interrupted") or resp.get("isImage"):
         return
-    cmd = shlex.shlex((inp.get("tool_input") or {}).get("command", ""), posix=True, punctuation_chars=True)
-    cmd.whitespace_split = True
+    command = (inp.get("tool_input") or {}).get("command", "")
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        args = list(lexer)
+    except ValueError:  # unbalanced quote, e.g. an apostrophe in a heredoc body
+        args = command.split()
     cwd = Path(inp.get("cwd") or os.getcwd())
     saved_dir = mcpout.out_dir().resolve()
-    if any((cwd / Path(arg).expanduser()).resolve().is_relative_to(saved_dir) for arg in cmd):
+    # os.path.expanduser leaves an unknown ~user as is; Path.expanduser raises on it.
+    if any((cwd / os.path.expanduser(arg)).resolve().is_relative_to(saved_dir) for arg in args):
         return
     ti = inp.get("tool_input") or {}
     try:
