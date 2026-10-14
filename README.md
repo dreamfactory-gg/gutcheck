@@ -7,7 +7,7 @@ Built by [Eaven Portillo](https://www.linkedin.com/in/eaven-portillo).
 ## Status
 
 - **Daily use, one person, one Mac.** Built and run every day on macOS for several weeks. Linux should work but is untried; Windows isn't supported.
-- **What enforces today:** the pasted-key blocker, refusal of keys written into commands or files, redaction of keys in command output, the secret-file block on Read and Grep, and the don't-delete guard.
+- **What enforces today:** the pasted-key blocker, refusal of keys written into commands or files, redaction of keys in command output, the secret-file block on direct Read and Grep, and the don't-delete guard.
 - **What runs in log mode:** the Bash command check records what it would have asked about, and switches itself to asking once its own live log passes a health gate. On the author's install it is held in log mode, so it has not yet asked in live use. Several tokenmaxxing features (earlier compaction, the subagent context cap, the long-run stop check) also ship in log mode.
 - **Needs** Python 3.12+ and a [TypeSafe](https://typesafe.ai) or Vercel AI Gateway key for the judgment-model features. Without a key those stay off and the plugin says so at session start.
 - **No CI yet.** Tests and the token-cost release gate run locally.
@@ -18,7 +18,7 @@ An agent doing real work holds real keys, runs commands on real servers and fill
 
 | Problem | What the plugins do |
 |---|---|
-| **Secrets** | A typed prompt with a key in a known format is blocked before it's sent. A key written into a command, file or MCP call is refused with a pointer to `gutcheck withsecret`, which hands the secret to the command through its environment so it never appears in the command text (what the command itself prints is up to the command). Read and Grep can't open `.env` or key files; reading them through Bash is only logged while the Bash check is in log mode. |
+| **Secrets** | A typed prompt with a key in a known format is blocked before it's sent. A key written into a command, file or MCP call is refused with a pointer to `gutcheck withsecret`, which hands the secret to the command through its environment so it never appears in the command text (what the command itself prints is up to the command). Read can't open `.env` or key files, and neither can a Grep pointed at one; a Grep across a whole directory, or a read through Bash while the Bash check is in log mode, isn't blocked. |
 | **Irreversible actions** | "Don't delete notes.txt", said once, still holds twenty turns later. Force pushes, deletes outside temp dirs, secret-printing and decoded-then-run commands are found by a shell parser that unwraps `ssh`, `sudo`, `bash -c`, heredocs and `docker exec` (log mode by default; see Status). |
 | **Context** | Long tool output becomes a compact view plus a saved file. Standing instructions and running jobs are written down before a compaction and put back after it. A failed command gets one line on how the same error was fixed before. |
 | **Review** | Claims in a subagent's report that cite a file and line are checked against that file. On demand, background checks on a finished change cover tests, duplication and docs drift. |
@@ -28,7 +28,7 @@ An agent doing real work holds real keys, runs commands on real servers and fill
 **[gutcheck](gutcheck/README.md)** guards against rogue agent actions. It only adds friction: it can make Claude ask, block a prompt, refuse a call or redact output, and it never approves anything for you.
 
 - Pasted-key blocker for known key formats, with a 60-second resend override for a wrong block.
-- Secret-file block on Read and Grep for `.env`, private keys and credential files; `.env.example` stays readable.
+- Secret-file block on Read, and on Grep pointed at the file, for `.env`, private keys and credential files; `.env.example` stays readable.
 - Key guard on Bash, Write, Edit and MCP calls; known key formats redacted from command output.
 - Don't-delete guard: your own words become protected paths, and `rm`, `git clean`, `git reset --hard`, `mv` or `>` over them needs your OK.
 - Bash command check (log mode by default) and a pre-push check of the unpushed diff against your CLAUDE.md rules (log mode by default).

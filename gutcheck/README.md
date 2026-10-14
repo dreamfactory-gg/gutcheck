@@ -29,7 +29,7 @@ From replays of one maintainer's own Claude Code history on macOS (about two wee
 
 ## On demand
 
-- `gutcheck withsecret SERVICE ENV -- command`: run a command with a secret in its environment, without the value ever being printed.
+- `gutcheck withsecret SERVICE ENV -- command`: run a command with a secret in its environment, so the value never appears in the command text (what the command prints is up to the command).
 - `gutcheck check-bash "COMMAND"`: dry-run the Bash check.
 - `gutcheck house-rules [--repo D]`: check the unpushed diff against the project's CLAUDE.md rules.
 - `gutcheck report [days]`: Bash asks and approvals, and pasted-key blocks.
