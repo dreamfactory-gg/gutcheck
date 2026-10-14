@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 
 def _env_name(service):
@@ -71,7 +72,7 @@ def withsecret(service, env, argv):
     if sys.platform == "win32":
         # through Git Bash's sh: CreateProcess can't run shebang scripts or our extensionless wrappers. Absolute PATH
         # entries only: which() and CreateProcess both try the cwd first, where a project's sh.exe would get the secret.
-        sh = next((p for d in os.environ.get("PATH", "").split(os.pathsep) if os.path.isabs(d)
+        sh = next((p for d in os.environ.get("PATH", "").split(os.pathsep) if Path(d).is_absolute()
                    for p in (os.path.join(d, "sh.exe"), os.path.join(d, "sh")) if os.path.isfile(p)), None)
         if not sh:
             sys.exit("withsecret: Git Bash's sh is not on PATH")
