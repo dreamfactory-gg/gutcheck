@@ -30,7 +30,7 @@ def out_dir():
 
 def passes_through(server, cfg=None):
     """Is this MCP server's output left untouched (no view, no saved file)? Roblox_Studio by default: Studio
-    calls go direct and oof, when installed, shapes their output at the source."""
+    calls go direct and a Studio MCP proxy, when installed, shapes their output at the source."""
     cfg = cfg if cfg is not None else config.load().get("mcp_trim", {})
     return server in (cfg.get("pass_through") or [])
 

@@ -199,7 +199,7 @@ def test_old_profile_removed_only_if_ours():
     d.parent.mkdir(parents=True)
     d.write_text("---\nname: studio\n---\nold\n\n" + rs.AGENT_MARK + "\n")
     assert rs.remove_agent_profile(d) == "removed" and not d.exists()
-    d.write_text("---\nname: studio\n---\nthe owner's (or oof's) own")
+    d.write_text("---\nname: studio\n---\nthe owner's (or a proxy's) own")
     assert rs.remove_agent_profile(d).startswith("kept") and d.exists()
     assert not hasattr(rs, "install_agent") and not hasattr(rs, "agent_profile")
 

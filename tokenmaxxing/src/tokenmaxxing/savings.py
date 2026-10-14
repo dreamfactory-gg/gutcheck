@@ -1,4 +1,4 @@
-"""Context kept out by tokenmaxxing and oof, times the later API calls that would have re-sent it (until compaction).
+"""Context kept out by tokenmaxxing and a Studio proxy, times the API calls that would re-send it (until compaction).
 Re-sends are priced as cache reads (0.1x); tokens ~ chars / 4."""
 import json
 import os
@@ -8,7 +8,7 @@ from pathlib import Path
 
 from gutcheck_core import config, transcripts
 
-OOF_HOME = Path(os.environ.get("OOF_HOME", Path.home() / ".cache" / "oof"))
+PROXY_HOME = Path(os.environ.get("STUDIO_PROXY_HOME", Path.home() / ".cache" / "studio-proxy"))
 CACHE_READ = 0.1
 STUDIO = "mcp__Roblox_Studio__"
 
@@ -43,7 +43,7 @@ def kept_events(since):
             out.append({"id": d.get("id"), "tool": d.get("tool"), "source": "tokenmaxxing", "kept": k})
     studio = [d for d in calls if str(d.get("tool", "")).startswith(STUDIO)]
     taken = set()
-    for r in _jsonl(OOF_HOME / "metrics.jsonl"):
+    for r in _jsonl(PROXY_HOME / "metrics.jsonl"):
         if "studio_out" not in r:
             continue
         t = _epoch(r.get("t"))
@@ -62,7 +62,7 @@ def kept_events(since):
                 best = d
         if best:
             taken.add(best["id"])
-        out.append({"id": best and best["id"], "tool": STUDIO + r["tool"], "source": "oof", "kept": k})
+        out.append({"id": best and best["id"], "tool": STUDIO + r["tool"], "source": "studio-proxy", "kept": k})
     return out
 
 

@@ -358,7 +358,7 @@ def heavy_untightenable(days=7, now=None):
 
 def upkeep():
     """Background, at most once a day (started by SessionStart): track waste; remove the studio.md agent profile
-    earlier versions installed (oof owns the Studio agent now); keep the Studio tools' preload setting applied."""
+    earlier versions installed (a Studio proxy owns that agent now); keep the Studio tools' preload setting applied."""
     try:
         track()
     except Exception as e:

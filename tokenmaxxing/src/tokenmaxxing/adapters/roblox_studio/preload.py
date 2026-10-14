@@ -8,7 +8,7 @@ left alone. Config: [studio] preload_tools (default off); the daily upkeep appli
 Measured (headless, stock StudioMCP): with alwaysLoad the first turn skips ToolSearch, but every call carries all
 28 Studio tool schemas (~20k tokens); deferred, ToolSearch loads only the tools used (a few hundred tokens each).
 Over a long session the preload costs far more than the round trips it saves, so it stays off unless the eval
-says otherwise. A proxy (oof) can instead mark single tools with `_meta["anthropic/alwaysLoad"]`.
+says otherwise. A Studio MCP proxy can instead mark single tools with `_meta["anthropic/alwaysLoad"]`.
 
   tokenmaxxing studio preload on|off|status
 """

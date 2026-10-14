@@ -8,7 +8,7 @@ plumbing behind it.
   SubagentStart: a new agent of the same type in the same project gets the pending note once (then it's used).
 
 Thresholds live in config: [soldier] max_context_tokens / max_idle_minutes, overridden per agent name or type in
-[soldier.agents.<name>]. The defaults are conservative placeholders; oof's eval (soldier reuse vs fresh helper)
+[soldier.agents.<name>]. The defaults are conservative placeholders; a Studio proxy eval (soldier reuse vs fresh helper)
 sets them.
 
   tokenmaxxing soldier-note [AGENT_TYPE] [--path] [--dir D]   the latest note for this project (or its path)

@@ -1,15 +1,15 @@
 """Roblox Studio adapter. Studio calls go direct and come back untouched: the core MCP output layer passes
-Roblox_Studio through (config `mcp_trim.pass_through`), with no receipts, outlines or saved files; oof, when
+Roblox_Studio through (config `mcp_trim.pass_through`), with no receipts, outlines or saved files; a Studio proxy, when
 installed, shapes Studio output at the source. What the adapter still does:
   - the Studio rules: rules.md, and the marked block in Roblox projects' CLAUDE.md (install_rules);
-  - removing the `studio` agent profile earlier versions installed (oof owns the Studio agent now);
+  - removing the `studio` agent profile earlier versions installed (a Studio MCP proxy owns the Studio agent now);
   - preloading the Studio tools in Roblox projects instead of deferring them behind ToolSearch (preload.py);
   - the experimental local script mirror (studio.py): `tokenmaxxing studio sync` and the resync after an edit, both off
     unless `[studio] mirror = true`."""
 from pathlib import Path
 
 SERVER = "Roblox_Studio"
-# oof's eval: Studio work moves to a fresh foreground agent per task once the main context is above ~100k (below
+# Studio proxy eval: Studio work moves to a fresh foreground agent per task once the main context is above ~100k (below
 # that, call Studio directly), and a studio agent is never resumed: a SendMessage resume runs in the background and
 # costs the main session ~2 extra turns per hand-off, which a warm, same-area reuse arm still lost on.
 SOLDIER_POLICIES = {r"studio": {"reuse": False, "fresh_above_main_tokens": 100_000}}
@@ -43,13 +43,13 @@ def post_tool(tool, inp, text, cfg):
     return None
 
 
-# ---- the old studio agent profile: oof owns the Studio agent now -----------------------------------------------
+# ---- the old studio agent profile: a Studio MCP proxy owns it now -----------------------------------------------
 AGENT_MARK = "<!-- installed by gutcheck (roblox_studio adapter); regenerated on refresh -->"
 
 
 def remove_agent_profile(dest=None):
     """Remove the studio.md that earlier gutcheck versions installed (it carries AGENT_MARK). A studio.md
-    without the mark (the owner's own, or oof's) is never touched. Returns what happened."""
+    without the mark (the owner's own, or a proxy's) is never touched. Returns what happened."""
     dest = Path(dest or Path.home() / ".claude" / "agents" / "studio.md")
     try:
         text = dest.read_text()
@@ -83,7 +83,7 @@ def rules():
 
 
 BLOCK_START, BLOCK_END = "<!-- gutcheck:roblox-studio -->", "<!-- /gutcheck:roblox-studio -->"
-HANDOFF_RULE = ("- A long Studio loop may go to a subagent, your call (oof's studio agent when installed): reuse it via "
+HANDOFF_RULE = ("- A long Studio loop may go to a subagent, your call (a Studio proxy's agent if any): reuse it via "
                 "SendMessage while it's on the same area and warm; retire it with a handoff note when it's large, "
                 "off-topic or cold (skill `tokenmaxxing:soldiers`).")
 
