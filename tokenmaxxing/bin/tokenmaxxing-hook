@@ -16,5 +16,5 @@ if [ ! -x "$py" ]; then
     exit 0
   fi
 fi
-PYTHONPATH="$here/../src" "$py" -m tokenmaxxing.cli hook "$@" 2>/dev/null
+PYTHONUTF8=1 PYTHONPATH="$here/../src" "$py" -P -m tokenmaxxing.cli hook "$@" 2>/dev/null
 exit 0

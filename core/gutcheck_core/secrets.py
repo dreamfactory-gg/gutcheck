@@ -3,6 +3,7 @@
 Values are returned to callers in-process only; nothing here prints a secret.
 """
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -59,7 +60,7 @@ def store_hint(service):
     if sys.platform == "darwin":
         return f"security add-generic-password -a \"$USER\" -s {service} -w   (prompts for the value)"
     if sys.platform == "win32":
-        return f"MSYS_NO_PATHCONV=1 cmdkey /generic:{service} /user:{os.environ['USERNAME']} /pass"
+        return f"MSYS_NO_PATHCONV=1 cmdkey /generic:{service} /user:{shlex.quote(os.environ['USERNAME'])} /pass"
     if shutil.which("secret-tool"):
         return f"secret-tool store --label={service} service {service}   (prompts for the value)"
     return f"export {_env_name(service)}=...   (in your shell profile; no system keyring found)"
@@ -72,10 +73,14 @@ def withsecret(service, env, argv):
     if sys.platform == "win32":
         # through Git Bash's sh: CreateProcess can't run shebang scripts or our extensionless wrappers. Absolute PATH
         # entries only: which() and CreateProcess both try the cwd first, where a project's sh.exe would get the secret.
-        sh = next((p for d in os.environ.get("PATH", "").split(os.pathsep) if Path(d).is_absolute()
-                   for p in (os.path.join(d, "sh.exe"), os.path.join(d, "sh")) if os.path.isfile(p)), None)
+        # sh.exe first: an extensionless sh earlier on PATH is a script CreateProcess can't run.
+        dirs = [d for d in os.environ.get("PATH", "").split(os.pathsep) if Path(d).is_absolute()]
+        sh = next((p for n in ("sh.exe", "sh") for d in dirs if os.path.isfile(p := os.path.join(d, n))), None)
         if not sh:
             sys.exit("withsecret: Git Bash's sh is not on PATH")
-        sys.exit(subprocess.run([sh, "-c", 'exec "$@"', "sh", *argv], env={**os.environ, env: v}).returncode)
+        # MSYS2_ENV_CONV_EXCL: MSYS converts values that look like paths; a secret must reach the child as stored
+        excl = ";".join(filter(None, (os.environ.get("MSYS2_ENV_CONV_EXCL"), env)))
+        sys.exit(subprocess.run([sh, "-c", 'exec "$@"', "sh", *argv],
+                                env={**os.environ, env: v, "MSYS2_ENV_CONV_EXCL": excl}).returncode)
     os.environ[env] = v
     os.execvp(argv[0], argv)

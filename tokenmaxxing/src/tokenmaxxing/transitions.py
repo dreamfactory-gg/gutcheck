@@ -45,7 +45,6 @@ NOW_MAX_CHARS, NOW_MAX_LINES = 1500, 40
 NOW_RE = re.compile(r"^## Now[ \t]*\r?$", re.MULTILINE)
 HEADING_RE = re.compile(r"^#{1,6}(?:[ \t]|\r?$)", re.MULTILINE)
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
-TASK_RE = re.compile(r"^\s*[-*+] \[[ xX]\]")
 SHELLS = {"sh", "bash", "zsh", "dash", "fish", "tokenmaxxing-hook"}
 
 NOW_SYSTEM = "You summarise where a coding session stands, for the session that continues it. Answer in plain text."
@@ -102,7 +101,7 @@ def _now_span(text):
         f = FENCE_RE.match(ln)
         if f:
             fence = None if fence == f.group(1) else fence or f.group(1)
-        elif not fence and (HEADING_RE.match(ln) or TASK_RE.match(ln)):
+        elif not fence and (HEADING_RE.match(ln) or OPEN_RE.match(ln) or DONE_RE.match(ln)):
             break
         pos += len(ln)
     return m.start(), pos

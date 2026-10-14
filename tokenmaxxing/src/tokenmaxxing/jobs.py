@@ -55,11 +55,11 @@ def read_status(d):
 
 
 def spawn(d, argv):
-    """Run `python -m tokenmaxxing.cli <argv>` detached (own session, no stdin), output to d/job.log."""
+    """Run `python -P -m tokenmaxxing.cli <argv>` detached (own session, no stdin), output to d/job.log."""
     env = dict(os.environ, PYTHONPATH=str(SRC) + (os.pathsep + os.environ["PYTHONPATH"]
                                                   if os.environ.get("PYTHONPATH") else ""))
     with open(Path(d) / "job.log", "ab") as log:
-        p = subprocess.Popen([sys.executable, "-m", "tokenmaxxing.cli", *argv], stdin=subprocess.DEVNULL,
+        p = subprocess.Popen([sys.executable, "-P", "-m", "tokenmaxxing.cli", *argv], stdin=subprocess.DEVNULL,
                              stdout=log, stderr=log, env=env, start_new_session=True, cwd=str(d))
     write_status(d, state="running", pid=p.pid, started=time.strftime("%Y-%m-%dT%H:%M:%S"))
     return p.pid
@@ -80,10 +80,10 @@ def alive(pid):
 
 def _win_alive(pid):
     import ctypes
-    k = ctypes.windll.kernel32
+    k = ctypes.WinDLL("kernel32", use_last_error=True)
     h = k.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
     if not h:
-        return k.GetLastError() == 5  # ERROR_ACCESS_DENIED
+        return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED
     code = ctypes.c_ulong()
     try:
         return bool(k.GetExitCodeProcess(h, ctypes.byref(code))) and code.value == 259  # STILL_ACTIVE

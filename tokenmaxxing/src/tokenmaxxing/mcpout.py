@@ -267,11 +267,11 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
     if level == "receipt" and kind == "action":
         path = save_fn(".txt")
         fails = failure_lines(text, limit=30) + [x for x in warning_lines(text, 10)]
+        verdict = _json_failure(text)
         first = text.strip().splitlines()[0][:160] if text.strip() else ""
-        if fails:
-            fails = sorted(_dedupe(fails))
+        if fails or verdict:
             return (f"✗ failed or warned · {len(text):,} chars, full output saved to {path}\n"
-                    + _numbered(fails))
+                    + _numbered(verdict + sorted(_dedupe(fails))))
         return f"✓ ok · {first} · full output ({len(text):,} chars) saved to {path}"
     if level == "receipt" and kind == "log":
         return _log_view(text, nlines, save_fn, routine or set(), judge, cfg)
@@ -283,6 +283,20 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
         return _bash_view(text, nlines, save_fn, cfg, purpose, command, brief, description)
     except Exception:
         return _bash_view(text, nlines, save_fn, cfg)  # purpose selection must never prevent the ordinary trim
+
+
+def _json_failure(text):
+    """(key, value) for the top-level keys that mark a JSON object reply failed: success/ok false, or an error or
+    reason without success/ok true."""
+    try:
+        d = json.loads(text)
+    except ValueError:
+        return []
+    if not isinstance(d, dict):
+        return []
+    ok = d.get("success", d.get("ok"))
+    return [(k, json.dumps(d[k])[:300]) for k in ("success", "ok", "error", "reason")
+            if k in d and (d[k] is False if k in ("success", "ok") else d[k] and ok is not True)]
 
 
 def _fail_block(text, limit=20):

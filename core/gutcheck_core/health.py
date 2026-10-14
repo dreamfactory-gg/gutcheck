@@ -14,7 +14,7 @@ def _bg(args, module=None):
     config.STATE_DIR.mkdir(parents=True, exist_ok=True)
     log = open(config.STATE_DIR / "background.log", "a")
     env = dict(os.environ, PYTHONPATH=os.path.dirname(os.path.dirname(__file__)))
-    subprocess.Popen([sys.executable, "-m", module or f"{config.APP}.cli"] + args, stdout=log, stderr=log,
+    subprocess.Popen([sys.executable, "-P", "-m", module or f"{config.APP}.cli"] + args, stdout=log, stderr=log,
                      stdin=subprocess.DEVNULL, start_new_session=True, env=env)
 
 

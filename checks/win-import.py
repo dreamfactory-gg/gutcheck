@@ -32,8 +32,14 @@ with open(tmp / "lockfile", "a+") as fh, lock.locked(fh):
     pass
 assert calls, "locked() did not call msvcrt.locking"
 
+(tmp / "a").mkdir()
+(tmp / "a" / "sh").write_text("#!/bin/sh\nexit 9\n")  # an extensionless sh earlier on PATH than sh.exe
+(tmp / "a" / "sh").chmod(0o755)
+(tmp / "b").mkdir()
+(tmp / "b" / "sh.exe").symlink_to("/bin/sh")
+os.environ["PATH"] = os.pathsep.join([str(tmp / "a"), str(tmp / "b"), os.environ["PATH"]])
 try:
-    secrets.withsecret("dfhtest", "T", ["sh", "-c", "exit 3"])
+    secrets.withsecret("dfhtest", "T", ["/bin/sh", "-c", '[ "$MSYS2_ENV_CONV_EXCL" = T ] && [ "$T" = x ] && exit 3'])
     raise AssertionError("withsecret returned")
 except SystemExit as e:
     assert e.code == 3, e.code
@@ -62,9 +68,9 @@ def exit_code(h, ref):
 
 
 closed = []
-ctypes.windll = types.SimpleNamespace(kernel32=types.SimpleNamespace(
-    OpenProcess=open_process, GetLastError=lambda: last[0], GetExitCodeProcess=exit_code,
-    CloseHandle=closed.append))
+kernel32 = types.SimpleNamespace(OpenProcess=open_process, GetExitCodeProcess=exit_code, CloseHandle=closed.append)
+ctypes.WinDLL = lambda name, use_last_error=False: kernel32 if name == "kernel32" and use_last_error else None
+ctypes.get_last_error = lambda: last[0]
 got = [jobs.alive(p) for p in (10, 11, 12, 13, None)]
 assert got == [True, False, True, False, False], got
 assert closed == [1010, 1011], closed

@@ -64,6 +64,8 @@ def connect(readonly=False):
 
 
 def _node(db, parent, level, label, source="", path="", line=0, ts="", kind=""):
+    # labels cut from prompts reach Jev through recall; project names come from the cwd and are looked up as stored
+    label = label if level == "project" else secretscan.redact(label)
     cur = db.execute("insert into nodes(parent,level,label,source,path,line,ts,kind) values(?,?,?,?,?,?,?,?)",
                      (parent, level, label[:300], source, path, line, ts, kind))
     return cur.lastrowid
