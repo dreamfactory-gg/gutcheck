@@ -69,9 +69,10 @@ def withsecret(service, env, argv):
     if not v:
         sys.exit(f"withsecret: no secret stored for '{service}'. Store it with: {store_hint(service)}")
     if sys.platform == "win32":
-        # through Git Bash's sh: CreateProcess can't run shebang scripts or our extensionless wrappers. An explicit
-        # path keeps which() (and CreateProcess) from taking a project-local sh.exe in the cwd.
-        sh = shutil.which("sh", path=os.environ.get("PATH", ""))
+        # through Git Bash's sh: CreateProcess can't run shebang scripts or our extensionless wrappers. Absolute PATH
+        # entries only: which() and CreateProcess both try the cwd first, where a project's sh.exe would get the secret.
+        sh = next((p for d in os.environ.get("PATH", "").split(os.pathsep) if os.path.isabs(d)
+                   for p in (os.path.join(d, "sh.exe"), os.path.join(d, "sh")) if os.path.isfile(p)), None)
         if not sh:
             sys.exit("withsecret: Git Bash's sh is not on PATH")
         sys.exit(subprocess.run([sh, "-c", 'exec "$@"', "sh", *argv], env={**os.environ, env: v}).returncode)
