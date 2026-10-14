@@ -1,7 +1,7 @@
 {
   "name": "gutcheck",
   "version": "0.2.0",
-  "description": "Guards against rogue agent actions: risky Bash asks first, pasted and literal keys are blocked, secret files stay unread, don't-delete instructions hold.",
+  "description": "Guards against rogue agent actions: pasted and literal keys are blocked, secret files stay unread, don't-delete instructions hold, risky Bash is flagged (log mode until it switches itself on).",
   "author": {"name": "dreamfactory-gg"},
   "homepage": "https://github.com/dreamfactory-gg/gutcheck",
   "repository": "https://github.com/dreamfactory-gg/gutcheck",

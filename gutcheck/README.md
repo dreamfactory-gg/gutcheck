@@ -1,22 +1,22 @@
 # gutcheck
 
-**Claude checks with you before it does something you can't undo.**
+**Keys, secret files and things you said to keep stay under your control, even when Claude runs on its own.**
 
 gutcheck is a Claude Code plugin that guards against rogue agent actions: risky commands, keys in the transcript, secret files read into the chat, and deleting what you said to keep. It only adds friction; it never approves anything for you. Install and key setup: see the [marketplace README](../README.md); its first session links the `gutcheck` CLI into `~/.local/bin` (manual command there). For longer, cheaper sessions, its sibling plugin is [tokenmaxxing](../tokenmaxxing/README.md).
 
 | When… | Without gutcheck | With gutcheck |
 |---|---|---|
 | you paste an API key | it's in the transcript for good | the prompt is blocked before it's sent |
-| Claude is about to force-push, `rm -rf` or print a secret | it runs if your permissions allow it | Claude has to ask you first |
+| Claude is about to force-push, `rm -rf` or print a secret | it runs if your permissions allow it | logged as a would-be ask today; Claude has to ask you once the check is switched on |
 | Claude writes a key into a command or a file | it's in the transcript and on disk | the call is refused, with a pointer to `gutcheck withsecret` |
 | you said "don't delete notes.txt" earlier | a later `rm` or overwrite just runs | Claude has to ask you, quoting what you said |
 
 ### Measured
 
-From one maintainer's own Claude Code history on macOS (about two weeks, 2,000+ prompts and 11,000 Bash commands). Your mileage will differ.
+From replays of one maintainer's own Claude Code history on macOS (about two weeks, 2,000+ prompts and 11,000 Bash commands). Method and caveats: [docs/evaluation.md](../docs/evaluation.md).
 
 - **Pasted keys:** zero false blocks on 2,158 real prompts. Made-up keys of 11 common kinds were all caught.
-- **Risky commands:** caught 29 of 30 labelled risky commands, with about 1 false alarm per 200 commands.
+- **Risky commands:** on a labelled set of 225 real commands, caught 29 of 30 risky ones, with 4 false alarms in 195 safe ones (about 1 in 49). Labels were written by a separate model, not by hand.
 
 ## What runs by itself
 
@@ -24,7 +24,7 @@ From one maintainer's own Claude Code history on macOS (about two weeks, 2,000+ 
 - **Secret files.** `.env`, private keys and credential files can't be read into the chat. Templates like `.env.example` stay readable.
 - **Don't-delete guard.** When you've told the session not to delete, remove or overwrite something ("don't delete notes.txt", "never overwrite `config/`"; paths that existed when you said it), a command or Write that would (`rm`, `git rm`, `git clean`, `git checkout --`, `git reset --hard`, `git stash drop`, `find -delete`, `mv` or `>` over it, a directory holding it) needs your OK first, quoting what you said.
 - **Keys in tool calls.** A literal key in a command, a file Claude writes or edits, or an MCP call is refused, with a pointer to `gutcheck withsecret`. Placeholders, `$VARS` and `.env.example` content pass. A key in a known provider format that a command prints is redacted before Claude sees it.
-- **Bash check.** Before a command runs, gutcheck looks for destructive, secret-printing or hidden (decoded-then-run) commands and makes Claude ask you. It starts in logging mode and switches itself on once its own logs show it's fast and quiet enough.
+- **Bash check.** Before a command runs, gutcheck looks for destructive, secret-printing or hidden (decoded-then-run) commands and would make Claude ask you. It ships in logging mode: it records what it would have asked (`gutcheck report` shows it) and switches itself on once its own log shows it's fast and quiet enough (at least 100 checks, under 2% hook errors, p95 under 3 s, under 5% fail-opens and under 5% would-be asks). Until then it asks nothing.
 - **House rules before a push.** Before `git push`, the unpushed diff is checked against your CLAUDE.md rules (secrets, conflict markers, "never `X`" literals, then Jev over rule and hunk). Logging only by default; switched on, it asks, never blocks.
 
 ## On demand

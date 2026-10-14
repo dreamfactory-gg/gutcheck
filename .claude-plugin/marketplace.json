@@ -10,7 +10,7 @@
     {
       "name": "gutcheck",
       "source": "./gutcheck",
-      "description": "Guards against rogue agent actions: risky Bash asks first, keys are blocked, secret files stay unread."
+      "description": "Guards against rogue agent actions: keys are blocked, secret files stay unread, don't-delete instructions hold, risky Bash is flagged."
     },
     {
       "name": "tokenmaxxing",
