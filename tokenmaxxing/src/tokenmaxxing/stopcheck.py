@@ -32,8 +32,10 @@ TM_RE = re.compile(r'<teammate-message teammate_id=\\?"([^"\\]+)\\?"')
 WRITE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "Agent", "Task", "Workflow"}
 MCP_WRITE = re.compile(r"(write|create|update|set|delete|remove|insert|execute|exec|run|apply|move|rename|"
                        r"commit|push|send|post|put|patch|upload|install|edit|save|publish|deploy|start|stop)", re.I)
-OPEN_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+\[ \]\s+(.+?)\s*$")
-DONE_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+\[[xX]\]\s+(.+?)\s*$")
+_ITEM = r"^\s*(?:[-*+]|\d+[.)])\s+\["
+ITEM_RE = re.compile(_ITEM + r"[ xX]\]")
+OPEN_RE = re.compile(_ITEM + r" \]\s+(.+?)\s*$")
+DONE_RE = re.compile(_ITEM + r"[xX]\]\s+(.+?)\s*$")
 
 # One Jev choice over how the turn ended. Replay eval (evals/stop_eval.py): a single choice separated the kinds
 # better than one noul per kind, which fired "offer"/"blocker"/"check_back" together on long orchestration reports.

@@ -33,7 +33,7 @@ from gutcheck_core import config
 from gutcheck_core.lock import locked
 
 from . import checkpoint, jobs
-from .stopcheck import DONE_RE, OPEN_RE
+from .stopcheck import DONE_RE, ITEM_RE, OPEN_RE
 
 LIVE_TTL = 24 * 3600
 PICKUP_MAX = 6 * 3600
@@ -101,7 +101,7 @@ def _now_span(text):
         f = FENCE_RE.match(ln)
         if f:
             fence = None if fence == f.group(1) else fence or f.group(1)
-        elif not fence and (HEADING_RE.match(ln) or OPEN_RE.match(ln) or DONE_RE.match(ln)):
+        elif not fence and (HEADING_RE.match(ln) or ITEM_RE.match(ln)):
             break
         pos += len(ln)
     return m.start(), pos

@@ -41,7 +41,7 @@ create virtual table if not exists errs using fts5(err, cmd unindexed, after uni
 create virtual table if not exists launches using fts5(brief, kind unindexed, path unindexed, line unindexed,
   ts unindexed, project unindexed, result unindexed, tokenize='porter unicode61');
 """
-VERSION = 7  # bump to re-index everything when the schema or extraction changes
+VERSION = 8  # bump to re-index everything when the schema or extraction changes
 
 
 def connect(readonly=False):

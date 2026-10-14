@@ -39,7 +39,7 @@ assert calls, "locked() did not call msvcrt.locking"
 (tmp / "b" / "sh.exe").symlink_to("/bin/sh")
 os.environ["PATH"] = os.pathsep.join([str(tmp / "a"), str(tmp / "b"), os.environ["PATH"]])
 try:
-    secrets.withsecret("dfhtest", "T", ["/bin/sh", "-c", '[ "$MSYS2_ENV_CONV_EXCL" = T ] && [ "$T" = x ] && exit 3'])
+    secrets.withsecret("dfhtest", "T", ["/bin/sh", "-c", '[ "$MSYS2_ENV_CONV_EXCL" = T= ] && [ "$T" = x ] && exit 3'])
     raise AssertionError("withsecret returned")
 except SystemExit as e:
     assert e.code == 3, e.code

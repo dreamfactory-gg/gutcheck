@@ -78,8 +78,8 @@ def withsecret(service, env, argv):
         sh = next((p for n in ("sh.exe", "sh") for d in dirs if os.path.isfile(p := os.path.join(d, n))), None)
         if not sh:
             sys.exit("withsecret: Git Bash's sh is not on PATH")
-        # MSYS2_ENV_CONV_EXCL: MSYS converts values that look like paths; a secret must reach the child as stored
-        excl = ";".join(filter(None, (os.environ.get("MSYS2_ENV_CONV_EXCL"), env)))
+        # MSYS converts values that look like paths; the secret must arrive as stored (exclusions are KEY=VALUE prefixes)
+        excl = ";".join(filter(None, (os.environ.get("MSYS2_ENV_CONV_EXCL"), f"{env}=")))
         sys.exit(subprocess.run([sh, "-c", 'exec "$@"', "sh", *argv],
                                 env={**os.environ, env: v, "MSYS2_ENV_CONV_EXCL": excl}).returncode)
     os.environ[env] = v

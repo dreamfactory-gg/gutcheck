@@ -285,18 +285,23 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
         return _bash_view(text, nlines, save_fn, cfg)  # purpose selection must never prevent the ordinary trim
 
 
+_WS = re.compile(r"\s*")
+
+
 def _json_failure(text):
-    """(key, value) for the top-level keys that mark a JSON object reply failed: success/ok false, or an error or
-    reason without success/ok true."""
-    try:
-        d = json.loads(text)
-    except ValueError:
-        return []
-    if not isinstance(d, dict):
-        return []
-    ok = d.get("success", d.get("ok"))
-    return [(k, json.dumps(d[k])[:300]) for k in ("success", "ok", "error", "reason")
-            if k in d and (d[k] is False if k in ("success", "ok") else d[k] and ok is not True)]
+    """(key, value) for the top-level keys that mark a JSON object reply failed (success/ok false, an error or a
+    reason), in each JSON document the text starts with: text_of joins an MCP reply's blocks with newlines."""
+    dec, out, i = json.JSONDecoder(), [], _WS.match(text).end()
+    while i < len(text):
+        try:
+            d, i = dec.raw_decode(text, i)
+        except ValueError:
+            break
+        if isinstance(d, dict):
+            out += [(k, json.dumps(d[k])[:300]) for k in ("success", "ok", "error", "reason")
+                    if k in d and (d[k] is False if k in ("success", "ok") else d[k])]
+        i = _WS.match(text, i).end()
+    return out
 
 
 def _fail_block(text, limit=20):
