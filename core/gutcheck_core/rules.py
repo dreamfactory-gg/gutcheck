@@ -20,7 +20,6 @@ Entry points (all fail open):
   on_stop(inp)          Stop: incremental transcript catch-up (queued prompts, lead messages to a teammate)
   sync(session, transcript_path, until_line=None, deadline=...)   PreCompact: catch up + classify anything pending
 """
-import fcntl
 import json
 import os
 import re
@@ -29,6 +28,7 @@ from contextlib import contextmanager
 
 from . import config
 from . import messages as msg
+from .lock import locked
 
 RULE_CONDITION = (
     "Does this message from the owner tell the agent anything that should still shape its behaviour later in the "
@@ -67,12 +67,8 @@ def _paths(session):
 def _locked(session):
     store, _, _, lock = _paths(session)
     store.parent.mkdir(parents=True, exist_ok=True)
-    with open(lock, "a") as fh:
-        fcntl.flock(fh, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(fh, fcntl.LOCK_UN)
+    with open(lock, "a") as fh, locked(fh):
+        yield
 
 
 def load(session):

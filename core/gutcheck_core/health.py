@@ -39,21 +39,33 @@ def init(kind, args, run):
 def link_cli():
     """~/.local/bin/<plugin> -> this install's CLI (plugin cache or release dir), when ~/.local/bin exists and nothing
     is at that name yet, or when it is our own link to another version of this install (same cache or release tree,
-    same bin/<cli>), dangling or not."""
+    same bin/<cli>), dangling or not. Windows uses a marked sh wrapper instead of a symlink."""
     root, link = os.environ.get("CLAUDE_PLUGIN_ROOT"), config.HOME / ".local" / "bin" / config.APP
     installs = (Path(os.environ.get("CLAUDE_CONFIG_DIR", config.HOME / ".claude")) / "plugins" / "cache",
                 config.SHARED_HOME / "release")
     if not root or not link.parent.is_dir() or not any(Path(root).is_relative_to(d) for d in installs):
         return  # a --plugin-dir checkout would leave a link to a dir that goes away
-    target = os.path.join(root, "bin", config.APP)
+    target = (Path(root) / "bin" / config.APP).as_posix()
     if os.path.lexists(link):
         old = Path(os.readlink(link)) if link.is_symlink() else None
-        if not old or str(old) == target or old.parts[-2:] != ("bin", config.APP) or \
+        if sys.platform == "win32" and link.is_file() and not link.is_symlink():
+            try:
+                lines = link.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeError):
+                return
+            if len(lines) == 3 and lines[1] == f"# {config.APP} link_cli" and \
+                    lines[2].startswith('exec "') and lines[2].endswith('" "$@"'):
+                old = Path(lines[2].removeprefix('exec "').removesuffix('" "$@"'))
+        if not old or old == Path(target) or old.parts[-2:] != ("bin", config.APP) or \
                 old.parent.parent.parent != Path(root).parent:
             return
     tmp = link.with_name(f".{config.APP}.{os.getpid()}.tmp")
-    try:  # symlink then rename: the link is never missing
-        tmp.symlink_to(target)
+    try:  # rename: the link is never missing
+        if sys.platform == "win32":
+            tmp.write_text(f'#!/bin/sh\n# {config.APP} link_cli\nexec "{target}" "$@"\n', encoding="utf-8", newline="\n")
+            tmp.chmod(0o755)
+        else:
+            tmp.symlink_to(target)
         os.replace(tmp, link)
     except OSError:
         tmp.unlink(missing_ok=True)

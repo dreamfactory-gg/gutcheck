@@ -6,22 +6,9 @@
   gutcheck report [DAYS]                    what the guards did
   gutcheck init | refresh
 """
-import os
 import sys
 
 from gutcheck_core import jev
-
-
-def withsecret(args):
-    from gutcheck_core import secrets
-    if len(args) < 4 or args[2] != "--":
-        sys.exit("usage: gutcheck withsecret SERVICE ENV_NAME -- COMMAND...")
-    service, name, cmd = args[0], args[1], args[3:]
-    v = secrets.get(service)
-    if not v:
-        sys.exit(f"withsecret: no secret stored for '{service}'. Store it with: {secrets.store_hint(service)}")
-    os.environ[name] = v
-    os.execvp(cmd[0], cmd)
 
 
 def main(argv=None):
@@ -31,7 +18,10 @@ def main(argv=None):
     cmd, args = argv[0], argv[1:]
     try:
         if cmd == "withsecret":
-            withsecret(args)
+            from gutcheck_core import secrets
+            if len(args) < 4 or args[2] != "--":
+                sys.exit("usage: gutcheck withsecret SERVICE ENV_NAME -- COMMAND...")
+            secrets.withsecret(args[0], args[1], args[3:])
         elif cmd == "check-bash":
             from . import bashcheck
             bashcheck.cli(args)

@@ -20,7 +20,6 @@ an entry is dead once its pid is gone or it is older than LIVE_TTL). SessionStar
   resume   nothing: the context is already there.
 A session with no owner prompt leaves the last ended record alone. config [transitions] mode = "on" | "off".
 """
-import fcntl
 import json
 import os
 import re
@@ -31,6 +30,7 @@ from datetime import datetime
 from pathlib import Path
 
 from gutcheck_core import config
+from gutcheck_core.lock import locked
 
 from . import checkpoint
 from .stopcheck import DONE_RE, OPEN_RE
@@ -243,8 +243,7 @@ def _sessions(fn):
     """fn(state) under a lock on <state>/sessions.json; state is written back after. Returns fn's result."""
     p = config.STATE_DIR / "sessions.json"
     p.parent.mkdir(parents=True, exist_ok=True)
-    with open(p.with_suffix(".lock"), "a") as lk:
-        fcntl.flock(lk, fcntl.LOCK_EX)
+    with open(p.with_suffix(".lock"), "a") as lk, locked(lk):
         try:
             st = json.loads(_read(p) or "{}")
         except ValueError:

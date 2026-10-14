@@ -1,7 +1,11 @@
 #!/bin/sh
 # Hook shim: never blocks Claude Code on a tokenmaxxing failure (fail open).
 here=$(cd "$(dirname "$(realpath "$0")")" && pwd)
-py="${GUTCHECK_HOME:-$HOME/.local/share/gutcheck}/venv/bin/python"
+if [ "$OS" = Windows_NT ]; then
+  py="${GUTCHECK_HOME:-$HOME/.local/share/gutcheck}/venv/Scripts/python.exe"
+else
+  py="${GUTCHECK_HOME:-$HOME/.local/share/gutcheck}/venv/bin/python"
+fi
 if [ ! -x "$py" ]; then
   # first run: build the venv in the background, run this hook without tree-sitter on a Python 3.12+ from PATH
   ( "$here/../setup.sh" >/dev/null 2>&1 & )

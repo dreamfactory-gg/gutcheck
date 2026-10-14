@@ -339,24 +339,20 @@ def classify(items, condition, kind, session, deadline=JEV_DEADLINE):
 def _cache_merge(path, new):
     """Merge answers into the per-session cache under a lock (re-read, merge, atomic rename), so parallel
     classifiers (prompt capture, Stop, PreCompact) never drop each other's entries."""
-    import fcntl
+    from gutcheck_core.lock import locked
     if not new:
         return
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path.with_suffix(".lock"), "a") as lk:
-            fcntl.flock(lk, fcntl.LOCK_EX)
+        with open(path.with_suffix(".lock"), "a") as lk, locked(lk):
             try:
-                try:
-                    cache = json.loads(path.read_text())
-                except Exception:
-                    cache = {}
-                cache.update(new)
-                tmp = path.with_suffix(f".{os.getpid()}.tmp")
-                tmp.write_text(json.dumps(cache))
-                tmp.replace(path)
-            finally:
-                fcntl.flock(lk, fcntl.LOCK_UN)
+                cache = json.loads(path.read_text())
+            except Exception:
+                cache = {}
+            cache.update(new)
+            tmp = path.with_suffix(f".{os.getpid()}.tmp")
+            tmp.write_text(json.dumps(cache))
+            tmp.replace(path)
     except Exception:
         pass
 
