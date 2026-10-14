@@ -1,3 +1,4 @@
+import errno
 import sys
 from contextlib import contextmanager
 
@@ -13,8 +14,8 @@ def locked(fh, exclusive=True, block=True):
             try:
                 msvcrt.locking(fh.fileno(), mode, 1)
                 break
-            except OSError:
-                if not block:
+            except OSError as e:
+                if not block or e.errno != errno.EDEADLK:  # EDEADLK: LK_LOCK's retries ran out on contention
                     raise
         try:
             yield
