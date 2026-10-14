@@ -8,8 +8,14 @@ def locked(fh, exclusive=True, block=True):
         import msvcrt
         mode = (msvcrt.LK_LOCK if block else msvcrt.LK_NBLCK) if exclusive else \
             (msvcrt.LK_RLCK if block else msvcrt.LK_NBRLCK)
-        fh.seek(0)
-        msvcrt.locking(fh.fileno(), mode, 1)
+        while True:  # LK_LOCK gives up after ~10 s; flock's blocking wait doesn't
+            fh.seek(0)
+            try:
+                msvcrt.locking(fh.fileno(), mode, 1)
+                break
+            except OSError:
+                if not block:
+                    raise
         try:
             yield
         finally:

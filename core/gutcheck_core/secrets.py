@@ -58,7 +58,7 @@ def store_hint(service):
     if sys.platform == "darwin":
         return f"security add-generic-password -a \"$USER\" -s {service} -w   (prompts for the value)"
     if sys.platform == "win32":
-        return f"cmdkey /generic:{service} /user:{os.environ['USERNAME']} /pass"
+        return f"MSYS_NO_PATHCONV=1 cmdkey /generic:{service} /user:{os.environ['USERNAME']} /pass"
     if shutil.which("secret-tool"):
         return f"secret-tool store --label={service} service {service}   (prompts for the value)"
     return f"export {_env_name(service)}=...   (in your shell profile; no system keyring found)"
