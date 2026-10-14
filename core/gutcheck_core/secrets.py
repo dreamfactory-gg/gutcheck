@@ -69,6 +69,7 @@ def withsecret(service, env, argv):
     if not v:
         sys.exit(f"withsecret: no secret stored for '{service}'. Store it with: {store_hint(service)}")
     if sys.platform == "win32":
-        sys.exit(subprocess.run(argv, env={**os.environ, env: v}).returncode)
+        # through Git Bash's sh: CreateProcess can't run shebang scripts or our extensionless wrappers
+        sys.exit(subprocess.run(["sh", "-c", 'exec "$@"', "sh", *argv], env={**os.environ, env: v}).returncode)
     os.environ[env] = v
     os.execvp(argv[0], argv)

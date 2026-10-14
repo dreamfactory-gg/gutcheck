@@ -1,5 +1,6 @@
 """SessionStart, shared part: silent unless something needs the user. Starts init/refresh in the background."""
 import os
+import re
 import subprocess
 import sys
 import time
@@ -55,14 +56,15 @@ def link_cli():
                 return
             if len(lines) == 3 and lines[1] == f"# {config.APP} link_cli" and \
                     lines[2].startswith('exec "') and lines[2].endswith('" "$@"'):
-                old = Path(lines[2].removeprefix('exec "').removesuffix('" "$@"'))
+                old = Path(re.sub(r'\\(.)', r'\1', lines[2].removeprefix('exec "').removesuffix('" "$@"')))
         if not old or old == Path(target) or old.parts[-2:] != ("bin", config.APP) or \
                 old.parent.parent.parent != Path(root).parent:
             return
     tmp = link.with_name(f".{config.APP}.{os.getpid()}.tmp")
     try:  # rename: the link is never missing
         if sys.platform == "win32":
-            tmp.write_text(f'#!/bin/sh\n# {config.APP} link_cli\nexec "{target}" "$@"\n', encoding="utf-8", newline="\n")
+            quoted = re.sub(r'([\\"$`])', r'\\\1', target)  # inside sh double quotes
+            tmp.write_text(f'#!/bin/sh\n# {config.APP} link_cli\nexec "{quoted}" "$@"\n', encoding="utf-8", newline="\n")
             tmp.chmod(0o755)
         else:
             tmp.symlink_to(target)
