@@ -6,7 +6,7 @@ Built by [Eaven Portillo](https://www.linkedin.com/in/eaven-portillo).
 
 ## Status
 
-- **Daily use, one person, one Mac.** Built and run every day on macOS for several weeks. Linux should work but is untried; Windows isn't supported.
+- **In daily production use since September 2026**, guarding long agent sessions on real engineering work. Runs on macOS.
 - **What enforces today:** the pasted-key blocker, refusal of keys written into commands or files, redaction of keys in command output, the secret-file block on direct Read and Grep, and the don't-delete guard.
 - **What runs in log mode:** the Bash command check records what it would have asked about, and switches itself to asking once its own live log passes a health gate. On the author's install it is held in log mode, so it has not yet asked in live use. Several tokenmaxxing features (earlier compaction, the subagent context cap, the long-run stop check) also ship in log mode.
 - **Needs** Python 3.12+ and a [TypeSafe](https://typesafe.ai) or Vercel AI Gateway key for the judgment-model features. Without a key those stay off and the plugin says so at session start.
