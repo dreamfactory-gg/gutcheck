@@ -108,7 +108,7 @@ rm -rf ~/.config/tokenmaxxing ~/.local/state/tokenmaxxing
 ## Limitations and honest status
 
 - **Logging only for now:** the long-run stop check and doc and memory loading. They record what they would have done. `/tokenmaxxing:report` shows it.
-- **Tested by one person on one Mac.** Linux is untested. Windows: hooks run through Git Bash; tested by <n> people.
+- **Tested by one person on one Mac.** Linux is untested. Windows: hooks run through Git Bash; testing there is still limited.
 - **Jev is a judgment model, not a reader.** It's fast and cheap, but weak at counting, arithmetic and dates. tokenmaxxing keeps numbers in code and tells Claude to double-check what Jev flags.
 - **The evidence check is young.** It has high precision on a small labelled set and catches about half of unsupported claims.
 - **Roblox Studio** has its own adapter. Studio output passes through untouched by default, and the local script mirror is an experiment that stays off unless you turn it on.

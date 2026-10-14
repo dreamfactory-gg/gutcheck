@@ -1,5 +1,5 @@
 """Simulated-Windows import check: hooks load without fcntl, locking goes through msvcrt, withsecret returns the
-child's exit code, and link_cli writes a sh wrapper instead of a symlink."""
+child's exit code, link_cli writes a sh wrapper instead of a symlink, and process liveness goes through kernel32."""
 import os
 import shutil
 import subprocess  # noqa: F401  imported before sys.platform is faked: it picks its backend at import
@@ -44,5 +44,30 @@ assert link.is_file() and not link.is_symlink(), "link_cli did not write a regul
 lines = link.read_text().splitlines()
 assert lines[1] == "# tokenmaxxing link_cli", lines
 assert f'exec "{root}/bin/tokenmaxxing" "$@"' in lines, lines
+import ctypes  # noqa: E402
+from tokenmaxxing import jobs, transitions  # noqa: E402
+
+procs = {10: 259, 11: 0}  # pid -> exit code; 12 is someone else's (access denied); others don't exist
+last = []
+
+
+def open_process(access, inherit, pid):
+    last[:] = [0 if pid in procs else 5 if pid == 12 else 87]
+    return pid + 1000 if pid in procs else 0
+
+
+def exit_code(h, ref):
+    ref._obj.value = procs[h - 1000]
+    return 1
+
+
+closed = []
+ctypes.windll = types.SimpleNamespace(kernel32=types.SimpleNamespace(
+    OpenProcess=open_process, GetLastError=lambda: last[0], GetExitCodeProcess=exit_code,
+    CloseHandle=closed.append))
+got = [jobs.alive(p) for p in (10, 11, 12, 13, None)]
+assert got == [True, False, True, False, False], got
+assert closed == [1010, 1011], closed
+assert transitions._claude_pid() is None
 shutil.rmtree(tmp)
 print("win-import ok")

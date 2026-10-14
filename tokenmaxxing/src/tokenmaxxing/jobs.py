@@ -66,11 +66,29 @@ def spawn(d, argv):
 
 
 def alive(pid):
+    """Whether pid is running; one we may not signal or open is someone else's live process."""
     try:
+        if sys.platform == "win32":  # os.kill(pid, 0) there sends CTRL_C_EVENT
+            return _win_alive(int(pid))
         os.kill(int(pid), 0)
+        return True
+    except PermissionError:
         return True
     except (OSError, TypeError, ValueError):
         return False
+
+
+def _win_alive(pid):
+    import ctypes
+    k = ctypes.windll.kernel32
+    h = k.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not h:
+        return k.GetLastError() == 5  # ERROR_ACCESS_DENIED
+    code = ctypes.c_ulong()
+    try:
+        return bool(k.GetExitCodeProcess(h, ctypes.byref(code))) and code.value == 259  # STILL_ACTIVE
+    finally:
+        k.CloseHandle(h)
 
 
 def listing(kind=None, limit=10):
