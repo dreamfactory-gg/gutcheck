@@ -267,7 +267,7 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
     if level == "receipt" and kind == "action":
         path = save_fn(".txt")
         fails = failure_lines(text, limit=30) + [x for x in warning_lines(text, 10)]
-        verdict = _json_failure(text)
+        verdict = _dedupe(_json_failure(text))[:30]
         first = text.strip().splitlines()[0][:160] if text.strip() else ""
         if fails or verdict:
             return (f"✗ failed or warned · {len(text):,} chars, full output saved to {path}\n"
