@@ -332,7 +332,9 @@ def classify(message, open_items=(), crons=(), task=None, deadline=20.0):
          "needed": NEEDED}
     ans = jev.call(build_state(message, list(open_items), crons, task), q, timeout=deadline, deadline=deadline)
     probs = {k: round(float(v), 3) for k, v in ans["kind"]["probabilities"].items()}
-    return decide(probs, float(ans["needed"]["probabilities"]["needed"]))
+    # build_state drops the middle of long messages, where an owner ask could hide: never block those
+    needed_p = 1.0 if len(message or "") > 6000 else float(ans["needed"]["probabilities"]["needed"])
+    return decide(probs, needed_p)
 
 
 def decide(probs, needed_p, th=None):
@@ -340,6 +342,8 @@ def decide(probs, needed_p, th=None):
     early_p = round(sum(probs.get(k, 0) for k in EARLY), 3)
     if early_p >= th["early"] and needed_p < th["needed"]:
         label = max(EARLY, key=lambda k: probs.get(k, 0))
+    elif needed_p >= th["needed"]:
+        label = "blocker"
     else:
         label = max((k for k in KINDS if k not in EARLY), key=lambda k: probs.get(k, 0))
     return {"probs": probs, "needed_p": needed_p, "label": label, "early_p": early_p, "early": label in EARLY}
@@ -487,7 +491,7 @@ def on_stop(inp):
                      deadline=float(sc.get("deadline_s", 20.0)))
     except Exception as e:  # Jev down or rejected: fail open
         return finish("allow-jev-error", error=str(e)[:300])
-    rec.update(label=c["label"], early_p=c["early_p"], probs=c["probs"])
+    rec.update(label=c["label"], early_p=c["early_p"], needed_p=c.get("needed_p"), probs=c["probs"])
     hist = st.get("history", [])
     hist.append({"t": time.strftime("%H:%M:%S"), "label": c["label"], "probs": c["probs"]})
 
