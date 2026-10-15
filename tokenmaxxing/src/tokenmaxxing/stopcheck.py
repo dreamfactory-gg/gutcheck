@@ -339,13 +339,13 @@ def classify(message, open_items=(), crons=(), task=None, deadline=20.0):
 def decide(probs, needed_p, th=None, whole=True):
     th = {**DEFAULT_TH, **(th or config.load()["stop"].get("thresholds") or {})}
     early_p = round(sum(probs.get(k, 0) for k in EARLY), 3)
-    if early_p >= th["early"] and needed_p < th["needed"] and whole:
+    if early_p >= th["early"] and needed_p < th["needed"]:
         label = max(EARLY, key=lambda k: probs.get(k, 0))
     elif needed_p >= th["needed"]:
         label = "blocker"
     else:
         label = max((k for k in KINDS if k not in EARLY), key=lambda k: probs.get(k, 0))
-    return {"probs": probs, "needed_p": needed_p, "label": label, "early_p": early_p, "early": label in EARLY}
+    return {"probs": probs, "needed_p": needed_p, "label": label, "early_p": early_p, "early": whole and label in EARLY}
 
 
 def last_request(path, max_bytes=2_000_000):
