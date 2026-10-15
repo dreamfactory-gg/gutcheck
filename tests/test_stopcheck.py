@@ -29,6 +29,8 @@ for kind in S.EARLY:
     assert not S.decide(probs, 1.0)["early"]
 assert not S.decide({"offer": S.DEFAULT_TH["early"] - 0.001}, 0.0)["early"]
 assert not S.decide({"offer": 0.6}, 0.1, {"needed": 0.1})["early"]
+assert not S.decide({"offer": 0.9, "done": 0.1}, 0.0, whole=False)["early"]                 # truncated: never block
+assert S.decide({"done": 0.99}, 0.0, whole=False)["label"] == "done"                          # ...nor call it an owner ask
 
 with patch.object(jev, "call", return_value={"kind": {"probabilities": {"offer": 0.9, "blocker": 0.1}},
                                            "needed": {"probabilities": {"needed": 0.8, "routine": 0.2}}}) as call:
