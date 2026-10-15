@@ -285,22 +285,22 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
         return _bash_view(text, nlines, save_fn, cfg)  # purpose selection must never prevent the ordinary trim
 
 
-_WS = re.compile(r"\s*")
+_JSON_START = re.compile(r"^[ \t]*\{", re.M)
 
 
 def _json_failure(text):
     """(key, value) for the top-level keys that mark a JSON object reply failed (success/ok false, an error or a
-    reason), in each JSON document the text starts with: text_of joins an MCP reply's blocks with newlines."""
-    dec, out, i = json.JSONDecoder(), [], _WS.match(text).end()
-    while i < len(text):
+    reason), in each JSON object that starts a line: text_of joins an MCP reply's blocks with newlines."""
+    dec, out, end = json.JSONDecoder(), [], 0
+    for m in _JSON_START.finditer(text):
+        if m.start() < end:
+            continue
         try:
-            d, i = dec.raw_decode(text, i)
+            d, end = dec.raw_decode(text, m.end() - 1)
         except ValueError:
-            break
-        if isinstance(d, dict):
-            out += [(k, json.dumps(d[k])[:300]) for k in ("success", "ok", "error", "reason")
-                    if k in d and (d[k] is False if k in ("success", "ok") else d[k])]
-        i = _WS.match(text, i).end()
+            continue
+        out += [(k, json.dumps(d[k])[:300]) for k in ("success", "ok", "error", "reason")
+                if k in d and (d[k] is False if k in ("success", "ok") else d[k])]
     return out
 
 
