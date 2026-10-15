@@ -1,6 +1,6 @@
 """`tokenmaxxing init` sets up the personal config (MCP adapters for the configured servers) and builds the skill,
 doc/memory and recall indexes and the MCP cost table; `tokenmaxxing refresh` updates them and switches doc/memory
-loading and the long-run stop check on once their logs show they're ready. Local code, except the MCP cost probes.
+loading on once its logs show it's ready. Local code, except the MCP cost probes.
 """
 import json
 import time
