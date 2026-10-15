@@ -285,7 +285,7 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
         return _bash_view(text, nlines, save_fn, cfg)  # purpose selection must never prevent the ordinary trim
 
 
-_JSON_START = re.compile(r"^\s*\{", re.M)
+_JSON_START = re.compile(r"^[ \t\r]*[[{]", re.M)
 _WS = re.compile(r"\s*")
 
 
