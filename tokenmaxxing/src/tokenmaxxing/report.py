@@ -8,13 +8,6 @@ from gutcheck_core.hookio import read_log as _read
 def attention_line():
     """One line when something needs a human decision, else None."""
     try:
-        from . import stopcheck
-        note = stopcheck.pop_notice()   # shown once, after the stop check promoted itself
-        if note:
-            return note
-    except Exception:
-        pass
-    try:
         from . import mcpload
         note = mcpload.notice()
         if note:

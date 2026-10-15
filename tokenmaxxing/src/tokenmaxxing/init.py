@@ -101,13 +101,6 @@ def run(kind, quiet=False):
                 print(f"  doc/memory loading switched on: {ctx_on}")
         except Exception:
             pass
-        try:  # long-run stop check: logging-only -> on once its logged TASKS.md blocks prove right (never loosens)
-            from . import stopcheck
-            stop_on = stopcheck.maybe_promote(user)
-            if stop_on and not quiet:
-                print(f"  {stop_on}")
-        except Exception as e:
-            (config.STATE_DIR / "background.log").open("a").write(f"refresh: stop check promotion failed: {e}\n")
     config.save(user)
     new_skills, ctx_files = _index_context()
     hist, hist_s = _index_history()

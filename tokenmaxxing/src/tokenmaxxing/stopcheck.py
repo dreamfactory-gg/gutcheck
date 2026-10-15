@@ -5,15 +5,14 @@ doesn't). At each end of turn:
   1. background work that will wake the session still running -> allow (not a stall);
   2. classify the final message with Jev (one request, several questions);
   3. legitimate stop (real blocker, blocking question) -> allow and notify; task done -> allow;
-  4. early stop -> block, naming the open items from TASKS.md;
-  5. the cap counts stalls without progress (TASKS.md ticks, or file/state-changing tool calls since the last nudge);
+  4. early stop -> block with a nudge for that kind of stop;
+  5. the cap counts stalls without progress (file/state-changing tool calls since the last nudge);
   6. at the cap: one BLOCKED nudge, then allow the stop, write STALLED.md and notify;
   7. every stop is logged to <state>/stops.jsonl.
 
-config [stop]: mode = "log" (classify and log what it would do) | "on" (act); max_stalls; thresholds;
-notify_cmd (optional argv list; the one-line message is appended) for push notifications.
+config [stop]: mode = "log" (classify and log what it would do) | "on" with jev_fallback = "on" (act); max_stalls;
+thresholds; notify_cmd (optional argv list; the one-line message is appended) for push notifications.
 """
-import hashlib
 import json
 import os
 import re
@@ -404,12 +403,10 @@ def notify(line, cfg=None):
             pass
 
 
-def write_stalled(where, open_items, message, history):
+def write_stalled(where, message, history):
     p = Path(where) / "STALLED.md"
     body = ["# STALLED", "", f"Written {time.strftime('%Y-%m-%d %H:%M:%S')} by tokenmaxxing's long-run stop check after "
-            "repeated stops with no progress.", "", "## Open items", ""]
-    body += [f"- [ ] {it}" for it in open_items] or ["(no TASKS.md open items)"]
-    body += ["", "## Last message", "", (message or "").strip()[:6000], "", "## Stop classifications", ""]
+            "repeated stops with no progress.", "", "## Last message", "", (message or "").strip()[:6000], "", "## Stop classifications", ""]
     for h in history[-12:]:
         probs = ", ".join(f"{k} {v:.2f}" for k, v in (h.get("probs") or {}).items())
         body.append(f"- {h.get('t')} {h.get('label')} -> {h.get('action')} ({probs})")
@@ -420,15 +417,10 @@ def write_stalled(where, open_items, message, history):
         return None
 
 
-def nudge_text(label, open_items, escalate=False):
+def nudge_text(label, escalate=False):
     if escalate:
-        item = open_items[0] if open_items else "the item you are stuck on"
-        return (f"{MARK} Several nudges in a row have produced no progress. Write what's blocking \"{item}\" under a "
-                "BLOCKED heading in TASKS.md, then continue with any open item that doesn't depend on it.")
-    if open_items:
-        shown = "; ".join(open_items[:6]) + (f"; and {len(open_items) - 6} more" if len(open_items) > 6 else "")
-        return (f"{MARK} Your task list still has open items: {shown}. Continue with them. "
-                "If one is blocked, say what is blocking it.")
+        return (f"{MARK} Several nudges in a row have produced no progress. Write what's blocking the item you are "
+                "stuck on under a BLOCKED heading in TASKS.md, then continue with any open item that doesn't depend on it.")
     return f"{MARK} {NUDGE.get(label, NUDGE['milestone'])} If something is blocked, say what is blocking it."
 
 
@@ -461,36 +453,24 @@ def on_stop(inp):
     if not message.strip():
         return finish("allow-no-message")
 
-    tasks, unowned = find_tasks(cwd, path)
-    open_items, ticked = task_items(tasks)
-    via = "tasks" if tasks else "jev"      # the guide's primary method; Jev only without a task list
-    act = mode == "on" and (via == "tasks" or sc.get("jev_fallback", "log") == "on")
+    act = mode == "on" and sc.get("jev_fallback", "log") == "on"
     st = load_state(session) if mode == "on" else {}
     size = os.path.getsize(path) if path and os.path.exists(path) else 0
     # progress since the last nudge
-    prog = {"ticked": 0, "changes": 0, "human": False}
+    prog = {"changes": 0, "human": False}
     if st.get("offset") is not None and path:
         a = activity(path, min(st["offset"], size), cwd)
-        prog = {"ticked": max(0, ticked - st.get("ticked", 0)), "changes": a["changes"], "human": a["human"],
-                "items_changed": st.get("items_hash") != _hash(open_items)}
+        prog = {"changes": a["changes"], "human": a["human"]}
         if a["human"]:  # the owner spoke: a new episode
             st = {}
-    progressed = bool(prog["ticked"] or prog["changes"] or prog.get("items_changed"))
-    rec.update(via=via, open_items=len(open_items), ticked=ticked, tasks=str(tasks) if tasks else None,
-               tasks_unowned=unowned, progress=prog, transcript=path, offset=size)
+    progressed = bool(prog["changes"])
+    rec.update(progress=prog, transcript=path, offset=size)
 
-    if via == "tasks":
-        if not open_items:
-            if act:
-                save_state(session, {})
-            return finish("allow-tasks-done")
-        c = {"label": "open_items", "probs": {}, "early_p": None, "early": True}
-    else:
-        try:
-            c = classify(message, open_items, crons, task=last_request(path) if path else None,
-                         deadline=float(sc.get("deadline_s", 20.0)))
-        except Exception as e:  # Jev down or rejected: fail open
-            return finish("allow-jev-error", error=str(e)[:300])
+    try:
+        c = classify(message, crons=crons, task=last_request(path) if path else None,
+                     deadline=float(sc.get("deadline_s", 20.0)))
+    except Exception as e:  # Jev down or rejected: fail open
+        return finish("allow-jev-error", error=str(e)[:300])
     rec.update(label=c["label"], early_p=c["early_p"], probs=c["probs"])
     hist = st.get("history", [])
     hist.append({"t": time.strftime("%H:%M:%S"), "label": c["label"], "probs": c["probs"]})
@@ -508,15 +488,15 @@ def on_stop(inp):
     stalls = 0 if (progressed or not st) else st.get("stalls", 0) + 1
     cap = int(sc.get("max_stalls", 3))
     escalated = st.get("escalated", False) and not progressed
-    common = {"ticked": ticked, "items_hash": _hash(open_items), "offset": size}
+    common = {"offset": size}
     if stalls < cap:
-        reason = nudge_text(c["label"], open_items)
+        reason = nudge_text(c["label"])
         hist[-1]["action"] = "block"
         if act:
             save_state(session, {**common, "stalls": stalls, "history": hist[-20:]})
         return finish("block", {"decision": "block", "reason": reason}, stalls=stalls, reason=reason[:500])
     if not escalated:
-        reason = nudge_text(c["label"], open_items, escalate=True)
+        reason = nudge_text(c["label"], escalate=True)
         hist[-1]["action"] = "block-escalate"
         if act:
             save_state(session, {**common, "stalls": stalls, "escalated": True, "history": hist[-20:]})
@@ -524,15 +504,10 @@ def on_stop(inp):
     hist[-1]["action"] = "allow-stalled"
     stalled = None
     if act:
-        stalled = write_stalled(tasks.parent if tasks else cwd, open_items, message, hist)
+        stalled = write_stalled(cwd, message, hist)
         save_state(session, {})
-        item = open_items[0] if open_items else "the task"
-        notify(f"Stalled after {stalls} nudges without progress on {item}. See STALLED.md.", cfg)
+        notify(f"Stalled after {stalls} nudges without progress. See STALLED.md.", cfg)
     return finish("allow-stalled", stalls=stalls, stalled_md=stalled)
-
-
-def _hash(items):
-    return hashlib.sha1("\n".join(items).encode()).hexdigest()[:12]
 
 
 def _last_line(text):
@@ -540,95 +515,3 @@ def _last_line(text):
         if ln.strip():
             return ln.strip()[:160]
     return ""
-
-
-# ---- promotion: logging-only -> on, judged from what the owner did after each would-block -----------
-NOT_OWNER = ("another claude session", "<teammate", "<bash-input", "<bash-stdout", "<bash-stderr",
-             "background agent", "<task-notification", "stop hook feedback", "<local-command", "<command-",
-             "<system-reminder", "caveat:", "[request interrupted")
-GOAHEAD = re.compile(r"^\s*(please\s+)?((ok(ay)?|k|yes|yeah|yup|sure|alright|go)[\s,.!]*)?"
-                     r"(so\s+)?(continue|keep going|go on|carry on|keep working|proceed|resume|go( ahead| for it)?|"
-                     r"do it|don'?t stop|finish( it| up)?|what'?s next|whats next|what next|next|status|"
-                     r"what'?s pending|whats pending|where are we( at)?|still\??)?[\s.!?,]*(please|pls)?[\s.!?]*$", re.I)
-PROMOTE = {"min_days": 3, "min_judged": 20, "precision": 0.9}
-
-
-def _epoch(ts):
-    try:
-        return time.mktime(time.strptime(ts[:19], "%Y-%m-%dT%H:%M:%S")) - (time.timezone if ts.endswith("Z") else 0)
-    except (TypeError, ValueError):
-        return None
-
-
-def judge(rec):
-    """Was a logged would-block right? From the owner's next typed message after that stop:
-    a go-ahead or "continue", or a short resume after 20+ minutes of silence -> True (blocking was right);
-    a new instruction, an answer or a correction -> False; no owner message yet -> None."""
-    recs, _ = _records(rec.get("transcript") or "", int(rec.get("offset") or 0))
-    last_ts = None
-    for r in recs:
-        if r.get("type") == "assistant" and r.get("timestamp"):
-            last_ts = r["timestamp"]
-        if r.get("type") != "user" or r.get("isMeta"):
-            continue
-        c = (r.get("message") or {}).get("content")
-        texts = [c] if isinstance(c, str) else [b.get("text", "") for b in c or []
-                                               if isinstance(b, dict) and b.get("type") == "text"]
-        for t in texts:
-            t = t.strip()
-            if not t or MARK in t or t.lower().startswith(NOT_OWNER):
-                continue
-            if GOAHEAD.match(t) and len(t) < 60:
-                return True, t[:60], r.get("timestamp")
-            gap = (_epoch(r.get("timestamp")) or 0) - (_epoch(last_ts) or 1e12)
-            if gap >= 1200 and len(t) <= 30 and "?" not in t:
-                return True, t[:60], r.get("timestamp")
-            return False, t[:60], r.get("timestamp")
-    return None, None, None
-
-
-def maybe_promote(user):
-    """Called by the daily refresh. Switches [stop] mode from "log" to "on" once the TASKS.md rule has been
-    logging for min_days with at least min_judged judged would-blocks at >= 90% precision. Never loosens.
-    Set [stop] auto_promote = false to keep it logging."""
-    from . import report
-    s = user.setdefault("stop", {})
-    if s.get("mode", config.DEFAULTS["stop"]["mode"]) != "log" or s.get("auto_promote") is False:
-        return None
-    wb = [d for d in report._read("stops") if d.get("via") == "tasks" and d.get("action") == "would-block"]
-    if not wb:
-        return None
-    first = min(time.mktime(time.strptime(d["t"], "%Y-%m-%dT%H:%M:%S")) for d in wb)
-    if time.time() - first < PROMOTE["min_days"] * 86400:
-        return None
-    seen, right, judged = set(), 0, 0
-    for d in wb:
-        ok, _, ts = judge(d)
-        if ok is None or (d.get("session"), ts) in seen:   # consecutive stops before one reply count once
-            continue
-        seen.add((d.get("session"), ts))
-        judged += 1
-        right += ok
-    if judged < PROMOTE["min_judged"] or right / judged < PROMOTE["precision"]:
-        return None
-    s["mode"] = "on"
-    line = (f"stop check on: {right}/{judged} logged TASKS.md blocks were right "
-            f"({right / judged:.0%}) over {(time.time() - first) / 86400:.0f} days")
-    config.STATE_DIR.mkdir(parents=True, exist_ok=True)
-    with open(config.STATE_DIR / "promotions.log", "a") as fh:
-        fh.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {line}\n")
-    (config.STATE_DIR / "stop_promoted.notice").write_text(
-        f"tokenmaxxing: long-run stop check switched on ({right}/{judged} logged blocks were right); "
-        "set [stop] mode = \"log\" in config.toml to undo")
-    return line
-
-
-def pop_notice():
-    """The one-line SessionStart notice after a promotion, shown once."""
-    p = config.STATE_DIR / "stop_promoted.notice"
-    try:
-        line = p.read_text().strip()
-        p.unlink()
-        return line or None
-    except OSError:
-        return None
