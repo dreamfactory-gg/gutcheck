@@ -60,9 +60,24 @@ KINDS = {
 }
 INSTRUCTIONS = ("How does the assistant's turn end in `final_message`, given `user_request` and `open_items`? "
                 "Pick the best description.")
+NEEDED = {
+    "type": "choice",
+    "instructions": "What is the assistant asking the owner for in `final_message`? Judge the requested action, "
+                    "not merely the fact that it asks a question. If any owner-only ask is present, choose needed.",
+    "criteria": {
+        "needed": "An owner-only decision or action: approval to spend money, credits or quota; restart or stop "
+                  "a running service; delete or overwrite data; push, merge, publish or release. Or a choice "
+                  "of scope, direction or taste (which feature, workflow or behavior the owner wants), private "
+                  "input such as an ID or credential, or a manual action the owner must perform in an app.",
+        "routine": "Only an offer or permission question for routine work the assistant can do itself: "
+                   "implement the next step, run checks or analysis, draft a plan or document, inspect code "
+                   "or fetch data without significant cost. No owner-only decision, information, authorization "
+                   "or manual action is needed. Or there is no ask at all.",
+    },
+}
 EARLY = ("announce", "offer", "decisions", "milestone", "check_back")
 LEGIT = ("blocker", "question")
-DEFAULT_TH = {"early": 0.6}   # block when the early-stop kinds together hold at least this much probability
+DEFAULT_TH = {"early": 0.6, "needed": 0.8}
 
 NUDGE = {
     "announce": "You ended the turn by announcing the next step instead of taking it. Take it now; put any status "
@@ -311,22 +326,23 @@ def build_state(message, open_items, crons=(), task=None):
 
 
 def classify(message, open_items=(), crons=(), task=None, deadline=20.0):
-    """-> {probs, choice, label, early_p, early}. Raises jev.JevError."""
+    """-> {probs, needed_p, label, early_p, early}. Raises jev.JevError."""
     from gutcheck_core import jev
-    q = {"kind": {"type": "choice", "instructions": INSTRUCTIONS, "criteria": KINDS}}
-    ans = jev.call(build_state(message, list(open_items), crons, task), q, timeout=deadline, deadline=deadline)["kind"]
-    probs = {k: round(float(v), 3) for k, v in ans["probabilities"].items()}
-    return decide(probs)
+    q = {"kind": {"type": "choice", "instructions": INSTRUCTIONS, "criteria": KINDS},
+         "needed": NEEDED}
+    ans = jev.call(build_state(message, list(open_items), crons, task), q, timeout=deadline, deadline=deadline)
+    probs = {k: round(float(v), 3) for k, v in ans["kind"]["probabilities"].items()}
+    return decide(probs, float(ans["needed"]["probabilities"]["needed"]))
 
 
-def decide(probs, th=None):
+def decide(probs, needed_p, th=None):
     th = {**DEFAULT_TH, **(th or config.load()["stop"].get("thresholds") or {})}
     early_p = round(sum(probs.get(k, 0) for k in EARLY), 3)
-    if early_p >= th["early"]:
+    if early_p >= th["early"] and needed_p < th["needed"]:
         label = max(EARLY, key=lambda k: probs.get(k, 0))
     else:
         label = max((k for k in KINDS if k not in EARLY), key=lambda k: probs.get(k, 0))
-    return {"probs": probs, "label": label, "early_p": early_p, "early": label in EARLY}
+    return {"probs": probs, "needed_p": needed_p, "label": label, "early_p": early_p, "early": label in EARLY}
 
 
 def last_request(path, max_bytes=2_000_000):

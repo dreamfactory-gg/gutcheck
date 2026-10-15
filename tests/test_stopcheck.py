@@ -4,13 +4,14 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 tmp = Path(tempfile.mkdtemp())
 os.environ["TOKENMAXXING_STATE_DIR"] = str(tmp / "state")
 os.environ["GUTCHECK_RULES_DIR"] = str(tmp / "rules")
 os.environ["TOKENMAXXING_CONFIG_DIR"] = str(tmp / "cfg")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
-from gutcheck_core import config  # noqa: E402
+from gutcheck_core import config, jev  # noqa: E402
 
 from tokenmaxxing import stopcheck as S  # noqa: E402
 
@@ -19,13 +20,28 @@ from tokenmaxxing import stopcheck as S  # noqa: E402
 config.load(refresh=True)
 notes = []
 S.notify = lambda line, cfg=None: notes.append(line)
-LABEL = {"v": "announce"}
+LABEL = {"v": "announce", "needed_p": 0.0}
+
+for kind in S.EARLY:
+    probs = {kind: S.DEFAULT_TH["early"], "blocker": 1 - S.DEFAULT_TH["early"]}
+    assert S.decide(probs, S.DEFAULT_TH["needed"] - 0.001)["early"]
+    assert not S.decide(probs, S.DEFAULT_TH["needed"])["early"]
+    assert not S.decide(probs, 1.0)["early"]
+assert not S.decide({"offer": S.DEFAULT_TH["early"] - 0.001}, 0.0)["early"]
+assert not S.decide({"offer": 0.6}, 0.1, {"needed": 0.1})["early"]
+
+with patch.object(jev, "call", return_value={"kind": {"probabilities": {"offer": 0.9, "blocker": 0.1}},
+                                           "needed": {"probabilities": {"needed": 0.8, "routine": 0.2}}}) as call:
+    result = S.classify("Want me to restart the running service and rerun the checks?")
+    assert not result["early"] and result["needed_p"] == 0.8
+    call.assert_called_once()
+    assert set(call.call_args.args[1]) == {"kind", "needed"}
 
 
 def fake_classify(message, open_items=(), crons=(), task=None, deadline=20.0):
     probs = {k: 0.01 for k in S.KINDS}
     probs[LABEL["v"]] = 0.92
-    return S.decide(probs)
+    return S.decide(probs, LABEL["needed_p"])
 
 
 S.classify = fake_classify
@@ -104,6 +120,11 @@ assert S.load_state("s1")["stalls"] == 1
 append({"type": "user", "message": {"content": "also rename the module"}})
 stop()
 assert S.load_state("s1")["stalls"] == 0
+
+# an owner-only ask vetoes even a confident offer classification
+LABEL.update(v="offer", needed_p=1.0)
+assert stop() is None
+LABEL["needed_p"] = 0.0
 
 # legitimate stops are allowed and notify; done is allowed quietly
 n = len(notes)

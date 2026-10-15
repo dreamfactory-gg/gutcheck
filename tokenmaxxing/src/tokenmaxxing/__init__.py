@@ -2,8 +2,7 @@
 from gutcheck_core import config
 
 config.configure("tokenmaxxing", {
-    "stop": {"mode": "log", "jev_fallback": "log", "max_stalls": 3, "deadline_s": 20.0,  # acts only with CLAUDE_LONG_RUN=1
-             "thresholds": {"early": 0.6}},
+    "stop": {"mode": "log", "jev_fallback": "log", "max_stalls": 3, "deadline_s": 20.0},  # acts only with CLAUDE_LONG_RUN=1
     "adapters": [],                # MCP adapters to run; `tokenmaxxing init` fills this from configured servers
     # pass_through: MCP servers whose output is never trimmed or saved to a file (Studio calls go direct)
     "mcp_trim": {"mode": "on", "min_chars": 8000, "min_lines": 300, "pass_through": ["Roblox_Studio"]},
