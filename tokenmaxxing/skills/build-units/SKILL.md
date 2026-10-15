@@ -36,7 +36,7 @@ Everything here only reads, runs in the background, and never gates. Start it, k
    ```
    tokenmaxxing explain --background [--commit SHA | --base REF] [--focus "what the owner should come away understanding"]
    ```
-   Codex writes one self-contained HTML page (background, intuition with toy data and diagrams, code walkthrough, 5-question quiz) to `~/Documents/gutcheck-explainers/YYYY-MM-DD-<slug>.html`, outside the repo. Link it from REPORT.md and the end-of-run notification. If the owner wants it on their phone or shared, offer to publish it as an artifact.
+   Codex writes one self-contained HTML page (background, intuition with toy data and diagrams, code walkthrough, 5-question quiz) to `~/Documents/explainers/YYYY-MM-DD-<slug>.html`, outside the repo. Link it from REPORT.md and the end-of-run notification. If the owner wants it on their phone or shared, offer to publish it as an artifact.
 
 ## Before `git push`
 Only when the gutcheck plugin is installed: its house-rules hook checks the unpushed diff against the project's CLAUDE.md rules (secrets, conflict markers, "never `X`" literals, then Jev over rule x hunk). It logs by default; when switched on it asks, never blocks. Dry run: `gutcheck house-rules [--base REF]`. Without gutcheck, skip this.

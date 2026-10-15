@@ -41,7 +41,7 @@ create virtual table if not exists errs using fts5(err, cmd unindexed, after uni
 create virtual table if not exists launches using fts5(brief, kind unindexed, path unindexed, line unindexed,
   ts unindexed, project unindexed, result unindexed, tokenize='porter unicode61');
 """
-VERSION = 7  # bump to re-index everything when the schema or extraction changes
+VERSION = 8  # bump to re-index everything when the schema or extraction changes
 
 
 def connect(readonly=False):
@@ -64,6 +64,8 @@ def connect(readonly=False):
 
 
 def _node(db, parent, level, label, source="", path="", line=0, ts="", kind=""):
+    # labels cut from prompts reach Jev through recall; project names come from the cwd and are looked up as stored
+    label = label if level == "project" else secretscan.redact(label)
     cur = db.execute("insert into nodes(parent,level,label,source,path,line,ts,kind) values(?,?,?,?,?,?,?,?)",
                      (parent, level, label[:300], source, path, line, ts, kind))
     return cur.lastrowid
@@ -473,39 +475,41 @@ def git_repos(root=None, depth=3):
 
 def build(quiet=True, codex_days=365):
     """Incremental: only sources whose mtime (or git HEAD) changed are re-read. One build at a time."""
-    import fcntl
+    from contextlib import ExitStack
+
+    from gutcheck_core.lock import locked
     t0 = time.time()
     config.STATE_DIR.mkdir(parents=True, exist_ok=True)
-    lock = open(config.STATE_DIR / "index.lock", "w")
-    try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        if not quiet:
-            print("index: another build is running")
-        return None
-    db = connect()
-    n = {"claude": 0, "memory": 0, "codex": 0, "git": 0}
-    for p in transcripts.files():
-        if _stale(db, p):
-            index_transcript(db, p)
-            n["claude"] += 1
-    for p in list(transcripts.PROJECTS.glob("*/memory/*.md")) + list(transcripts.PROJECTS.glob("*/memory/archive/*.md")):
-        if p.name != "MEMORY.md" and "-gutcheck-evals-" not in str(p) and _stale(db, p):
-            index_memory(db, p)
-            n["memory"] += 1
-    cutoff = time.time() - codex_days * 86400
-    for p in (CODEX_DIR / "sessions").rglob("rollout-*.jsonl"):
+    with open(config.STATE_DIR / "index.lock", "w") as lock, ExitStack() as stack:
         try:
-            if p.stat().st_mtime > cutoff and _stale(db, p):
-                index_codex(db, p)
-                n["codex"] += 1
+            stack.enter_context(locked(lock, block=False))
         except OSError:
-            pass
-    for repo in git_repos():
-        index_git(db, repo)
-        n["git"] += 1
-    db.commit()
-    db.close()
-    if not quiet:
-        print(f"index: updated {n} in {time.time() - t0:.0f}s -> {DB}")
-    return n
+            if not quiet:
+                print("index: another build is running")
+            return None
+        db = connect()
+        n = {"claude": 0, "memory": 0, "codex": 0, "git": 0}
+        for p in transcripts.files():
+            if _stale(db, p):
+                index_transcript(db, p)
+                n["claude"] += 1
+        for p in list(transcripts.PROJECTS.glob("*/memory/*.md")) + list(transcripts.PROJECTS.glob("*/memory/archive/*.md")):
+            if p.name != "MEMORY.md" and "-gutcheck-evals-" not in str(p) and _stale(db, p):
+                index_memory(db, p)
+                n["memory"] += 1
+        cutoff = time.time() - codex_days * 86400
+        for p in (CODEX_DIR / "sessions").rglob("rollout-*.jsonl"):
+            try:
+                if p.stat().st_mtime > cutoff and _stale(db, p):
+                    index_codex(db, p)
+                    n["codex"] += 1
+            except OSError:
+                pass
+        for repo in git_repos():
+            index_git(db, repo)
+            n["git"] += 1
+        db.commit()
+        db.close()
+        if not quiet:
+            print(f"index: updated {n} in {time.time() - t0:.0f}s -> {DB}")
+        return n

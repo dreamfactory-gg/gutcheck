@@ -204,23 +204,6 @@ def test_old_profile_removed_only_if_ours():
     assert not hasattr(rs, "install_agent") and not hasattr(rs, "agent_profile")
 
 
-def test_project_rules_block_refresh():
-    root = Path(tempfile.mkdtemp())
-    a, b = root / "a", root / "b"
-    a.mkdir()
-    b.mkdir()
-    (a / "CLAUDE.md").write_text("# A\nkeep me\n\n" + rs.BLOCK_START + "\nold rules\n" + rs.BLOCK_END + "\ntail\n")
-    (b / "CLAUDE.md").write_text("# B\n")
-    done = rs.install_rules([a, b], backup_root=root / "bak", refresh_only=True)
-    assert done == [str(a / "CLAUDE.md")] and (b / "CLAUDE.md").read_text() == "# B\n"
-    t = (a / "CLAUDE.md").read_text()
-    assert t.startswith("# A\nkeep me\n") and t.endswith(rs.BLOCK_END + "\ntail\n") and "old rules" not in t
-    for want in ("directly", "one turn", "Never poll", "SendMessage", "retire", "handoff note"):
-        assert want in t, want
-    assert "tokenmaxxing studio sync" not in t and (root / "bak" / "a" / "CLAUDE.md.before-studio-block").exists()
-    assert rs.install_rules([a], backup_root=root / "bak", refresh_only=True) == []  # idempotent
-
-
 def test_preload_on_off_keeps_owner_setting():
     from tokenmaxxing.adapters.roblox_studio import preload
     root = Path(tempfile.mkdtemp())

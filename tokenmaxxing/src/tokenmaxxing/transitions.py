@@ -20,7 +20,6 @@ an entry is dead once its pid is gone or it is older than LIVE_TTL). SessionStar
   resume   nothing: the context is already there.
 A session with no owner prompt leaves the last ended record alone. config [transitions] mode = "on" | "off".
 """
-import fcntl
 import json
 import os
 import re
@@ -31,9 +30,10 @@ from datetime import datetime
 from pathlib import Path
 
 from gutcheck_core import config
+from gutcheck_core.lock import locked
 
-from . import checkpoint
-from .stopcheck import DONE_RE, OPEN_RE
+from . import checkpoint, jobs
+from .stopcheck import DONE_RE, ITEM_RE, OPEN_RE
 
 LIVE_TTL = 24 * 3600
 PICKUP_MAX = 6 * 3600
@@ -45,7 +45,6 @@ NOW_MAX_CHARS, NOW_MAX_LINES = 1500, 40
 NOW_RE = re.compile(r"^## Now[ \t]*\r?$", re.MULTILINE)
 HEADING_RE = re.compile(r"^#{1,6}(?:[ \t]|\r?$)", re.MULTILINE)
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
-TASK_RE = re.compile(r"^\s*[-*+] \[[ xX]\]")
 SHELLS = {"sh", "bash", "zsh", "dash", "fish", "tokenmaxxing-hook"}
 
 NOW_SYSTEM = "You summarise where a coding session stands, for the session that continues it. Answer in plain text."
@@ -102,7 +101,7 @@ def _now_span(text):
         f = FENCE_RE.match(ln)
         if f:
             fence = None if fence == f.group(1) else fence or f.group(1)
-        elif not fence and (HEADING_RE.match(ln) or TASK_RE.match(ln)):
+        elif not fence and (HEADING_RE.match(ln) or ITEM_RE.match(ln)):
             break
         pos += len(ln)
     return m.start(), pos
@@ -243,8 +242,7 @@ def _sessions(fn):
     """fn(state) under a lock on <state>/sessions.json; state is written back after. Returns fn's result."""
     p = config.STATE_DIR / "sessions.json"
     p.parent.mkdir(parents=True, exist_ok=True)
-    with open(p.with_suffix(".lock"), "a") as lk:
-        fcntl.flock(lk, fcntl.LOCK_EX)
+    with open(p.with_suffix(".lock"), "a") as lk, locked(lk):
         try:
             st = json.loads(_read(p) or "{}")
         except ValueError:
@@ -257,7 +255,10 @@ def _sessions(fn):
 
 
 def _claude_pid():
-    """Claude Code's pid: the nearest ancestor that isn't a shell (hooks run under `sh -c` and the shim)."""
+    """Claude Code's pid: the nearest ancestor that isn't a shell (hooks run under `sh -c` and the shim).
+    None on Windows (Git Bash's ps has no -o): the entry then lives until SessionEnd or LIVE_TTL."""
+    if sys.platform == "win32":
+        return None
     pid = os.getppid()
     for _ in range(4):
         out = subprocess.run(["ps", "-o", "ppid=,comm=", "-p", str(pid)], capture_output=True, text=True, check=False,
@@ -266,16 +267,6 @@ def _claude_pid():
             break
         pid = int(out[0])
     return pid
-
-
-def _alive(pid):
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except (PermissionError, TypeError):  # someone else's process; no pid recorded
-        pass
-    return True
 
 
 def pickup(source, ended, others, t):
@@ -300,7 +291,8 @@ def on_start(inp):
 
     def register(st):
         st["live"] = {k: v for k, v in st["live"].items()
-                      if isinstance(v, dict) and t - v.get("t", 0) < LIVE_TTL and _alive(v.get("pid"))}
+                      if isinstance(v, dict) and t - v.get("t", 0) < LIVE_TTL
+                      and (v.get("pid") is None or jobs.alive(v["pid"]))}
         others = [k for k, v in st["live"].items() if v.get("project") == proj and k != sid]
         st["live"][sid] = {"project": proj, "t": t, "pid": pid}
         return st["ended"].get(proj), others

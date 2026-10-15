@@ -102,13 +102,13 @@ claude plugin uninstall tokenmaxxing@gutcheck
 rm -rf ~/.config/tokenmaxxing ~/.local/state/tokenmaxxing
 ```
 
-`~/.local/share/gutcheck` holds the venv and the standing-rules store gutcheck also uses; remove it once neither plugin is installed. If you turned on Roblox Studio tool preloading, ask Claude to run `tokenmaxxing studio preload off` before you uninstall. If you added the long-run line to `~/.zshrc`, remove it. Explainer pages, if you made any, are in `~/Documents/gutcheck-explainers`.
+`~/.local/share/gutcheck` holds the venv and the standing-rules store gutcheck also uses; remove it once neither plugin is installed. If you turned on Roblox Studio tool preloading, ask Claude to run `tokenmaxxing studio preload off` before you uninstall. If you added the long-run line to `~/.zshrc`, remove it. Explainer pages, if you made any, are in `~/Documents/explainers`.
 
 ## Limitations and honest status
 
 - **tokenmaxxing is not a key guard.** On its own it redacts keys only in output it trims; short output, pasted keys, keys Claude writes into commands or files, and secret files pass untouched. Install [gutcheck](../gutcheck/README.md) for key protection.
 - **Logging only by default:** compact earlier, long tool inputs, long messages, the subagent context cap, the long-run stop check, and doc and memory loading. They record what they would have done; `/tokenmaxxing:report` shows it.
-- **Tested by one person on one Mac.** Linux is untested and Windows isn't supported.
+- **Tested by one person on one Mac.** Linux is untested. Windows: hooks run through Git Bash; testing there is still limited.
 - **Jev is a judgment model, not a reader.** It's fast and cheap, but weak at counting, arithmetic and dates. tokenmaxxing keeps numbers in code and tells Claude to double-check what Jev flags.
 - **The evidence check is young.** It has high precision on a small labelled set and catches about half of unsupported claims.
 - **Roblox Studio** has its own adapter. Studio output passes through untouched by default, and the local script mirror is an experiment that stays off unless you turn it on.

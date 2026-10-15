@@ -1,5 +1,6 @@
 """tokenmaxxing command line.
 
+  tokenmaxxing withsecret SERVICE ENV_NAME -- COMMAND...
   tokenmaxxing jev ask STATE QUESTIONS          STATE: file or - ; QUESTIONS: JSON string or file
   tokenmaxxing jev filter "CONDITION" [FILE|-] [--by line|block] [--min 0.5] [--all] [--context N]
   tokenmaxxing jev pick "QUESTION" "name: description" ... [--state FILE|-]
@@ -105,6 +106,11 @@ def main(argv=None):
             if not args or args[0] not in ("ask", "filter", "pick"):
                 sys.exit(__doc__)
             {"ask": jev_ask, "filter": jev_filter, "pick": jev_pick}[args[0]](args[1:])
+        elif cmd == "withsecret":
+            from gutcheck_core import secrets
+            if len(args) < 4 or args[2] != "--":
+                sys.exit("usage: tokenmaxxing withsecret SERVICE ENV_NAME -- COMMAND...")
+            secrets.withsecret(args[0], args[1], args[3:])
         elif cmd == "recall":
             from . import recall
             recall.main(args)

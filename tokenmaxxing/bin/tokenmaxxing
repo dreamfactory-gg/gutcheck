@@ -2,4 +2,4 @@
 # tokenmaxxing CLI. Uses the shared venv (tree-sitter) when present, else a Python 3.12+ on PATH.
 here=$(cd "$(dirname "$(realpath "$0")")" && pwd)
 py=$("$here/gutcheck-python") || { echo "tokenmaxxing: needs Python 3.12 or newer (install uv, or python3.12+, then run $here/../setup.sh)" >&2; exit 1; }
-PYTHONPATH="$here/../src${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m tokenmaxxing.cli "$@"
+PYTHONUTF8=1 PYTHONPATH="$here/../src${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -P -m tokenmaxxing.cli "$@"

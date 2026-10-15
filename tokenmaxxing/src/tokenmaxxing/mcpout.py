@@ -267,11 +267,11 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
     if level == "receipt" and kind == "action":
         path = save_fn(".txt")
         fails = failure_lines(text, limit=30) + [x for x in warning_lines(text, 10)]
+        verdict = _json_failure(text)
         first = text.strip().splitlines()[0][:160] if text.strip() else ""
-        if fails:
-            fails = sorted(_dedupe(fails))
+        if fails or verdict:
             return (f"✗ failed or warned · {len(text):,} chars, full output saved to {path}\n"
-                    + _numbered(fails))
+                    + _numbered(verdict + sorted(_dedupe(fails))))
         return f"✓ ok · {first} · full output ({len(text):,} chars) saved to {path}"
     if level == "receipt" and kind == "log":
         return _log_view(text, nlines, save_fn, routine or set(), judge, cfg)
@@ -283,6 +283,28 @@ def render(tool, text, kind, level, cfg, save_fn=None, routine=None, judge=None,
         return _bash_view(text, nlines, save_fn, cfg, purpose, command, brief, description)
     except Exception:
         return _bash_view(text, nlines, save_fn, cfg)  # purpose selection must never prevent the ordinary trim
+
+
+_JSON_START = re.compile(r"^[ \t\r]*[\[{]", re.M)
+_WS = re.compile(r"\s*")
+
+
+def _json_failure(text):
+    """(key, value) for the top-level keys that mark a JSON object reply failed (success/ok false, an error or a
+    reason), in each run of JSON documents that starts a line: text_of joins an MCP reply's blocks with newlines."""
+    dec, out, end = json.JSONDecoder(), [], 0
+    for m in _JSON_START.finditer(text):
+        i = m.end() - 1
+        while i >= end and i < len(text):
+            try:
+                d, end = dec.raw_decode(text, i)
+            except ValueError:
+                break
+            if isinstance(d, dict):
+                out += [(k, json.dumps(d[k])[:300]) for k in ("success", "ok", "error", "reason")
+                        if k in d and (d[k] is False if k in ("success", "ok") else d[k])]
+            i = _WS.match(text, end).end()
+    return out
 
 
 def _fail_block(text, limit=20):

@@ -1,4 +1,4 @@
-## Roblox Studio calls (gutcheck)
+## Roblox Studio calls
 - Batch independent Studio calls in one turn (several tool calls in one message); fold several checks into one `execute_luau` that prints one compact line per check.
 - Never poll: wait once (`wait_job_finished`, or a `task.wait(n)` at the top of the checking `execute_luau`), then check once.
 - `script_grep`, then a ranged `script_read` (start/end lines), not the whole script. `search_game_tree`: pass `max_depth` 2-3, `head_limit` and `path`.
