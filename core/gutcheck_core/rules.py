@@ -254,9 +254,10 @@ def add_message(session, ts, src, text, deadline=PROMPT_DEADLINE, cwd=None):
 # ---- transcript catch-up ------------------------------------------------------------------------------
 def _messages(path, start=0, until_line=None, cwd=None):
     """(ts, src, text, cwd) of owner/lead messages from byte offset `start`; returns (messages, end_offset). A Codex
-    message gets the cwd of its own turn's turn_context, before or after it in the rollout; a turn with none yet is
-    the open one, which runs in the hook's `cwd`."""
-    msgs, turns, turn_of, turn = [], {}, {}, None
+    message belongs to the turn its metadata names, else the one the last task_started opened (by order), and gets the
+    cwd of that turn's next turn_context, else of its previous one; a turn with none yet is the open one, which runs in
+    the hook's `cwd`."""
+    msgs, turns, waiting, turn, turn_no = [], {}, {}, None, 0
     try:
         fh = open(path, "rb")
     except OSError:
@@ -276,12 +277,19 @@ def _messages(path, start=0, until_line=None, cwd=None):
                 d = json.loads(raw)
             except ValueError:
                 continue
+            if not isinstance(d, dict):
+                continue
             payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
             codex = d.get("type") in ("response_item", "event_msg")
             if d.get("type") in ("session_meta", "turn_context"):
-                turns[payload.get("turn_id")] = payload.get("cwd")
+                key = payload.get("turn_id") or turn
+                turns[key] = payload.get("cwd")
+                for i in waiting.pop(key, []):
+                    msgs[i] = msgs[i][:3] + (turns[key],)
             elif codex:
-                turn = payload.get("turn_id") if payload.get("type") == "task_started" else turn
+                if payload.get("type") == "task_started":
+                    turn_no += 1
+                    turn = payload.get("turn_id") or turn_no
                 meta = payload.get("internal_chat_message_metadata_passthrough")
                 codex_turn = (meta.get("turn_id") if isinstance(meta, dict) else None) or turn
                 d = codex_rollout.normalize(d)
@@ -301,10 +309,10 @@ def _messages(path, start=0, until_line=None, cwd=None):
                 src = msg.owner_source(txt)
                 if src:
                     if codex:
-                        turn_of[len(msgs)] = codex_turn
-                    msgs.append((d.get("timestamp"), src, txt, d.get("cwd")))
-    for i, t in turn_of.items():
-        msgs[i] = msgs[i][:3] + (turns.get(t) or cwd,)
+                        waiting.setdefault(codex_turn, []).append(len(msgs))
+                    msgs.append((d.get("timestamp"), src, txt, turns.get(codex_turn) if codex else d.get("cwd")))
+    for i in (i for ids in waiting.values() for i in ids):
+        msgs[i] = msgs[i][:3] + (msgs[i][3] or cwd,)
     return msgs, pos
 
 

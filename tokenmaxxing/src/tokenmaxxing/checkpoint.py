@@ -92,31 +92,37 @@ def _strings(obj):
 
 
 def _codex_bg(s, d, n, calls, cells, done):
-    """Codex background work. A command session runs from the tool output that yields its ID until a completion
-    reports that ID; a completion logged while the yielding call (or the exec cell a wait resumes) was still open
-    ended that same command (a late yield). A subagent runs from started to its end."""
+    """Codex background work. A command session runs from the output of a command call (exec, exec_command,
+    write_stdin, wait) that yields its ID until a completion reports that ID; a completion logged while the yielding
+    call (or the exec cell a wait resumes) was still open ended that same command (a late yield). A subagent runs
+    from started to its end. Malformed records are skipped."""
     p = d["payload"]
     item = p.get("item") if isinstance(p.get("item"), dict) else {}
-    if p.get("type") in ("custom_tool_call", "function_call"):
-        calls[p.get("call_id")] = n
+    call = p.get("call_id") if isinstance(p.get("call_id"), str) else None
+    if p.get("type") in ("custom_tool_call", "function_call") and call and \
+            p.get("name") in ("exec", "exec_command", "write_stdin", "wait"):
+        calls[call] = n
         if p.get("name") == "wait":
             try:
-                cell = json.loads(p.get("arguments") or "{}").get("cell_id")
-            except (ValueError, AttributeError):
-                cell = None
-            calls[p.get("call_id")] = cells.get(str(cell), n)
-    elif p.get("type") in ("custom_tool_call_output", "function_call_output"):
+                args = json.loads(p.get("arguments") or "{}")
+            except (TypeError, ValueError):
+                args = None
+            calls[call] = cells.get(str(args.get("cell_id")) if isinstance(args, dict) else None, n)
+    elif p.get("type") in ("custom_tool_call_output", "function_call_output") and call in calls:
         for cell in codex_rollout.yielded_cells(d):
-            cells[cell] = calls.get(p.get("call_id"), n)
+            cells[cell] = calls[call]
         for sid in codex_rollout.running_sessions(d):
-            if done.get(sid, -1) < calls.get(p.get("call_id"), n):
+            if done.get(sid, -1) < calls[call]:
                 s["bg"].setdefault(sid, {"kind": "bash", "desc": "Codex command session",
                                          "started": d.get("timestamp"), "output": None})
-    elif p.get("type") == "item_completed" and item.get("type") == "CommandExecution" and item.get("process_id"):
+    elif p.get("type") == "item_completed" and item.get("type") == "CommandExecution" and \
+            isinstance(item.get("process_id"), (str, int)) and str(item["process_id"]):
         done[str(item["process_id"])] = n
         _end(s, str(item["process_id"]), item.get("status"))
     elif p.get("type") == "item_completed" and item.get("type") == "SubAgentActivity":
         agent = item.get("agent_path") or item.get("agent_thread_id")
+        if not isinstance(agent, str):
+            return
         if item.get("kind") == "started":
             s["bg"].setdefault(agent, {"kind": "agent", "desc": "Codex subagent", "name": agent,
                                        "started": d.get("timestamp"), "type": item.get("model")})

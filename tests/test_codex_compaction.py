@@ -192,6 +192,28 @@ class CodexCompactionTest(unittest.TestCase):
         self.assertEqual(saved[-2]["keep"], [str((first / "alpha.txt").resolve())])
         self.assertEqual(saved[-1]["keep"], [str((second / "beta.txt").resolve())])
 
+    def test_rollout_without_turn_ids_keeps_directory_boundaries_by_order(self):
+        dirs = [self.root / name for name in ("a", "b", "c")]
+        for directory, name in zip(dirs, ("alpha", "beta", "gamma")):
+            directory.mkdir()
+            (directory / f"{name}.txt").write_text("keep\n")
+        started = {"type": "event_msg", "payload": {"type": "task_started"}}
+        self.append(started, {"type": "turn_context", "payload": {"cwd": str(dirs[0])}},
+                    self.message("user", "Never delete alpha.txt."),
+                    started, self.message("user", "Never delete beta.txt."),
+                    {"type": "turn_context", "payload": {"cwd": str(dirs[1])}},
+                    started, self.message("user", "Never delete gamma.txt."))
+        self.assertEqual([m[3] for m in rules._messages(str(self.transcript), cwd=str(dirs[2]))[0]],
+                         [str(self.root), *map(str, dirs)])
+
+    def test_non_object_json_lines_are_skipped(self):
+        claude = self.root / "claude.jsonl"
+        claude.write_text("[]\nnull\n" + json.dumps({"type": "user", "cwd": str(self.root),
+                                                     "message": {"content": "Never delete important.txt."}}) + "\n")
+        self.assertEqual([m[2] for m in rules._messages(str(claude))[0]], ["Never delete important.txt."])
+        self.append([], None)
+        self.assertEqual(len(rules._messages(str(self.transcript))[0]), 1)
+
     def test_missing_transcript_still_fails_open(self):
         result = rules.sync("missing", str(self.root / "missing.jsonl"))
         self.assertEqual(result["messages"], 0)
@@ -273,6 +295,22 @@ class CodexCompactionTest(unittest.TestCase):
                   {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "d",
                    "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}]
         self.assertIn("502", self.running(self.exec_call("a"), self.exec_output("a"), self.exec_done(), *direct))
+
+    def test_malformed_and_unrelated_records_neither_abort_nor_fabricate_work(self):
+        bad = [
+            {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec", "call_id": ["x"]}},
+            {"type": "response_item", "payload": {"type": "function_call_output", "call_id": ["x"], "output": "x"}},
+            {"type": "response_item", "payload": {"type": "function_call", "name": "wait", "call_id": "w",
+                                                  "arguments": {"cell_id": "1"}}},
+            {"type": "response_item", "payload": {"type": "function_call", "name": "wait", "call_id": "w2",
+                                                  "arguments": "[1]"}},
+            self.item({"type": "SubAgentActivity", "kind": "started", "agent_path": ["/root/x"]}),
+            self.item({"type": "CommandExecution", "status": "completed", "process_id": {"a": 1}}),
+            {"type": "response_item", "payload": {"type": "function_call", "name": "read_file", "call_id": "r"}},
+            {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "r", "output":
+                "Process running with session ID 999\n" + json.dumps({"session_id": 998, "wall_time_seconds": 1})}},
+        ]
+        self.assertEqual(list(self.running(*bad, self.exec_call("a"), self.exec_output("a"))), ["502"])
 
     def test_poll_and_intermediate_output_close_nothing(self):
         notify = {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "a",
@@ -401,10 +439,23 @@ class CodexCompactionTest(unittest.TestCase):
                     else:
                         self.assertIn("MARKETPLACE-CHECKPOINT",
                                       json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"])
+        # A missing link, a dangling one, and a link whose Python fails all exit 0 with no output.
+        broken = fake_home / "broken"
+        broken.write_text("#!/bin/sh\necho Traceback >&2\nexit 1\n")
+        broken.chmod(0o755)
+        for target in (None, cache / "0.2.old/bin/tokenmaxxing", broken):
+            link.unlink(missing_ok=True)
+            if target:
+                link.symlink_to(target)
+            for event in ("PreCompact", "SessionStart"):
+                result = subprocess.run(example["hooks"][event][0]["hooks"][0]["command"], shell=True, env=env,
+                                        input="{}", capture_output=True, text=True, timeout=20)
+                with self.subTest(target=target, event=event):
+                    self.assertEqual((result.returncode, result.stdout, result.stderr), (0, "", ""))
 
     def test_malformed_records_are_ignored(self):
         with self.transcript.open("a") as out:
-            for record in ({"type": "session_meta", "payload": "invalid"},
+            for record in ([], {"type": "session_meta", "payload": "invalid"},
                            {"type": "response_item", "payload": {"type": "custom_tool_call", "input": 12}},
                            {"type": "response_item", "payload": {"type": "function_call_output", "call_id": []}},
                            self.item({"type": "CommandExecution", "id": [], "status": "completed",
