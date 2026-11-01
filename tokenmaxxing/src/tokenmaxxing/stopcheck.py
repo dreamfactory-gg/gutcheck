@@ -22,7 +22,7 @@ import sys
 import time
 from pathlib import Path
 
-from gutcheck_core import config
+from gutcheck_core import codex_rollout, config
 
 MARK = "[tokenmaxxing long-run]"
 TERMINAL = {"completed", "complete", "done", "failed", "error", "errored", "killed", "stopped", "cancelled",
@@ -168,14 +168,25 @@ def session_tasks_files(transcript, max_bytes=8_000_000):
             data = fh.read().decode("utf-8", errors="replace")
     except (OSError, TypeError):
         return []
-    out = []
+    out, codex_cwd = [], None
     for line in data.splitlines():
-        if "tasks.md" not in line.lower():
+        if "tasks.md" not in line.lower() and '"session_meta"' not in line and '"turn_context"' not in line:
             continue
         try:
             rec = json.loads(line)
         except ValueError:
             continue
+        if not isinstance(rec, dict):
+            continue
+        if rec.get("type") in ("session_meta", "turn_context"):
+            meta = rec.get("payload")
+            if isinstance(meta, dict):
+                codex_cwd = meta.get("cwd") or codex_cwd
+            continue
+        if rec.get("type") in ("response_item", "event_msg"):
+            rec = codex_rollout.normalize(rec, cwd=codex_cwd)
+            if rec is None:
+                continue
         c = (rec.get("message") or {}).get("content")
         for b in c if isinstance(c, list) else []:
             if not isinstance(b, dict) or b.get("type") != "tool_use":

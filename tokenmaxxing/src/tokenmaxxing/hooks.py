@@ -104,6 +104,20 @@ def context_tokens(transcript_path, max_bytes=2_000_000):
             d = json.loads(line)
         except ValueError:
             continue
+        if not isinstance(d, dict):
+            continue
+        if d.get("type") == "token_usage_record":
+            payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
+            usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
+            if isinstance(usage.get("input_tokens"), int):
+                return usage["input_tokens"]
+        elif d.get("type") == "event_msg":
+            payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
+            if payload.get("type") == "token_count":
+                info = payload.get("info") if isinstance(payload.get("info"), dict) else {}
+                usage = info.get("last_token_usage") if isinstance(info.get("last_token_usage"), dict) else {}
+                if isinstance(usage.get("input_tokens"), int):
+                    return usage["input_tokens"]
         u = (d.get("message") or {}).get("usage") if isinstance(d.get("message"), dict) else None
         if u:
             return (u.get("input_tokens") or 0) + (u.get("cache_read_input_tokens") or 0) + \
@@ -477,12 +491,12 @@ def session_start(inp):
         emit({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}})
 
 
-def reinject(inp):
+def reinject(inp, compact_only=False):
     """After a compaction, a /clear or a restart: the checkpoint written at the transition (transitions.py), so the
     Now block, open items, standing rules and running work survive."""
     from . import checkpoint, transitions
     try:
-        text = transitions.on_start(inp)
+        text = checkpoint.for_session_start(inp) if compact_only else transitions.on_start(inp)
     except Exception as e:
         log("hook_errors", {"event": f"SessionStart:{inp.get('source')}", "error": f"{type(e).__name__}: {e}",
                             "trace": traceback.format_exc()[-1500:]})
@@ -491,6 +505,15 @@ def reinject(inp):
         log("checkpoint_inject", {"session": inp.get("session_id"), "source": inp.get("source"), "found": bool(text),
                                   "tokens": checkpoint.est_tokens(text) if text else 0})
     return text
+
+
+def compact_session_start(inp):
+    """Re-inject after compaction without invoking the other SessionStart behaviors."""
+    if inp.get("source") != "compact":
+        return
+    text = reinject(inp, compact_only=True)
+    if text:
+        emit({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}})
 
 
 def stop(inp):
@@ -559,7 +582,8 @@ HANDLERS = {"PreToolUse:*": subagent_cap,
             "PreCompact": compact_log, "PreToolUse:Bash": pre_bash, "PreToolUse:Agent": pre_agent,
             "PostToolUse:Bash": post_bash, "PostToolUseFailure:Bash": post_failure,
             "PreToolUse:Read": pre_read, "PreToolUse:mcp__": pre_mcp, "PostToolUse:mcp__": post_mcp,
-            "UserPromptSubmit": prompt_submit, "SessionStart": session_start, "Stop": stop,
+            "UserPromptSubmit": prompt_submit, "SessionStart": session_start,
+            "CompactSessionStart": compact_session_start, "Stop": stop,
             "SessionEnd": lambda i: __import__("tokenmaxxing.transitions", fromlist=["on_end"]).on_end(i),
             "SubagentStop": subagent_stop, "SubagentStart": subagent_start, "PreToolUse:SendMessage": pre_send,
             **dict.fromkeys(("PostToolUse:Edit", "PostToolUse:Write", "PostToolUse:MultiEdit"),

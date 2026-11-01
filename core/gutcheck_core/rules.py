@@ -26,7 +26,7 @@ import re
 import time
 from contextlib import contextmanager
 
-from . import config
+from . import codex_rollout, config
 from . import messages as msg
 from .lock import locked
 
@@ -252,7 +252,7 @@ def add_message(session, ts, src, text, deadline=PROMPT_DEADLINE, cwd=None):
 
 
 # ---- transcript catch-up ------------------------------------------------------------------------------
-def _messages(path, start=0, until_line=None):
+def _messages(path, start=0, until_line=None, cwd=None):
     """(ts, src, text, cwd) of owner/lead messages from byte offset `start`; returns (messages, end_offset)."""
     msgs = []
     try:
@@ -274,6 +274,17 @@ def _messages(path, start=0, until_line=None):
                 d = json.loads(raw)
             except ValueError:
                 continue
+            if not isinstance(d, dict):
+                continue
+            codex = d.get("type") in ("response_item", "event_msg")
+            if d.get("type") in ("session_meta", "turn_context"):
+                meta = d.get("payload")
+                if isinstance(meta, dict):
+                    cwd = meta.get("cwd") or cwd
+            if codex:
+                d = codex_rollout.normalize(d, cwd=cwd)
+                if d is None:
+                    continue
             if d.get("isSidechain"):
                 continue
             t = d.get("type")
@@ -287,11 +298,11 @@ def _messages(path, start=0, until_line=None):
             for txt in texts:
                 src = msg.owner_source(txt)
                 if src:
-                    msgs.append((d.get("timestamp"), src, txt, d.get("cwd")))
+                    msgs.append((d.get("timestamp"), src, txt, d.get("cwd") or (cwd if codex else None)))
     return msgs, pos
 
 
-def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE):
+def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE, cwd=None):
     """Catch up from the transcript and classify every pending unit. Returns a short status dict."""
     from concurrent.futures import ThreadPoolExecutor
     _, _, statep, _ = _paths(session)
@@ -302,7 +313,7 @@ def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE):
         except Exception:
             state = {}
         start = 0 if until_line is not None or state.get("transcript") != transcript_path else state.get("offset", 0)
-        msgs, end = _messages(transcript_path, start, until_line)
+        msgs, end = _messages(transcript_path, start, until_line, cwd=cwd)
         recs = load(session)
         for ts, src, text, cwd in msgs:
             recs.extend(_new_units(recs, ts, src, text, cwd))

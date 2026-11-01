@@ -22,7 +22,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from gutcheck_core import config
+from gutcheck_core import codex_rollout, config
 from gutcheck_core.messages import (
     _HEUR,
     _SENT_RE,
@@ -96,7 +96,7 @@ def scan(path, until_line=None):
     s = {"owner": [], "asks": [], "agent_text": [], "bg": OrderedDict(), "files": OrderedDict(), "branches": [],
          "docs": OrderedDict(), "tasks_files": OrderedDict(), "todos": None, "cwd": None, "git_branch": None,
          "session": None, "last_ts": None, "lead_heard": {}, "titles": {}}
-    uses, pend_stop = {}, {}
+    uses, pend_stop, codex_execs, codex_cells = {}, {}, set(), set()
     try:
         fh = open(path, encoding="utf-8", errors="replace")
     except OSError:
@@ -119,6 +119,56 @@ def scan(path, until_line=None):
                 d = json.loads(line)
             except ValueError:
                 continue
+            if not isinstance(d, dict):
+                continue
+            if d.get("type") == "response_item":
+                payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
+                call_id, code = payload.get("call_id"), payload.get("input")
+                if payload.get("type") in ("custom_tool_call", "function_call") and \
+                        isinstance(call_id, str) and call_id and \
+                        (payload.get("name") == "exec_command" or (payload.get("name") == "exec" and
+                         isinstance(code, str) and "tools.exec_command" in code)):
+                    codex_execs.add(call_id)
+                elif payload.get("type") == "function_call" and payload.get("name") == "wait" and \
+                        isinstance(call_id, str) and call_id:
+                    try:
+                        args = json.loads(payload.get("arguments") or "{}")
+                    except (TypeError, ValueError):
+                        args = {}
+                    if isinstance(args, dict) and str(args.get("cell_id")) in codex_cells:
+                        codex_execs.add(call_id)
+                elif payload.get("type") in ("custom_tool_call_output", "function_call_output") and \
+                        payload.get("call_id") in codex_execs:
+                    codex_cells.update(codex_rollout.yielded_cells(d))
+                    for session_id in codex_rollout.running_sessions(d):
+                        s["bg"][session_id] = {"kind": "bash", "desc": "Codex command session",
+                                               "started": d.get("timestamp"), "output": None}
+            elif d.get("type") == "event_msg":
+                payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
+                item = payload.get("item") if isinstance(payload.get("item"), dict) else {}
+                if payload.get("type") == "item_completed" and item.get("type") == "CommandExecution" \
+                        and item.get("status") in ("completed", "failed", "cancelled", "canceled"):
+                    _end(s, str(item.get("process_id") or ""), item["status"])
+                elif payload.get("type") == "item_completed" and item.get("type") == "SubAgentActivity":
+                    agent = item.get("agent_path") or item.get("agent_thread_id")
+                    if agent and item.get("kind") == "started":
+                        s["bg"][agent] = {"kind": "agent", "desc": "Codex subagent", "name": agent,
+                                          "started": d.get("timestamp"), "type": item.get("model")}
+                    elif agent and item.get("kind") in ("completed", "failed", "interrupted", "cancelled"):
+                        _end(s, agent, item["kind"])
+            if d.get("type") == "session_meta":
+                meta = d.get("payload") if isinstance(d.get("payload"), dict) else {}
+                s["cwd"] = meta.get("cwd") or s["cwd"]
+                s["session"] = meta.get("session_id") or meta.get("id") or s["session"]
+                git = meta.get("git") if isinstance(meta.get("git"), dict) else {}
+                s["git_branch"] = git.get("branch") or s["git_branch"]
+            elif d.get("type") == "turn_context":
+                meta = d.get("payload") if isinstance(d.get("payload"), dict) else {}
+                s["cwd"] = meta.get("cwd") or s["cwd"]
+            elif d.get("type") in ("response_item", "event_msg"):
+                d = codex_rollout.normalize(d, cwd=s["cwd"])
+                if d is None:
+                    continue
             if d.get("isSidechain"):
                 continue
             t = d.get("type")
@@ -435,7 +485,7 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
     # standing rules: captured as stated (rules.py); catch up from the transcript and classify what is pending
     from gutcheck_core import rules as rules_mod
     try:
-        sync_st = rules_mod.sync(session, transcript_path, until_line=until_line, deadline=deadline)
+        sync_st = rules_mod.sync(session, transcript_path, until_line=until_line, deadline=deadline, cwd=cwd)
     except Exception as e:
         sync_st = {"error": f"{type(e).__name__}: {e}"}
     rules_md, rules_meta = rules_mod.section(session)
