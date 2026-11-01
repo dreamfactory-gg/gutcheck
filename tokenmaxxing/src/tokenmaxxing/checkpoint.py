@@ -91,131 +91,37 @@ def _strings(obj):
             yield from _strings(v)
 
 
-def _codex_agent_path(meta):
-    source = meta.get("source")
-    source = source if isinstance(source, dict) else {}
-    sub = source.get("subagent") or source.get("subAgent") or source.get("sub_agent") or {}
-    sub = sub if isinstance(sub, dict) else {}
-    spawn = sub.get("thread_spawn") or sub.get("threadSpawn") or {}
-    spawn = spawn if isinstance(spawn, dict) else {}
-    path = spawn.get("agent_path") or spawn.get("agentPath") or meta.get("agent_path")
-    return path if isinstance(path, str) and path.startswith("/") else "/root"
-
-
-def _codex_descendant(item, session, parent):
-    path, thread = item.get("agent_path"), item.get("agent_thread_id")
-    if thread and session and thread == session:
-        return False
-    return isinstance(path, str) and path.startswith(parent.rstrip("/") + "/")
-
-
-def _codex_target_matches(target, item, parent):
-    if not isinstance(target, str) or not target:
-        return False
-    path, thread = item.get("agent_path"), item.get("agent_thread_id")
-    return target in (path, thread) or (not target.startswith("/") and
-                                        parent.rstrip("/") + "/" + target == path)
-
-
-def _codex_action(name):
-    if not isinstance(name, str):
-        return None
-    name = name.split(".")[-1].split("__")[-1].replace("_", "").lower()
-    return {"followuptask": "followup_task", "sendmessage": "send_message"}.get(name)
-
-
-def _codex_command_owner(item, calls, owners, allow_single=True):
-    for ident in (item.get("call_id"), item.get("id")):
-        if isinstance(ident, str) and ident in calls:
-            return calls[ident][0]
-    running = {id(root) for root in owners.values()}
-    active = {id(root): root for root, _ in calls.values() if root["pending"] or root["cells"] or id(root) in running}
-    command = item.get("command")
-    if isinstance(command, list):
-        command = command[-1] if command else None
-    matching = [root for root in active.values() if isinstance(command, str) and command and
-                command in root["input"]]
-    if len(matching) == 1:
-        return matching[0]
-    return next(iter(active.values())) if allow_single and len(active) == 1 else None
-
-
-class _CodexCommands:
-    """Associate process IDs with exec invocations, not with the entire rollout."""
-
-    def __init__(self, state):
-        self.state = state
-        self.calls, self.cells, self.owners, self.items = {}, {}, {}, {}
-
-    def _release_input(self, root):
-        if not root["pending"] and not root["cells"] and not any(owner is root for owner in self.owners.values()):
-            root["input"] = ""
-            self.calls = {call_id: call for call_id, call in self.calls.items() if call[0] is not root}
-            self.items = {item_id: owner for item_id, owner in self.items.items() if owner is not root}
-
-    def response(self, record):
-        payload = record.get("payload") if isinstance(record.get("payload"), dict) else {}
-        call_id, code, name = payload.get("call_id"), payload.get("input"), payload.get("name")
-        if payload.get("type") in ("custom_tool_call", "function_call") and \
-                isinstance(call_id, str) and call_id and \
-                (name == "exec_command" or (name == "exec" and isinstance(code, str) and "tools.exec_command" in code)):
-            raw_input = code if isinstance(code, str) else payload.get("arguments")
-            root = {"finished": set(), "pending": {call_id}, "cells": set(),
-                    "input": raw_input if isinstance(raw_input, str) else ""}
-            self.calls[call_id] = (root, None)
-        elif payload.get("type") == "function_call" and name == "wait" and isinstance(call_id, str) and call_id:
+def _codex_bg(s, d, n, calls, cells, done):
+    """Codex background work. A command session runs from the tool output that yields its ID until a completion
+    reports that ID; a completion logged while the yielding call (or the exec cell a wait resumes) was still open
+    ended that same command (a late yield). A subagent runs from started to its end."""
+    p = d["payload"]
+    item = p.get("item") if isinstance(p.get("item"), dict) else {}
+    if p.get("type") in ("custom_tool_call", "function_call"):
+        calls[p.get("call_id")] = n
+        if p.get("name") == "wait":
             try:
-                args = json.loads(payload.get("arguments") or "{}")
-            except (TypeError, ValueError):
-                args = {}
-            cell = str(args.get("cell_id")) if isinstance(args, dict) else ""
-            root = self.cells.get(cell)
-            if root is not None:
-                root["pending"].add(call_id)
-                self.calls[call_id] = (root, cell)
-        elif payload.get("type") in ("custom_tool_call_output", "function_call_output") and \
-                isinstance(call_id, str) and call_id in self.calls:
-            root, waited_cell = self.calls[call_id]
-            root["pending"].discard(call_id)
-            yielded = codex_rollout.yielded_cells(record)
-            if waited_cell and waited_cell not in yielded:
-                root["cells"].discard(waited_cell)
-                self.cells.pop(waited_cell, None)
-            for cell in yielded:
-                self.cells[cell] = root
-                root["cells"].add(cell)
-            for session_id in codex_rollout.running_sessions(record):
-                if session_id not in root["finished"]:
-                    self.state["bg"][session_id] = {"kind": "bash", "desc": "Codex command session",
-                                                    "started": record.get("timestamp"), "output": None}
-                    self.owners[session_id] = root
-            self._release_input(root)
-
-    def item(self, event, item):
-        item_id = item.get("id")
-        item_id = item_id if isinstance(item_id, str) else None
-        if event == "item_started":
-            root = _codex_command_owner(item, self.calls, self.owners)
-            if item_id and root is not None:
-                self.items[item_id] = root
-                process_id = item.get("process_id")
-                if isinstance(process_id, (str, int)) and not isinstance(process_id, bool):
-                    root["finished"].discard(str(process_id))
-        elif event == "item_completed" and item.get("status") in ("completed", "failed", "cancelled", "canceled"):
-            process_id = item.get("process_id")
-            if not isinstance(process_id, (str, int)) or isinstance(process_id, bool) or not str(process_id):
-                return
-            process_id = str(process_id)
-            root = (self.items.pop(item_id, None) or
-                    _codex_command_owner(item, self.calls, self.owners, allow_single=False) or
-                    self.owners.get(process_id) or _codex_command_owner(item, self.calls, self.owners))
-            if root is not None:
-                root["finished"].add(process_id)
-                if self.owners.get(process_id) is root:
-                    self.owners.pop(process_id, None)
-                    _end(self.state, process_id, item["status"])
-                self._release_input(root)
-            # If overlapping calls cannot be distinguished, retain possible live work.
+                cell = json.loads(p.get("arguments") or "{}").get("cell_id")
+            except (ValueError, AttributeError):
+                cell = None
+            calls[p.get("call_id")] = cells.get(str(cell), n)
+    elif p.get("type") in ("custom_tool_call_output", "function_call_output"):
+        for cell in codex_rollout.yielded_cells(d):
+            cells[cell] = calls.get(p.get("call_id"), n)
+        for sid in codex_rollout.running_sessions(d):
+            if done.get(sid, -1) < calls.get(p.get("call_id"), n):
+                s["bg"].setdefault(sid, {"kind": "bash", "desc": "Codex command session",
+                                         "started": d.get("timestamp"), "output": None})
+    elif p.get("type") == "item_completed" and item.get("type") == "CommandExecution" and item.get("process_id"):
+        done[str(item["process_id"])] = n
+        _end(s, str(item["process_id"]), item.get("status"))
+    elif p.get("type") == "item_completed" and item.get("type") == "SubAgentActivity":
+        agent = item.get("agent_path") or item.get("agent_thread_id")
+        if item.get("kind") == "started":
+            s["bg"].setdefault(agent, {"kind": "agent", "desc": "Codex subagent", "name": agent,
+                                       "started": d.get("timestamp"), "type": item.get("model")})
+        elif item.get("kind") in ("completed", "failed", "interrupted", "cancelled"):
+            _end(s, agent, item["kind"])
 
 
 def scan(path, until_line=None):
@@ -224,8 +130,8 @@ def scan(path, until_line=None):
          "docs": OrderedDict(), "tasks_files": OrderedDict(), "todos": None, "cwd": None, "git_branch": None,
          "session": None, "last_ts": None, "lead_heard": {}, "titles": {}}
     uses, pend_stop = {}, {}
-    codex_commands, codex_actions = _CodexCommands(s), []
-    codex_parent = "/root"
+    # call_id or exec cell -> line of the call that opened it; process ID -> line of its last completion
+    codex_calls, codex_cells, codex_done = {}, {}, {}
     try:
         fh = open(path, encoding="utf-8", errors="replace")
     except OSError:
@@ -251,62 +157,17 @@ def scan(path, until_line=None):
             if not isinstance(d, dict):
                 continue
             is_codex = d.get("type") in ("response_item", "event_msg")
-            if d.get("type") == "response_item":
-                payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
-                codex_commands.response(d)
-                if payload.get("type") == "function_call" and _codex_action(payload.get("name")):
-                    try:
-                        args = json.loads(payload.get("arguments") or "{}")
-                    except (TypeError, ValueError):
-                        args = {}
-                    if isinstance(args, dict) and isinstance(args.get("target"), str):
-                        codex_actions.append((args["target"], _codex_action(payload["name"])))
-            elif d.get("type") == "event_msg":
-                payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
-                item = payload.get("item") if isinstance(payload.get("item"), dict) else {}
-                if payload.get("type") == "task_complete":
-                    codex_actions.clear()
-                elif payload.get("type") == "item_started" and \
-                        item.get("type") in ("CollabAgentToolCall", "collabAgentToolCall") and \
-                        _codex_action(item.get("tool")):
-                    receivers = item.get("receiver_thread_ids") or item.get("receiverThreadIds") or []
-                    for target in receivers if isinstance(receivers, list) else []:
-                        if isinstance(target, str):
-                            codex_actions.append((target, _codex_action(item["tool"])))
-                elif item.get("type") == "CommandExecution":
-                    codex_commands.item(payload.get("type"), item)
-                elif payload.get("type") == "item_completed" and item.get("type") == "SubAgentActivity":
-                    agent = item.get("agent_path") or item.get("agent_thread_id")
-                    agent = agent if isinstance(agent, str) else None
-                    action = None
-                    if item.get("kind") == "interacted":
-                        for index in range(len(codex_actions) - 1, -1, -1):
-                            target, kind = codex_actions[index]
-                            if _codex_target_matches(target, item, codex_parent):
-                                action = kind
-                                break
-                        codex_actions[:] = [(target, kind) for target, kind in codex_actions
-                                            if not _codex_target_matches(target, item, codex_parent)]
-                    descendant = _codex_descendant(item, s["session"], codex_parent)
-                    if agent and descendant and (item.get("kind") == "started" or
-                                                  item.get("kind") == "interacted" and action == "followup_task"):
-                        s["bg"].setdefault(agent, {"kind": "agent", "desc": "Codex subagent", "name": agent,
-                                                   "started": d.get("timestamp"), "type": item.get("model")})
-                    elif agent and item.get("kind") in ("completed", "failed", "interrupted", "cancelled"):
-                        _end(s, agent, item["kind"])
-                        codex_actions[:] = [(target, kind) for target, kind in codex_actions
-                                            if not _codex_target_matches(target, item, codex_parent)]
+            meta = d.get("payload") if isinstance(d.get("payload"), dict) else {}
             if d.get("type") == "session_meta":
-                meta = d.get("payload") if isinstance(d.get("payload"), dict) else {}
                 s["cwd"] = meta.get("cwd") or s["cwd"]
                 s["session"] = meta.get("session_id") or meta.get("id") or s["session"]
-                codex_parent = _codex_agent_path(meta)
                 git = meta.get("git") if isinstance(meta.get("git"), dict) else {}
                 s["git_branch"] = git.get("branch") or s["git_branch"]
             elif d.get("type") == "turn_context":
-                meta = d.get("payload") if isinstance(d.get("payload"), dict) else {}
                 s["cwd"] = meta.get("cwd") or s["cwd"]
-            elif d.get("type") in ("response_item", "event_msg"):
+            elif is_codex:
+                if meta:
+                    _codex_bg(s, d, n, codex_calls, codex_cells, codex_done)
                 d = codex_rollout.normalize(d, cwd=s["cwd"])
                 if d is None:
                     continue

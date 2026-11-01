@@ -6,7 +6,7 @@ tokenmaxxing is a Claude Code plugin. It keeps text Claude doesn't need out of i
 
 ### Codex compaction hooks
 
-Codex can use the durable checkpoint without installing tokenmaxxing's other hooks. Install tokenmaxxing through the [marketplace](../README.md) and start Claude once so the shared venv is built. Use `claude plugin list` to identify the enabled tokenmaxxing version, find its directory under `~/.claude/plugins/cache/gutcheck/tokenmaxxing/`, and replace `<version>` below with that exact directory name; if the marketplace has a different name, replace `gutcheck` too. Enable `hooks = true` under `[features]` in Codex's `config.toml`, then add these entries to the `hooks` object in `~/.codex/hooks.json`, preserving any other hooks already there:
+Codex can use the durable checkpoint without installing tokenmaxxing's other hooks. Install tokenmaxxing through the [marketplace](../README.md) and start Claude once, so the shared venv is built and the `tokenmaxxing` CLI is linked into `~/.local/bin` (manual command there). Each Claude session start points that link at the enabled version, so these hooks keep working after a plugin upgrade. Enable `hooks = true` under `[features]` in Codex's `config.toml`, then add these entries to the `hooks` object in `~/.codex/hooks.json`, preserving any other hooks already there:
 
 ```json
 {
@@ -16,7 +16,7 @@ Codex can use the durable checkpoint without installing tokenmaxxing's other hoo
         "hooks": [
           {
             "type": "command",
-            "command": "env GUTCHECK_HOME=\"$HOME/.local/share/gutcheck\" TOKENMAXXING_CONFIG_DIR=\"$HOME/.config/tokenmaxxing\" TOKENMAXXING_STATE_DIR=\"$HOME/.local/state/tokenmaxxing-codex/state\" TOKENMAXXING_DATA_DIR=\"$HOME/.local/state/tokenmaxxing-codex/data\" GUTCHECK_RULES_DIR=\"$HOME/.local/state/tokenmaxxing-codex/rules\" \"$HOME/.claude/plugins/cache/gutcheck/tokenmaxxing/<version>/bin/tokenmaxxing-hook\" PreCompact",
+            "command": "env TOKENMAXXING_STATE_DIR=\"$HOME/.local/state/tokenmaxxing-codex/state\" TOKENMAXXING_DATA_DIR=\"$HOME/.local/state/tokenmaxxing-codex/data\" GUTCHECK_RULES_DIR=\"$HOME/.local/state/tokenmaxxing-codex/rules\" \"$HOME/.local/bin/tokenmaxxing\" hook PreCompact",
             "timeout": 120
           }
         ]
@@ -28,7 +28,7 @@ Codex can use the durable checkpoint without installing tokenmaxxing's other hoo
         "hooks": [
           {
             "type": "command",
-            "command": "env GUTCHECK_HOME=\"$HOME/.local/share/gutcheck\" TOKENMAXXING_CONFIG_DIR=\"$HOME/.config/tokenmaxxing\" TOKENMAXXING_STATE_DIR=\"$HOME/.local/state/tokenmaxxing-codex/state\" TOKENMAXXING_DATA_DIR=\"$HOME/.local/state/tokenmaxxing-codex/data\" GUTCHECK_RULES_DIR=\"$HOME/.local/state/tokenmaxxing-codex/rules\" \"$HOME/.claude/plugins/cache/gutcheck/tokenmaxxing/<version>/bin/tokenmaxxing-hook\" CompactSessionStart",
+            "command": "env TOKENMAXXING_STATE_DIR=\"$HOME/.local/state/tokenmaxxing-codex/state\" TOKENMAXXING_DATA_DIR=\"$HOME/.local/state/tokenmaxxing-codex/data\" GUTCHECK_RULES_DIR=\"$HOME/.local/state/tokenmaxxing-codex/rules\" \"$HOME/.local/bin/tokenmaxxing\" hook CompactSessionStart",
             "timeout": 15,
             "additionalContextLimit": 0
           }
@@ -39,9 +39,9 @@ Codex can use the durable checkpoint without installing tokenmaxxing's other hoo
 }
 ```
 
-`PreCompact` writes the checkpoint; `CompactSessionStart` reinjects it only after compaction, without the other SessionStart behaviors. The separate state, data and rules directories keep Codex checkpoints apart from Claude's. `additionalContextLimit: 0` leaves the reinjected context uncapped. When the marketplace installs a new version, update both hook paths to its directory. If Codex uses an isolated home, use the real absolute paths to the plugin, venv and state directories in the commands instead. Review and trust the hooks through Codex's normal trust prompt or `/hooks`; each Codex home has its own trust state. The `PreCompact` handler can also move completed TASKS.md entries to REPORT.md and, if the Now block is stale, call Claude to update it.
+`PreCompact` writes the checkpoint; `CompactSessionStart` reinjects it only after compaction, without the other SessionStart behaviors. The three directories keep Codex checkpoints and rules apart from Claude's; everything else (venv, config) is the shared default under `$HOME`. `additionalContextLimit: 0` leaves the reinjected context uncapped. If Codex uses an isolated home, use real absolute paths in the commands instead of `$HOME`. The maintainer's own hooks call the release folder's `~/.local/share/gutcheck/release/tokenmaxxing/bin/tokenmaxxing-hook <Event>` with the same variables. Review and trust the hooks through Codex's normal trust prompt or `/hooks`; each Codex home has its own trust state. The `PreCompact` handler can also move completed TASKS.md entries to REPORT.md and, if the Now block is stale, call Claude to update it.
 
-If a rollout does not distinguish overlapping commands with the same process ID, the checkpoint keeps uncertain work as possibly running; a completed command can therefore remain listed.
+The checkpoint lists a Codex command as running from the tool output that yields its session ID until Codex logs that ID's completion, and a subagent from its start to its end; a follow-up task sent to an idle subagent is not tracked. Rules take the directory of their own turn; one stated in a turn whose context Codex has not written yet takes the hook's directory.
 
 Every call Claude makes re-sends the whole conversation. Anything that lands in context gets paid for again on every step after it. Long logs, huge tool outputs and forgotten instructions are what make a session expensive and short.
 

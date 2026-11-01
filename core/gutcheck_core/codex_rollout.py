@@ -105,7 +105,15 @@ def _result_texts(record):
 
 def yielded_cells(record):
     return [cell for text in _result_texts(record) if isinstance(text, str)
-            for cell in re.findall(r"\bScript running with cell ID\s+([\w-]+)", text)]
+            for cell in re.findall(r"\bScript running with cell ID\s+([\w:-]+)", text)]
+
+
+def is_rollout(path):
+    try:
+        with open(path, "rb") as fh:
+            return json.loads(fh.readline()).get("type") == "session_meta"
+    except (OSError, ValueError, AttributeError):
+        return False
 
 
 def running_sessions(record):

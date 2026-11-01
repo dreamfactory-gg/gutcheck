@@ -92,177 +92,105 @@ class CodexCompactionTest(unittest.TestCase):
         self.assertEqual(stopcheck.find_tasks(str(self.root), str(self.transcript))[0], self.tasks)
         self.assertEqual(hooks.context_tokens(str(self.transcript)), 25000)
 
+    @staticmethod
+    def turn_record(kind, turn, cwd=None):
+        if kind == "context":
+            return {"type": "turn_context", "payload": {"turn_id": turn, "cwd": cwd}}
+        return {"type": "event_msg", "payload": {"type": kind, "turn_id": turn}}
+
+    def append(self, *records):
+        with self.transcript.open("a") as out:
+            out.writelines(json.dumps(record) + "\n" for record in records)
+
     def test_rule_reader_handles_partial_appends_without_duplication(self):
-        messages, position, cwd = rules._messages(str(self.transcript))
-        self.assertEqual([item[2] for item in messages],
-                         ["Always preserve COPPER-OWL-418 and never overwrite important.txt."])
-        self.assertEqual(cwd, str(self.root))
+        messages, position = rules._messages(str(self.transcript))
+        self.assertEqual([(item[2], item[3]) for item in messages],
+                         [("Always preserve COPPER-OWL-418 and never overwrite important.txt.", str(self.root))])
         additional = json.dumps(self.message("user", "Never remove the demo file."))
         with self.transcript.open("a") as out:
             out.write(additional[:20])
-        empty, unchanged, cwd = rules._messages(str(self.transcript), start=position, cwd=cwd)
-        self.assertEqual(empty, [])
-        self.assertEqual(unchanged, position)
-        self.assertEqual(cwd, str(self.root))
+        self.assertEqual(rules._messages(str(self.transcript))[1], position)
         with self.transcript.open("a") as out:
             out.write(additional[20:] + "\n")
-        later, final, cwd = rules._messages(str(self.transcript), start=unchanged, cwd=cwd)
-        self.assertEqual([item[2] for item in later], ["Never remove the demo file."])
+        later, final = rules._messages(str(self.transcript))
+        self.assertEqual(later[-1][2], "Never remove the demo file.")
         self.assertEqual(final, self.transcript.stat().st_size)
-        self.assertEqual(later[0][3], str(self.root))
 
-    def test_incremental_rule_sync_retains_the_codex_working_directory(self):
+    def test_rescanned_rollout_adds_each_unit_once(self):
         (self.root / "second.txt").write_text("keep this too\n")
         rules.sync("codex-1", str(self.transcript))
-        self.assertEqual(json.loads(rules._paths("codex-1")[2].read_text())["cwd"], str(self.root))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(self.message("user", "Never delete second.txt.")) + "\n")
+        self.append(self.message("user", "Never delete second.txt."))
         rules.sync("codex-1", str(self.transcript))
         recorded = rules.load("codex-1")
         self.assertEqual(len(recorded), 2)
         self.assertIn(str((self.root / "second.txt").resolve()), recorded[-1]["keep"])
         rules.sync("codex-1", str(self.transcript))
         self.assertEqual(len(rules.load("codex-1")), 2)
+        self.assertEqual(set(json.loads(rules._paths("codex-1")[2].read_text())), {"transcript", "offset"})
 
-    def test_incremental_rule_sync_tracks_changed_cwd_and_resets_for_a_new_transcript(self):
+    def test_changed_directory_and_a_new_transcript(self):
         second = self.root / "second"
         second.mkdir()
         (second / "owned.txt").write_text("keep\n")
         rules.sync("codex-1", str(self.transcript))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "turn_context", "payload": {"cwd": str(second)}}) + "\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(self.message("user", "Never delete owned.txt.")) + "\n")
+        self.append({"type": "turn_context", "payload": {"cwd": str(second)}},
+                    self.message("user", "Never delete owned.txt."))
         rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
         self.assertIn(str((second / "owned.txt").resolve()), rules.load("codex-1")[-1]["keep"])
-        self.assertEqual(json.loads(rules._paths("codex-1")[2].read_text())["cwd"], str(second))
 
         other = self.root / "other.jsonl"
         (self.root / "new.txt").write_text("keep\n")
         other.write_text(json.dumps(self.message("user", "Never delete new.txt.")) + "\n")
         rules.sync("codex-1", str(other), cwd=str(self.root))
         self.assertIn(str((self.root / "new.txt").resolve()), rules.load("codex-1")[-1]["keep"])
-        self.assertEqual(json.loads(rules._paths("codex-1")[2].read_text())["cwd"], str(self.root))
 
-    def test_incremental_rule_sync_recovers_cwd_from_an_old_state_file(self):
-        (self.root / "legacy.txt").write_text("keep\n")
-        rules.sync("codex-1", str(self.transcript))
-        state_path = rules._paths("codex-1")[2]
-        state = json.loads(state_path.read_text())
-        state.pop("cwd")
-        state_path.write_text(json.dumps(state))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(self.message("user", "Never delete legacy.txt.")) + "\n")
-        rules.sync("codex-1", str(self.transcript))
-        self.assertIn(str((self.root / "legacy.txt").resolve()), rules.load("codex-1")[-1]["keep"])
-
-    def test_failed_compaction_after_resume_uses_the_new_turn_directory(self):
+    def test_message_before_its_turn_context_after_a_resume_into_another_directory(self):
+        # Real rollouts tie a message to its turn by the metadata turn_id; that turn's context can come later.
         new = self.root / "resumed"
         new.mkdir()
         (new / "important.txt").write_text("new place\n")
         rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "event_msg", "payload": {
-                "type": "task_started", "turn_id": "resumed-turn"}}) + "\n")
-            out.write(json.dumps(self.message("user", "Never delete important.txt.")) + "\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(new))
-        saved = rules.load("codex-1")[-1]
-        self.assertEqual(saved["keep"], [str((new / "important.txt").resolve())])
-
-        # Re-reading an unresolved turn must not forget a protected path just
-        # because the file temporarily disappeared after it was captured.
-        (new / "important.txt").unlink()
-        rules.sync("codex-1", str(self.transcript), cwd=str(new))
-        self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((new / "important.txt").resolve())])
-        (new / "important.txt").write_text("new place\n")
-
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "turn_context", "payload": {
-                "turn_id": "resumed-turn", "cwd": str(new)}}) + "\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(new))
-        self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((new / "important.txt").resolve())])
-        self.assertEqual(len(rules.load("codex-1")), 2)
-
-    def test_misbound_rule_from_old_state_is_reconciled_after_resume(self):
-        new = self.root / "resumed"
-        new.mkdir()
-        (new / "important.txt").write_text("new place\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
-        state_path = rules._paths("codex-1")[2]
         message = self.message("user", "Never delete important.txt.")
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "event_msg", "payload": {
-                "type": "task_started", "turn_id": "resumed-turn"}}) + "\n")
-            out.write(json.dumps(message) + "\n")
-            out.write(json.dumps({"type": "event_msg", "payload": {
-                "type": "task_complete", "turn_id": "resumed-turn"}}) + "\n")
-        rules.add_message("codex-1", message["timestamp"], "owner", "Never delete important.txt.", cwd=str(self.root))
-        state = json.loads(state_path.read_text())
-        state.pop("turn_tracking", None)
-        state.pop("pending_turn_start", None)
-        state["offset"] = self.transcript.stat().st_size
-        state_path.write_text(json.dumps(state))
-        self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((self.root / "important.txt").resolve())])
-
-        rules.sync("codex-1", str(self.transcript), cwd=str(new))
+        message["payload"]["internal_chat_message_metadata_passthrough"] = {"turn_id": "resumed-turn"}
+        self.append(self.turn_record("context", "earlier-turn", str(self.root)),
+                    self.turn_record("task_started", "resumed-turn"), message,
+                    self.turn_record("context", "resumed-turn", str(new)))
+        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
         self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((new / "important.txt").resolve())])
-        self.assertEqual(len(rules.load("codex-1")), 2)
 
-    def test_late_turn_context_corrects_a_provisional_rule_directory(self):
+    def test_open_turn_uses_the_hook_directory_and_the_stored_directory_is_final(self):
         new = self.root / "resumed"
         new.mkdir()
         (new / "important.txt").write_text("new place\n")
+        absolute = Path(self.temp.name) / "absolute.txt"
+        absolute.write_text("keep\n")
         rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "event_msg", "payload": {
-                "type": "task_started", "turn_id": "resumed-turn"}}) + "\n")
-            out.write(json.dumps(self.message("user", "Never delete important.txt.")) + "\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
-        self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((self.root / "important.txt").resolve())])
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "turn_context", "payload": {
-                "turn_id": "resumed-turn", "cwd": str(new)}}) + "\n")
+        self.append(self.turn_record("task_started", "resumed-turn"),
+                    self.message("user", f"Never delete important.txt or {absolute}."))
         rules.sync("codex-1", str(self.transcript), cwd=str(new))
-        self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((new / "important.txt").resolve())])
+        stored = rules.load("codex-1")[-1]["keep"]
+        self.assertEqual(stored, [str((new / "important.txt").resolve()), str(absolute.resolve())])
+        # Neither the file vanishing nor a later context naming another directory changes what was stored.
+        (new / "important.txt").unlink()
+        self.append(self.turn_record("context", "resumed-turn", str(self.root)))
+        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
+        self.assertEqual(rules.load("codex-1")[-1]["keep"], stored)
         self.assertEqual(len(rules.load("codex-1")), 2)
 
-    def test_consecutive_uncontextualized_turns_keep_their_own_directories(self):
+    def test_consecutive_turns_keep_their_own_directories(self):
         first, second = self.root / "resume-a", self.root / "resume-b"
         first.mkdir()
         second.mkdir()
         (first / "alpha.txt").write_text("keep\n")
         (second / "beta.txt").write_text("keep\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "event_msg", "payload": {
-                "type": "task_started", "turn_id": "turn-a"}}) + "\n")
-            out.write(json.dumps(self.message("user", "Never delete alpha.txt.")) + "\n")
+        self.append(self.turn_record("task_started", "turn-a"), self.message("user", "Never delete alpha.txt."))
         rules.sync("codex-1", str(self.transcript), cwd=str(first))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "event_msg", "payload": {
-                "type": "task_complete", "turn_id": "turn-a"}}) + "\n")
-            out.write(json.dumps({"type": "event_msg", "payload": {
-                "type": "task_started", "turn_id": "turn-b"}}) + "\n")
-            out.write(json.dumps(self.message("user", "Never delete beta.txt.")) + "\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(second))
+        self.append(self.turn_record("task_complete", "turn-a"), self.turn_record("task_started", "turn-b"),
+                    self.message("user", "Never delete beta.txt."), self.turn_record("context", "turn-b", str(second)))
+        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
         saved = rules.load("codex-1")
         self.assertEqual(saved[-2]["keep"], [str((first / "alpha.txt").resolve())])
         self.assertEqual(saved[-1]["keep"], [str((second / "beta.txt").resolve())])
-
-    def test_pending_turn_survives_an_incremental_sync_before_its_prompt(self):
-        new = self.root / "resumed"
-        new.mkdir()
-        (new / "important.txt").write_text("new place\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps({"type": "event_msg", "payload": {
-                "type": "task_started", "turn_id": "resumed-turn"}}) + "\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(new))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(self.message("user", "Never delete important.txt.")) + "\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(new))
-        self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((new / "important.txt").resolve())])
 
     def test_missing_transcript_still_fails_open(self):
         result = rules.sync("missing", str(self.root / "missing.jsonl"))
@@ -295,121 +223,65 @@ class CodexCompactionTest(unittest.TestCase):
                 "last_token_usage": {"input_tokens": 500, "cached_input_tokens": 400}}}}) + "\n")
         self.assertEqual(hooks.context_tokens(str(self.transcript)), 500)
 
+    @staticmethod
+    def exec_call(call_id):
+        return {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec", "call_id": call_id,
+                "input": "await tools.exec_command({cmd:'sleep 9'})"}}
+
+    @staticmethod
+    def exec_output(call_id, result=None):
+        return {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": call_id,
+                "output": json.dumps(result or {"wall_time_seconds": 1, "session_id": 502})}}
+
+    def exec_done(self, status="completed", session="502"):
+        return self.item({"type": "CommandExecution", "id": "exec-x", "status": status, "process_id": session,
+                          "command": "sleep 9"})
+
+    def running(self, *records):
+        self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
+        return dict(checkpoint.running(checkpoint.scan(str(self.transcript))))
+
     def test_active_codex_command_is_recorded_until_its_completion(self):
-        command = {"type": "response_item", "timestamp": "2026-01-01T00:00:03Z", "payload": {
-            "type": "custom_tool_call", "name": "exec", "call_id": "call-1",
-            "input": 'const r = await tools.exec_command({cmd:"sleep 25",yield_time_ms:1000}); text(JSON.stringify(r));'}}
         result = {"type": "response_item", "timestamp": "2026-01-01T00:00:04Z", "payload": {
             "type": "custom_tool_call_output", "call_id": "call-1", "output": [
                 {"type": "input_text", "text": "Script completed\nOutput:\n"},
                 {"type": "input_text", "text": json.dumps({"wall_time_seconds": 1.0, "session_id": 35253,
                                                             "output": ""})}]}}
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(command) + "\n" + json.dumps(result) + "\n")
-        self.assertIn("35253", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-        completed = self.item({"type": "CommandExecution", "id": "exec-1", "status": "completed",
-                               "process_id": "35253", "command": ["/bin/zsh", "-lc", "sleep 25"],
-                               "cwd": self.root.as_uri(), "exit_code": 0})
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(completed) + "\n")
-        self.assertNotIn("35253", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+        self.assertIn("35253", self.running(*self.records, self.exec_call("call-1"), result))
+        self.assertNotIn("35253", self.running(*self.records, self.exec_call("call-1"), result,
+                                               self.exec_done(session="35253")))
 
-    def test_completed_command_is_not_resurrected_by_a_late_yield(self):
-        call = {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec",
-                "call_id": "call-late", "input": "await tools.exec_command({cmd:'sleep 9'})"}}
-        output = {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "call-late",
-                  "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}
-        for status in ("completed", "failed", "cancelled", "canceled"):
-            done = self.item({"type": "CommandExecution", "id": "exec-late", "status": status,
-                              "process_id": "502", "command": "sleep 9"})
-            for records in ((call, done, output), (call, output, done)):
-                with self.subTest(status=status, order=records.index(done)):
-                    self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
-                    self.assertNotIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+    def test_late_yield_of_a_command_that_already_completed(self):
+        # Codex logs the completion while the exec script still runs; the script's output then reports the yield.
+        for status in ("completed", "failed"):
+            with self.subTest(status=status):
+                self.assertNotIn("502", self.running(self.exec_call("a"), self.exec_done(status),
+                                                     self.exec_output("a")))
+                self.assertNotIn("502", self.running(self.exec_call("a"), self.exec_output("a"),
+                                                     self.exec_done(status)))
 
-    def test_reused_command_session_id_tracks_each_invocation(self):
-        def call(call_id):
-            return {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec",
-                    "call_id": call_id, "input": "await tools.exec_command({cmd:'sleep 9'})"}}
-        def yielded(call_id):
-            return {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": call_id,
-                    "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}
-        def ended(item_id):
-            return self.item({"type": "CommandExecution", "id": item_id, "status": "completed",
-                              "process_id": "502", "command": "sleep 9"})
-        second_start = {"type": "event_msg", "payload": {"type": "item_started", "item": {
-            "type": "CommandExecution", "id": "exec-b", "process_id": "502", "status": "in_progress"}}}
-        for prefix in ((call("a"), yielded("a"), ended("exec-a")),
-                       (call("a"), ended("exec-a"), yielded("a")),
-                       (call("a"), ended("exec-a"))):
-            with self.subTest(prefix_length=len(prefix), yielded_first=prefix[1].get("type") == "response_item"):
-                records = [*prefix, call("b"), second_start, yielded("b")]
-                if len(prefix) == 2:
-                    records.append(yielded("a"))  # an old result arrives after B has already yielded
-                self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
-                self.assertIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-                with self.transcript.open("a") as out:
-                    out.write(json.dumps(ended("exec-b")) + "\n")
-                self.assertNotIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+    def test_session_id_reused_after_exit_is_running_again(self):
+        for first in ((self.exec_call("a"), self.exec_output("a"), self.exec_done()),
+                      (self.exec_call("a"), self.exec_done(), self.exec_output("a")),
+                      (self.exec_call("a"), self.exec_done())):
+            with self.subTest(first=len(first)):
+                records = [*first, self.exec_call("b"), self.exec_output("b")]
+                self.assertIn("502", self.running(*records))
+                self.assertNotIn("502", self.running(*records, self.exec_done()))
+        direct = [{"type": "response_item", "payload": {"type": "function_call", "name": "exec_command",
+                   "call_id": "d", "arguments": json.dumps({"cmd": "sleep 2"})}},
+                  {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "d",
+                   "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}]
+        self.assertIn("502", self.running(self.exec_call("a"), self.exec_output("a"), self.exec_done(), *direct))
 
-    def test_reused_session_id_inside_one_exec_cell_is_not_blacklisted(self):
-        call = {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec",
-                "call_id": "outer", "input": "await tools.exec_command({cmd:'sleep 1'})"}}
-        done = self.item({"type": "CommandExecution", "id": "old-command", "status": "completed",
-                          "process_id": "502", "command": "sleep 1"})
-        started = {"type": "event_msg", "payload": {"type": "item_started", "item": {
-            "type": "CommandExecution", "id": "new-command", "process_id": "502", "status": "in_progress"}}}
-        output = {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "outer",
-                  "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}
-        self.transcript.write_text("".join(json.dumps(r) + "\n" for r in (call, done, started, output)))
-        self.assertIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(self.item({"type": "CommandExecution", "id": "new-command", "status": "completed",
-                                           "process_id": "502", "command": "sleep 1"})) + "\n")
-        self.assertNotIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-
-    def test_overlapping_exec_calls_correlate_completions_to_their_commands(self):
-        def call(call_id, command):
-            return {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec",
-                    "call_id": call_id, "input": f"await tools.exec_command({{cmd:'{command}'}})"}}
-        def item_event(event, item_id, command, status):
-            return {"type": "event_msg", "payload": {"type": event, "item": {
-                "type": "CommandExecution", "id": item_id, "process_id": "502",
-                "status": status, "command": command}}}
-        def yielded(call_id):
-            return {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": call_id,
-                    "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}
-        records = [call("a", "sleep 1"), call("b", "sleep 2"),
-                   item_event("item_started", "exec-a", "sleep 1", "in_progress"),
-                   item_event("item_completed", "exec-a", "sleep 1", "completed"),
-                   item_event("item_started", "exec-b", "sleep 2", "in_progress"), yielded("b"),
-                   item_event("item_completed", "exec-b", "sleep 2", "completed"), yielded("a")]
-        self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
-        self.assertNotIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-
-    def test_ambiguous_overlapping_calls_do_not_hide_a_live_session(self):
-        def call(call_id):
-            return {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec",
-                    "call_id": call_id, "input": "await tools.exec_command({cmd:'sleep 1'})"}}
-        done = self.item({"type": "CommandExecution", "id": "unknown-command", "status": "completed",
-                          "process_id": "502", "command": "sleep 1"})
-        output = {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "b",
-                  "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}
-        self.transcript.write_text("".join(json.dumps(r) + "\n" for r in (call("a"), call("b"), done, output)))
-        self.assertIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-
-    def test_direct_exec_command_can_reuse_an_earlier_session_id(self):
-        def call(call_id, command):
-            return {"type": "response_item", "payload": {"type": "function_call", "name": "exec_command",
-                    "call_id": call_id, "arguments": json.dumps({"cmd": command})}}
-        def output(call_id):
-            return {"type": "response_item", "payload": {"type": "function_call_output", "call_id": call_id,
-                    "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}
-        done = self.item({"type": "CommandExecution", "id": "first", "status": "completed",
-                          "process_id": "502", "command": "sleep 1"})
-        records = [call("a", "sleep 1"), done, output("a"), call("b", "sleep 2"), output("b")]
-        self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
-        self.assertIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+    def test_poll_and_intermediate_output_close_nothing(self):
+        notify = {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "a",
+                  "output": [{"type": "input_text", "text": "starting"}]}}
+        records = [self.exec_call("a"), notify, self.exec_output("a"), self.exec_call("poll"),
+                   self.exec_output("poll")]
+        self.assertIn("502", self.running(*records))
+        self.assertNotIn("502", self.running(*records, self.exec_call("poll2"), self.exec_done(),
+                                             self.exec_output("poll2", {"wall_time_seconds": 1, "exit_code": 0})))
 
     def test_command_working_directory_does_not_change_the_session_directory(self):
         other = self.root / "command-dir"
@@ -449,20 +321,16 @@ class CodexCompactionTest(unittest.TestCase):
                          ["Bash", "Read"])
 
     def test_yielded_exec_cell_wait_can_report_a_running_command(self):
-        records = [
-            {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec", "call_id": "c1",
-                "input": 'await tools.exec_command({cmd:"sleep 9",yield_time_ms:4000})'}},
-            {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "c1",
-                "output": "Script running with cell ID 202\nWall time 1.0 seconds\nOutput:\n"}},
-            {"type": "response_item", "payload": {"type": "function_call", "name": "wait", "call_id": "w1",
-                "arguments": json.dumps({"cell_id": "202", "yield_time_ms": 6000})}},
-            {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "w1", "output": [
-                {"type": "input_text", "text": "Script completed\nOutput:\n"},
-                {"type": "input_text", "text": json.dumps({"wall_time_seconds": 4.0, "session_id": 26717})}]}},
-        ]
-        with self.transcript.open("a") as out:
-            out.writelines(json.dumps(record) + "\n" for record in records)
-        self.assertIn("26717", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+        cell = {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "c1",
+                "output": "Script running with cell ID g3:46\nWall time 1.0 seconds\nOutput:\n"}}
+        wait = {"type": "response_item", "payload": {"type": "function_call", "name": "wait", "call_id": "w1",
+                "arguments": json.dumps({"cell_id": "g3:46", "yield_time_ms": 6000})}}
+        waited = {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "w1", "output": [
+            {"type": "input_text", "text": "Script completed\nOutput:\n"},
+            {"type": "input_text", "text": json.dumps({"wall_time_seconds": 4.0, "session_id": 502})}]}}
+        self.assertIn("502", self.running(self.exec_call("c1"), cell, wait, waited))
+        # completed while the cell ran, before the wait reported its yield (seen in real rollouts)
+        self.assertNotIn("502", self.running(self.exec_call("c1"), cell, self.exec_done(), wait, waited))
 
     def test_codex_plan_keeps_only_open_items(self):
         plan = {"type": "response_item", "timestamp": "2026-01-01T00:00:04Z", "payload": {
@@ -475,134 +343,68 @@ class CodexCompactionTest(unittest.TestCase):
         self.assertIn("Finish review", text)
         self.assertNotIn("Finished step", text)
 
-    def test_codex_subagent_is_recorded_until_it_finishes(self):
-        started = self.item({"type": "SubAgentActivity", "kind": "started", "agent_path": "/root/worker",
-                             "agent_thread_id": "thread-1", "model": "gpt-6.1-terra"})
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(started) + "\n")
-        self.assertIn("/root/worker", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-        completed = self.item({"type": "SubAgentActivity", "kind": "completed", "agent_path": "/root/worker",
-                               "agent_thread_id": "thread-1"})
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(completed) + "\n")
-        self.assertNotIn("/root/worker", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+    def test_codex_subagent_runs_from_started_to_its_end(self):
+        def activity(kind, path="/root/worker"):
+            return self.item({"type": "SubAgentActivity", "kind": kind, "agent_path": path,
+                              "agent_thread_id": "thread-" + path, "model": "gpt-6.1-terra"})
+        self.assertIn("/root/worker", self.running(activity("started")))
+        for end in ("completed", "failed", "interrupted", "cancelled"):
+            with self.subTest(end=end):
+                self.assertNotIn("/root/worker", self.running(activity("started"), activity(end)))
+        # interacted (send_message, followup_task, the current thread itself) neither revives nor ends an agent
+        self.assertEqual(self.running(activity("started"), activity("completed"), activity("interacted"),
+                                      activity("interacted", "/root")), {})
+        self.assertIn("/root/worker", self.running(activity("started"), activity("interacted")))
 
-    def test_followup_interaction_records_a_descendant_until_it_finishes(self):
-        followup = {"type": "response_item", "payload": {"type": "function_call", "name": "followup_task",
-                    "namespace": "collaboration", "call_id": "followup-1",
-                    "arguments": json.dumps({"target": "/root/reused", "message": "resume work"})}}
-        interacted = self.item({"type": "SubAgentActivity", "kind": "interacted", "agent_path": "/root/reused",
-                                "agent_thread_id": "thread-2", "model": "gpt-6.1-terra"})
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(followup) + "\n" + json.dumps(interacted) + "\n")
-        self.assertIn("/root/reused", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-        completed = self.item({"type": "SubAgentActivity", "kind": "completed", "agent_path": "/root/reused"})
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(completed) + "\n")
-        self.assertNotIn("/root/reused", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-        # A stale followup must not make a later uncorrelated interaction live.
-        with self.transcript.open("a") as out:
-            out.write(json.dumps(interacted) + "\n")
-        self.assertNotIn("/root/reused", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-
-    def test_message_only_and_self_interactions_do_not_revive_agents(self):
-        records = [
-            {"type": "session_meta", "payload": {"id": "parent-thread", "source": {"subagent": {
-                "thread_spawn": {"agent_path": "/root/parent", "parent_thread_id": "root-thread", "depth": 1}}}}},
-            self.item({"type": "SubAgentActivity", "kind": "started", "agent_path": "/root/parent/child",
-                       "agent_thread_id": "child-thread"}),
-            self.item({"type": "SubAgentActivity", "kind": "completed", "agent_path": "/root/parent/child",
-                       "agent_thread_id": "child-thread"}),
-            {"type": "response_item", "payload": {"type": "function_call", "name": "send_message",
-             "namespace": "collaboration", "call_id": "message-1",
-             "arguments": json.dumps({"target": "/root/parent/child", "message": "status"})}},
-            self.item({"type": "SubAgentActivity", "kind": "interacted", "agent_path": "/root/parent/child",
-                       "agent_thread_id": "child-thread"}),
-            {"type": "response_item", "payload": {"type": "function_call", "name": "followup_task",
-             "namespace": "collaboration", "call_id": "self-followup",
-             "arguments": json.dumps({"target": "/root/parent", "message": "continue"})}},
-            self.item({"type": "SubAgentActivity", "kind": "interacted", "agent_path": "/root/parent",
-                       "agent_thread_id": "parent-thread"}),
-            {"type": "response_item", "payload": {"type": "function_call", "name": "followup_task",
-             "namespace": "collaboration", "call_id": "sibling-followup",
-             "arguments": json.dumps({"target": "/root/sibling", "message": "continue"})}},
-            self.item({"type": "SubAgentActivity", "kind": "interacted", "agent_path": "/root/sibling",
-                       "agent_thread_id": "sibling-thread"}),
-        ]
-        self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
-        self.assertEqual(dict(checkpoint.running(checkpoint.scan(str(self.transcript)))), {})
-
-    def test_collab_tool_events_distinguish_followup_from_message(self):
-        def activity(kind):
-            return self.item({"type": "SubAgentActivity", "kind": kind, "agent_path": "/root/child",
-                              "agent_thread_id": "child-thread"})
-        def action(tool):
-            return {"type": "event_msg", "payload": {"type": "item_started", "item": {
-                "type": "CollabAgentToolCall", "tool": tool, "receiver_thread_ids": ["child-thread"]}}}
-        records = [activity("completed"), action("followupTask"), activity("interacted")]
-        self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
-        self.assertIn("/root/child", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-        with self.transcript.open("a") as out:
-            out.writelines(json.dumps(record) + "\n" for record in
-                           (activity("completed"), action("sendMessage"), activity("interacted")))
-        self.assertNotIn("/root/child", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
-
-    def test_unmatched_followup_does_not_leak_into_the_next_turn(self):
-        followup = {"type": "response_item", "payload": {"type": "function_call", "name": "followup_task",
-                    "call_id": "followup-1", "arguments": json.dumps({"target": "/root/child"})}}
-        turn_end = {"type": "event_msg", "payload": {"type": "task_complete"}}
-        interaction = self.item({"type": "SubAgentActivity", "kind": "interacted", "agent_path": "/root/child",
-                                 "agent_thread_id": "child-thread"})
-        self.transcript.write_text("".join(json.dumps(record) + "\n" for record in
-                                           (followup, turn_end, interaction)))
-        self.assertEqual(dict(checkpoint.running(checkpoint.scan(str(self.transcript)))), {})
-
-    def test_documented_hooks_run_from_a_marketplace_cache_install(self):
+    def test_documented_hooks_run_through_the_linked_cli_across_an_upgrade(self):
         repo = Path(__file__).resolve().parents[1]
         readme = (repo / "tokenmaxxing" / "README.md").read_text()
         section = readme.split("### Codex compaction hooks", 1)[1]
         example = json.loads(re.search(r"```json\n(.*?)\n```", section, re.S).group(1))
         fake_home = self.root / "marketplace-home"
-        plugin = fake_home / ".claude/plugins/cache/gutcheck/tokenmaxxing/0.2.test"
-        shutil.copytree(repo / "tokenmaxxing", plugin, symlinks=False,
-                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         python = fake_home / ".local/share/gutcheck/venv/bin/python"
         python.parent.mkdir(parents=True)
         python.symlink_to(sys.executable)
-        # Exercise the real shim and handlers without using a keychain or network.
-        (plugin / "src/sitecustomize.py").write_text("from gutcheck_core import jev\njev.have_key = lambda: False\n")
+        link = fake_home / ".local/bin/tokenmaxxing"
+        link.parent.mkdir(parents=True)
         config_dir = fake_home / ".config/tokenmaxxing"
         config_dir.mkdir(parents=True)
         (config_dir / "config.toml").write_text('[transitions]\nmode = "off"\n')
         transcript = fake_home / "rollout.jsonl"
         transcript.write_text(json.dumps({"type": "session_meta", "payload": {"cwd": str(fake_home)}}) + "\n" +
                               json.dumps(self.message("user", "Always preserve MARKETPLACE-CHECKPOINT.")) + "\n")
-        payload = {"session_id": "marketplace-test", "transcript_path": str(transcript), "cwd": str(fake_home),
-                   "hook_event_name": "PreCompact", "trigger": "manual"}
-        for event in ("PreCompact", "SessionStart"):
-            command = example["hooks"][event][0]["hooks"][0]["command"]
-            command = command.replace("$HOME", str(fake_home)).replace("<version>", "0.2.test")
-            if event == "SessionStart":
-                payload = {**payload, "hook_event_name": "SessionStart", "source": "compact"}
-            result = subprocess.run(command, shell=True, input=json.dumps(payload), capture_output=True,
-                                    text=True, timeout=20)
-            with self.subTest(event=event):
-                self.assertEqual(result.returncode, 0, result.stderr)
-                if event == "PreCompact":
-                    output = fake_home / ".local/state/tokenmaxxing-codex/data/checkpoints/marketplace-test.md"
-                    self.assertIn("MARKETPLACE-CHECKPOINT", output.read_text())
-                else:
-                    self.assertIn("MARKETPLACE-CHECKPOINT",
-                                  json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"])
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("GUTCHECK_", "TOKENMAXXING_"))}
+        env["HOME"] = str(fake_home)
+        cache = fake_home / ".claude/plugins/cache/gutcheck/tokenmaxxing"
+        for version, old in (("0.2.old", None), ("0.2.new", "0.2.old")):
+            plugin = cache / version
+            shutil.copytree(repo / "tokenmaxxing", plugin, symlinks=False,
+                            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            # Exercise the real CLI and handlers without using a keychain or network.
+            (plugin / "src/sitecustomize.py").write_text("from gutcheck_core import jev\njev.have_key = lambda: False\n")
+            link.unlink(missing_ok=True)
+            link.symlink_to(plugin / "bin/tokenmaxxing")  # what a Claude session start does after an upgrade
+            if old:
+                shutil.rmtree(cache / old)
+            payload = {"session_id": "marketplace-test", "transcript_path": str(transcript), "cwd": str(fake_home),
+                       "hook_event_name": "PreCompact", "trigger": "manual"}
+            for event in ("PreCompact", "SessionStart"):
+                if event == "SessionStart":
+                    payload = {**payload, "hook_event_name": "SessionStart", "source": "compact"}
+                result = subprocess.run(example["hooks"][event][0]["hooks"][0]["command"], shell=True, env=env,
+                                        input=json.dumps(payload), capture_output=True, text=True, timeout=20)
+                with self.subTest(version=version, event=event):
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    if event == "PreCompact":
+                        output = fake_home / ".local/state/tokenmaxxing-codex/data/checkpoints/marketplace-test.md"
+                        self.assertIn("MARKETPLACE-CHECKPOINT", output.read_text())
+                    else:
+                        self.assertIn("MARKETPLACE-CHECKPOINT",
+                                      json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"])
 
-    def test_unrelated_outputs_and_malformed_records_are_ignored(self):
-        call = {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec",
-                "call_id": "other", "input": "text('not an exec command')"}}
-        result = {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "other",
-                  "output": [{"type": "input_text", "text": json.dumps({"session_id": 123,
-                                                                          "wall_time_seconds": 1.0})}]}}
+    def test_malformed_records_are_ignored(self):
         with self.transcript.open("a") as out:
-            for record in (call, result, [], {"type": "session_meta", "payload": "invalid"},
+            for record in ({"type": "session_meta", "payload": "invalid"},
                            {"type": "response_item", "payload": {"type": "custom_tool_call", "input": 12}},
                            {"type": "response_item", "payload": {"type": "function_call_output", "call_id": []}},
                            self.item({"type": "CommandExecution", "id": [], "status": "completed",
@@ -611,7 +413,7 @@ class CodexCompactionTest(unittest.TestCase):
                            {"type": "event_msg", "payload": {"type": "item_completed", "item": "invalid"}}):
                 out.write(json.dumps(record) + "\n")
         state = checkpoint.scan(str(self.transcript))
-        self.assertNotIn("123", dict(checkpoint.running(state)))
+        self.assertEqual(dict(checkpoint.running(state)), {})
         self.assertEqual(len(state["owner"]), 1)
         self.assertEqual(len(rules._messages(str(self.transcript))[0]), 1)
         self.assertEqual(hooks.context_tokens(str(self.transcript)), 25000)

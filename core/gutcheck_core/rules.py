@@ -252,29 +252,22 @@ def add_message(session, ts, src, text, deadline=PROMPT_DEADLINE, cwd=None):
 
 
 # ---- transcript catch-up ------------------------------------------------------------------------------
-def _messages(path, start=0, until_line=None, cwd=None, end_offset=None, hook_cwd=None, turn_info=None):
-    """Read owner/lead messages from `start`; return (messages, end_offset, last_cwd)."""
-    msgs, pending, replayed = [], [], []
-    pending_start, pending_turn = None, None
-
-    def bind_pending(directory):
-        for index in pending:
-            ts, src, text, _ = msgs[index]
-            msgs[index] = (ts, src, text, directory)
-        pending.clear()
-
+def _messages(path, start=0, until_line=None, cwd=None):
+    """(ts, src, text, cwd) of owner/lead messages from byte offset `start`; returns (messages, end_offset). A Codex
+    message gets the cwd of its own turn's turn_context, before or after it in the rollout; a turn with none yet is
+    the open one, which runs in the hook's `cwd`."""
+    msgs, turns, turn_of, turn = [], {}, {}, None
     try:
         fh = open(path, "rb")
     except OSError:
-        return msgs, start, cwd
+        return msgs, start
     with fh:
         fh.seek(start)
         n = 0
         pos = start
         for raw in fh:
-            if (until_line is not None and n >= until_line) or (end_offset is not None and pos >= end_offset):
+            if until_line is not None and n >= until_line:
                 break
-            line_start = pos
             n += 1
             if not raw.endswith(b"\n"):
                 break          # a line still being written: pick it up next time
@@ -283,25 +276,15 @@ def _messages(path, start=0, until_line=None, cwd=None, end_offset=None, hook_cw
                 d = json.loads(raw)
             except ValueError:
                 continue
-            if not isinstance(d, dict):
-                continue
-            codex = d.get("type") in ("response_item", "event_msg")
             payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
-            if d.get("type") == "event_msg" and payload.get("type") == "task_started":
-                if pending_start is not None:
-                    bind_pending(cwd)
-                pending_start, pending_turn = line_start, payload.get("turn_id")
+            codex = d.get("type") in ("response_item", "event_msg")
             if d.get("type") in ("session_meta", "turn_context"):
-                next_cwd = payload.get("cwd") or cwd
-                if d.get("type") == "turn_context" and pending_start is not None:
-                    if not pending_turn or not payload.get("turn_id") or pending_turn == payload.get("turn_id"):
-                        bind_pending(next_cwd)
-                    else:
-                        bind_pending(cwd)
-                    pending_start, pending_turn = None, None
-                cwd = next_cwd
-            if codex:
-                d = codex_rollout.normalize(d, cwd=cwd)
+                turns[payload.get("turn_id")] = payload.get("cwd")
+            elif codex:
+                turn = payload.get("turn_id") if payload.get("type") == "task_started" else turn
+                meta = payload.get("internal_chat_message_metadata_passthrough")
+                codex_turn = (meta.get("turn_id") if isinstance(meta, dict) else None) or turn
+                d = codex_rollout.normalize(d)
                 if d is None:
                     continue
             if d.get("isSidechain"):
@@ -317,71 +300,17 @@ def _messages(path, start=0, until_line=None, cwd=None, end_offset=None, hook_cw
             for txt in texts:
                 src = msg.owner_source(txt)
                 if src:
-                    msgs.append((d.get("timestamp"), src, txt, d.get("cwd") or (cwd if codex else None)))
-                    if codex and pending_start is not None:
-                        pending.append(len(msgs) - 1)
-                    if turn_info is not None and line_start < turn_info.get("replay_before", 0):
-                        replayed.append(len(msgs) - 1)
-    if pending_start is not None:
-        bind_pending(hook_cwd or cwd)
-        cwd = hook_cwd or cwd
-    if turn_info is not None:
-        turn_info.update(pending_turn_start=pending_start, replayed=replayed)
-    return msgs, pos, cwd
-
-
-def _pending_turn_start(path, end_offset):
-    """Find an uncontextualized Codex turn in a state file written before turn tracking."""
-    pending, turn, identified = None, None, False
-    try:
-        with open(path, "rb") as fh:
-            while fh.tell() < end_offset:
-                pos = fh.tell()
-                raw = fh.readline()
-                if not raw.endswith(b"\n"):
-                    break
-                try:
-                    record = json.loads(raw)
-                except ValueError:
-                    continue
-                if not isinstance(record, dict) or not isinstance(record.get("payload"), dict):
-                    if isinstance(record, dict) and record.get("type") in ("user", "assistant", "system"):
-                        return None
-                    continue
-                if not identified:
-                    if record.get("type") not in ("session_meta", "turn_context", "response_item", "event_msg"):
-                        return None
-                    identified = True
-                payload = record["payload"]
-                if record.get("type") == "event_msg" and payload.get("type") == "task_started":
-                    pending, turn = pos, payload.get("turn_id")
-                elif record.get("type") == "turn_context" and pending is not None and \
-                        (not turn or not payload.get("turn_id") or turn == payload.get("turn_id")):
-                    pending, turn = None, None
-    except OSError:
-        pass
-    return pending
-
-
-def _reconcile_paths(recs, ts, src, text, cwd):
-    """Correct an already captured unit when its Codex turn's directory becomes known."""
-    from . import secretscan
-    if not cwd:
-        return
-    for unit in msg.units(msg._clean(text)):
-        unit = secretscan.redact(unit)
-        k = key(unit)
-        for rec in recs:
-            if rec.get("key") == k and rec.get("ts") == ts and rec.get("src") == src and rec.get("text") == unit:
-                keep, but = _keep_paths(unit, cwd)
-                rec.pop("keep", None)
-                rec.pop("keep_except", None)
-                if keep:
-                    rec.update(keep=keep, keep_except=but)
+                    if codex:
+                        turn_of[len(msgs)] = codex_turn
+                    msgs.append((d.get("timestamp"), src, txt, d.get("cwd")))
+    for i, t in turn_of.items():
+        msgs[i] = msgs[i][:3] + (turns.get(t) or cwd,)
+    return msgs, pos
 
 
 def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE, cwd=None):
-    """Catch up from the transcript and classify every pending unit. Returns a short status dict."""
+    """Catch up from the transcript and classify every pending unit. Returns a short status dict. A Codex rollout is
+    reread from the start each time (its messages' cwds can come later); units dedupe by text."""
     from concurrent.futures import ThreadPoolExecutor
     _, _, statep, _ = _paths(session)
     t0 = time.monotonic()
@@ -390,28 +319,12 @@ def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE, cwd=
             state = json.loads(statep.read_text())
         except Exception:
             state = {}
-        start = 0 if until_line is not None or state.get("transcript") != transcript_path else state.get("offset", 0)
-        saved_offset, hook_cwd = start, cwd
-        if start and "cwd" not in state:
-            # Recover the directory once for state files written before it was saved.
-            _, _, cwd = _messages(transcript_path, cwd=cwd, end_offset=start)
-        elif start:
-            cwd = state.get("cwd") or cwd
-        if start:
-            pending_start = (state.get("pending_turn_start") if state.get("turn_tracking") else
-                             _pending_turn_start(transcript_path, start))
-            if isinstance(pending_start, int) and 0 <= pending_start < start:
-                start = pending_start
-        turn_info = {"replay_before": saved_offset if start < saved_offset else 0,
-                     "pending_turn_start": None, "replayed": []}
-        msgs, end, last_cwd = _messages(transcript_path, start, until_line, cwd=cwd,
-                                         hook_cwd=hook_cwd, turn_info=turn_info)
+        start = 0 if until_line is not None or state.get("transcript") != transcript_path or \
+            codex_rollout.is_rollout(transcript_path) else state.get("offset", 0)
+        msgs, end = _messages(transcript_path, start, until_line, cwd)
         recs = load(session)
-        replayed = set(turn_info["replayed"])
-        for index, (ts, src, text, message_cwd) in enumerate(msgs):
-            if index in replayed and message_cwd != state.get("cwd"):
-                _reconcile_paths(recs, ts, src, text, message_cwd)
-            recs.extend(_new_units(recs, ts, src, text, message_cwd))
+        for ts, src, text, msg_cwd in msgs:
+            recs.extend(_new_units(recs, ts, src, text, msg_cwd))
         pending = [r for r in recs if r["status"] == "pending"]
         chunks = [pending[i:i + 60] for i in range(0, len(pending), 60)]
         # classify in parallel chunks, then one supersession pass over everything new
@@ -424,9 +337,7 @@ def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE, cwd=
         _supersede(recs, [r for r in pending if id(r) in kept], left)
         _save(session, recs)
         if until_line is None:
-            statep.write_text(json.dumps({"transcript": transcript_path, "offset": end, "cwd": last_cwd,
-                                          "turn_tracking": True,
-                                          "pending_turn_start": turn_info["pending_turn_start"]}))
+            statep.write_text(json.dumps({"transcript": transcript_path, "offset": end}))
     return {"messages": len(msgs), "pending_before": len(pending),
             "pending_after": sum(1 for r in recs if r["status"] == "pending"), "jev": hows}
 
