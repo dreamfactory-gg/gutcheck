@@ -65,7 +65,7 @@ def normalize(record, cwd=None):
         return None
     cwd = _path(item.get("cwd")) or cwd
     blocks = []
-    if item.get("type") == "CommandExecution":
+    if item.get("type") == "CommandExecution" and item.get("status") == "completed":
         command = item.get("command")
         if isinstance(command, list):
             command = command[-1] if command else None

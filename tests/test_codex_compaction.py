@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tokenmaxxing" / "src"))
 
-from gutcheck_core import config, jev, rules  # noqa: E402
+from gutcheck_core import codex_rollout, config, jev, rules  # noqa: E402
 from tokenmaxxing import checkpoint, evidence, health, hooks, stopcheck, transitions  # noqa: E402
 
 
@@ -90,32 +90,87 @@ class CodexCompactionTest(unittest.TestCase):
         self.assertEqual(hooks.context_tokens(str(self.transcript)), 25000)
 
     def test_rule_reader_handles_partial_appends_without_duplication(self):
-        messages, position = rules._messages(str(self.transcript))
+        messages, position, cwd = rules._messages(str(self.transcript))
         self.assertEqual([item[2] for item in messages],
                          ["Always preserve COPPER-OWL-418 and never overwrite important.txt."])
+        self.assertEqual(cwd, str(self.root))
         additional = json.dumps(self.message("user", "Never remove the demo file."))
         with self.transcript.open("a") as out:
             out.write(additional[:20])
-        empty, unchanged = rules._messages(str(self.transcript), start=position)
+        empty, unchanged, cwd = rules._messages(str(self.transcript), start=position, cwd=cwd)
         self.assertEqual(empty, [])
         self.assertEqual(unchanged, position)
+        self.assertEqual(cwd, str(self.root))
         with self.transcript.open("a") as out:
             out.write(additional[20:] + "\n")
-        later, final = rules._messages(str(self.transcript), start=unchanged)
+        later, final, cwd = rules._messages(str(self.transcript), start=unchanged, cwd=cwd)
         self.assertEqual([item[2] for item in later], ["Never remove the demo file."])
         self.assertEqual(final, self.transcript.stat().st_size)
+        self.assertEqual(later[0][3], str(self.root))
 
     def test_incremental_rule_sync_retains_the_codex_working_directory(self):
         (self.root / "second.txt").write_text("keep this too\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
+        rules.sync("codex-1", str(self.transcript))
+        self.assertEqual(json.loads(rules._paths("codex-1")[2].read_text())["cwd"], str(self.root))
         with self.transcript.open("a") as out:
             out.write(json.dumps(self.message("user", "Never delete second.txt.")) + "\n")
-        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
+        rules.sync("codex-1", str(self.transcript))
         recorded = rules.load("codex-1")
         self.assertEqual(len(recorded), 2)
         self.assertIn(str((self.root / "second.txt").resolve()), recorded[-1]["keep"])
-        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
+        rules.sync("codex-1", str(self.transcript))
         self.assertEqual(len(rules.load("codex-1")), 2)
+
+    def test_incremental_rule_sync_tracks_changed_cwd_and_resets_for_a_new_transcript(self):
+        second = self.root / "second"
+        second.mkdir()
+        (second / "owned.txt").write_text("keep\n")
+        rules.sync("codex-1", str(self.transcript))
+        with self.transcript.open("a") as out:
+            out.write(json.dumps({"type": "turn_context", "payload": {"cwd": str(second)}}) + "\n")
+        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
+        with self.transcript.open("a") as out:
+            out.write(json.dumps(self.message("user", "Never delete owned.txt.")) + "\n")
+        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
+        self.assertIn(str((second / "owned.txt").resolve()), rules.load("codex-1")[-1]["keep"])
+        self.assertEqual(json.loads(rules._paths("codex-1")[2].read_text())["cwd"], str(second))
+
+        other = self.root / "other.jsonl"
+        (self.root / "new.txt").write_text("keep\n")
+        other.write_text(json.dumps(self.message("user", "Never delete new.txt.")) + "\n")
+        rules.sync("codex-1", str(other), cwd=str(self.root))
+        self.assertIn(str((self.root / "new.txt").resolve()), rules.load("codex-1")[-1]["keep"])
+        self.assertEqual(json.loads(rules._paths("codex-1")[2].read_text())["cwd"], str(self.root))
+
+    def test_incremental_rule_sync_recovers_cwd_from_an_old_state_file(self):
+        (self.root / "legacy.txt").write_text("keep\n")
+        rules.sync("codex-1", str(self.transcript))
+        state_path = rules._paths("codex-1")[2]
+        state = json.loads(state_path.read_text())
+        state.pop("cwd")
+        state_path.write_text(json.dumps(state))
+        with self.transcript.open("a") as out:
+            out.write(json.dumps(self.message("user", "Never delete legacy.txt.")) + "\n")
+        rules.sync("codex-1", str(self.transcript))
+        self.assertIn(str((self.root / "legacy.txt").resolve()), rules.load("codex-1")[-1]["keep"])
+
+    def test_claude_incremental_rules_keep_each_messages_own_cwd(self):
+        second = self.root / "claude-second"
+        second.mkdir()
+        (self.root / "first.txt").write_text("keep\n")
+        (second / "last.txt").write_text("keep\n")
+        claude = self.root / "claude.jsonl"
+        def record(text, cwd):
+            return {"type": "user", "timestamp": "2026-01-01T00:00:01Z", "cwd": str(cwd),
+                    "message": {"content": text}}
+        claude.write_text(json.dumps(record("Never delete first.txt.", self.root)) + "\n")
+        rules.sync("claude-1", str(claude))
+        with claude.open("a") as out:
+            out.write(json.dumps(record("Never delete last.txt.", second)) + "\n")
+        rules.sync("claude-1", str(claude))
+        saved = rules.load("claude-1")
+        self.assertEqual([record["keep"] for record in saved],
+                         [[str((self.root / "first.txt").resolve())], [str((second / "last.txt").resolve())]])
 
     def test_token_usage_preserves_claude_accounting_and_uses_codex_last_input(self):
         self.transcript.write_text(json.dumps({"type": "assistant", "message": {"usage": {
@@ -144,6 +199,56 @@ class CodexCompactionTest(unittest.TestCase):
         with self.transcript.open("a") as out:
             out.write(json.dumps(completed) + "\n")
         self.assertNotIn("35253", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+
+    def test_completed_command_is_not_resurrected_by_a_late_yield(self):
+        call = {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec",
+                "call_id": "call-late", "input": "await tools.exec_command({cmd:'sleep 9'})"}}
+        output = {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "call-late",
+                  "output": json.dumps({"wall_time_seconds": 1, "session_id": 502})}}
+        for status in ("completed", "failed", "cancelled", "canceled"):
+            done = self.item({"type": "CommandExecution", "id": "exec-late", "status": status,
+                              "process_id": "502", "command": "sleep 9"})
+            for records in ((call, done, output), (call, output, done)):
+                with self.subTest(status=status, order=records.index(done)):
+                    self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
+                    self.assertNotIn("502", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+
+    def test_command_working_directory_does_not_change_the_session_directory(self):
+        other = self.root / "command-dir"
+        other.mkdir()
+        (other / "TASKS.md").write_text("- [ ] other task\n")
+        records = [
+            {"type": "session_meta", "payload": {"cwd": str(self.root)}},
+            self.item({"type": "CommandExecution", "id": "other-cwd", "status": "completed",
+                       "command": "cat TASKS.md", "cwd": other.as_uri(),
+                       "parsed_cmd": [{"type": "read", "path": "TASKS.md"}]}),
+            self.item({"type": "FileChange", "id": "later-edit", "status": "completed",
+                       "changes": {"later.py": {"type": "add"}}}),
+        ]
+        self.transcript.write_text("".join(json.dumps(record) + "\n" for record in records))
+        state = checkpoint.scan(str(self.transcript))
+        self.assertEqual(state["cwd"], str(self.root))
+        self.assertIn(str(self.root / "later.py"), state["files"])
+        self.assertIn(str(other / "TASKS.md"), state["tasks_files"])
+        self.assertIn(str(other / "TASKS.md"), stopcheck.session_tasks_files(str(self.transcript)))
+
+    def test_noncompleted_commands_do_not_emit_bash_or_read_facts(self):
+        for status in ("failed", "cancelled", "in_progress", None):
+            record = self.item({"type": "CommandExecution", "id": "unfinished", "status": status,
+                                "command": "git switch -c unwanted", "cwd": str(self.root),
+                                "parsed_cmd": [{"type": "read", "path": "TASKS.md"}]})
+            with self.subTest(status=status):
+                self.assertIsNone(codex_rollout.normalize(record, cwd=str(self.root)))
+                self.transcript.write_text(json.dumps(record) + "\n")
+                state = checkpoint.scan(str(self.transcript))
+                self.assertNotIn("unwanted", state["branches"])
+                self.assertFalse(state["tasks_files"])
+
+        completed = self.item({"type": "CommandExecution", "id": "finished", "status": "completed",
+                               "exit_code": 1, "command": "cat TASKS.md", "cwd": str(self.root),
+                               "parsed_cmd": [{"type": "read", "path": "TASKS.md"}]})
+        self.assertEqual([block["name"] for block in codex_rollout.normalize(completed)["message"]["content"]],
+                         ["Bash", "Read"])
 
     def test_yielded_exec_cell_wait_can_report_a_running_command(self):
         records = [
@@ -183,6 +288,17 @@ class CodexCompactionTest(unittest.TestCase):
         with self.transcript.open("a") as out:
             out.write(json.dumps(completed) + "\n")
         self.assertNotIn("/root/worker", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+
+    def test_interacted_codex_subagent_is_recorded_until_it_finishes(self):
+        interacted = self.item({"type": "SubAgentActivity", "kind": "interacted", "agent_path": "/root/reused",
+                                "agent_thread_id": "thread-2", "model": "gpt-6.1-terra"})
+        with self.transcript.open("a") as out:
+            out.write(json.dumps(interacted) + "\n")
+        self.assertIn("/root/reused", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
+        completed = self.item({"type": "SubAgentActivity", "kind": "completed", "agent_path": "/root/reused"})
+        with self.transcript.open("a") as out:
+            out.write(json.dumps(completed) + "\n")
+        self.assertNotIn("/root/reused", dict(checkpoint.running(checkpoint.scan(str(self.transcript)))))
 
     def test_unrelated_outputs_and_malformed_records_are_ignored(self):
         call = {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec",

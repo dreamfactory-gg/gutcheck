@@ -252,19 +252,19 @@ def add_message(session, ts, src, text, deadline=PROMPT_DEADLINE, cwd=None):
 
 
 # ---- transcript catch-up ------------------------------------------------------------------------------
-def _messages(path, start=0, until_line=None, cwd=None):
-    """(ts, src, text, cwd) of owner/lead messages from byte offset `start`; returns (messages, end_offset)."""
+def _messages(path, start=0, until_line=None, cwd=None, end_offset=None):
+    """Read owner/lead messages from `start`; return (messages, end_offset, last_cwd)."""
     msgs = []
     try:
         fh = open(path, "rb")
     except OSError:
-        return msgs, start
+        return msgs, start, cwd
     with fh:
         fh.seek(start)
         n = 0
         pos = start
         for raw in fh:
-            if until_line is not None and n >= until_line:
+            if (until_line is not None and n >= until_line) or (end_offset is not None and pos >= end_offset):
                 break
             n += 1
             if not raw.endswith(b"\n"):
@@ -299,7 +299,7 @@ def _messages(path, start=0, until_line=None, cwd=None):
                 src = msg.owner_source(txt)
                 if src:
                     msgs.append((d.get("timestamp"), src, txt, d.get("cwd") or (cwd if codex else None)))
-    return msgs, pos
+    return msgs, pos, cwd
 
 
 def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE, cwd=None):
@@ -313,10 +313,15 @@ def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE, cwd=
         except Exception:
             state = {}
         start = 0 if until_line is not None or state.get("transcript") != transcript_path else state.get("offset", 0)
-        msgs, end = _messages(transcript_path, start, until_line, cwd=cwd)
+        if start and "cwd" not in state:
+            # Recover the directory once for state files written before it was saved.
+            _, _, cwd = _messages(transcript_path, cwd=cwd, end_offset=start)
+        elif start:
+            cwd = state.get("cwd") or cwd
+        msgs, end, last_cwd = _messages(transcript_path, start, until_line, cwd=cwd)
         recs = load(session)
-        for ts, src, text, cwd in msgs:
-            recs.extend(_new_units(recs, ts, src, text, cwd))
+        for ts, src, text, message_cwd in msgs:
+            recs.extend(_new_units(recs, ts, src, text, message_cwd))
         pending = [r for r in recs if r["status"] == "pending"]
         chunks = [pending[i:i + 60] for i in range(0, len(pending), 60)]
         # classify in parallel chunks, then one supersession pass over everything new
@@ -329,7 +334,7 @@ def sync(session, transcript_path, until_line=None, deadline=SYNC_DEADLINE, cwd=
         _supersede(recs, [r for r in pending if id(r) in kept], left)
         _save(session, recs)
         if until_line is None:
-            statep.write_text(json.dumps({"transcript": transcript_path, "offset": end}))
+            statep.write_text(json.dumps({"transcript": transcript_path, "offset": end, "cwd": last_cwd}))
     return {"messages": len(msgs), "pending_before": len(pending),
             "pending_after": sum(1 for r in recs if r["status"] == "pending"), "jev": hows}
 

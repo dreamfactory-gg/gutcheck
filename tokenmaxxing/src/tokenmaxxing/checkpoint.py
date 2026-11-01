@@ -96,7 +96,7 @@ def scan(path, until_line=None):
     s = {"owner": [], "asks": [], "agent_text": [], "bg": OrderedDict(), "files": OrderedDict(), "branches": [],
          "docs": OrderedDict(), "tasks_files": OrderedDict(), "todos": None, "cwd": None, "git_branch": None,
          "session": None, "last_ts": None, "lead_heard": {}, "titles": {}}
-    uses, pend_stop, codex_execs, codex_cells = {}, {}, set(), set()
+    uses, pend_stop, codex_execs, codex_cells, codex_finished = {}, {}, set(), set(), set()
     try:
         fh = open(path, encoding="utf-8", errors="replace")
     except OSError:
@@ -121,6 +121,7 @@ def scan(path, until_line=None):
                 continue
             if not isinstance(d, dict):
                 continue
+            is_codex = d.get("type") in ("response_item", "event_msg")
             if d.get("type") == "response_item":
                 payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
                 call_id, code = payload.get("call_id"), payload.get("input")
@@ -141,19 +142,23 @@ def scan(path, until_line=None):
                         payload.get("call_id") in codex_execs:
                     codex_cells.update(codex_rollout.yielded_cells(d))
                     for session_id in codex_rollout.running_sessions(d):
-                        s["bg"][session_id] = {"kind": "bash", "desc": "Codex command session",
-                                               "started": d.get("timestamp"), "output": None}
+                        if session_id not in codex_finished:
+                            s["bg"][session_id] = {"kind": "bash", "desc": "Codex command session",
+                                                   "started": d.get("timestamp"), "output": None}
             elif d.get("type") == "event_msg":
                 payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
                 item = payload.get("item") if isinstance(payload.get("item"), dict) else {}
                 if payload.get("type") == "item_completed" and item.get("type") == "CommandExecution" \
                         and item.get("status") in ("completed", "failed", "cancelled", "canceled"):
-                    _end(s, str(item.get("process_id") or ""), item["status"])
+                    process_id = item.get("process_id")
+                    if process_id is not None and not isinstance(process_id, bool) and str(process_id):
+                        codex_finished.add(str(process_id))
+                        _end(s, str(process_id), item["status"])
                 elif payload.get("type") == "item_completed" and item.get("type") == "SubAgentActivity":
                     agent = item.get("agent_path") or item.get("agent_thread_id")
-                    if agent and item.get("kind") == "started":
-                        s["bg"][agent] = {"kind": "agent", "desc": "Codex subagent", "name": agent,
-                                          "started": d.get("timestamp"), "type": item.get("model")}
+                    if agent and item.get("kind") in ("started", "interacted"):
+                        s["bg"].setdefault(agent, {"kind": "agent", "desc": "Codex subagent", "name": agent,
+                                                   "started": d.get("timestamp"), "type": item.get("model")})
                     elif agent and item.get("kind") in ("completed", "failed", "interrupted", "cancelled"):
                         _end(s, agent, item["kind"])
             if d.get("type") == "session_meta":
@@ -190,7 +195,8 @@ def scan(path, until_line=None):
                 continue
             ts = d.get("timestamp")
             s["last_ts"] = ts or s["last_ts"]
-            s["cwd"] = d.get("cwd") or s["cwd"]
+            if not is_codex:
+                s["cwd"] = d.get("cwd") or s["cwd"]
             s["session"] = d.get("sessionId") or s["session"]
             if d.get("gitBranch") and d.get("gitBranch") != "HEAD":
                 s["git_branch"] = d["gitBranch"]
