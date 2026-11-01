@@ -16,7 +16,7 @@ Codex can use the durable checkpoint without installing tokenmaxxing's other hoo
         "hooks": [
           {
             "type": "command",
-            "command": "env GUTCHECK_HOME=\"$HOME/.local/share/gutcheck\" TOKENMAXXING_CONFIG_DIR=\"$HOME/.config/tokenmaxxing\" TOKENMAXXING_STATE_DIR=\"$HOME/.local/state/tokenmaxxing-codex/state\" TOKENMAXXING_DATA_DIR=\"$HOME/.local/state/tokenmaxxing-codex/data\" GUTCHECK_RULES_DIR=\"$HOME/.local/state/tokenmaxxing-codex/rules\" \"$HOME/.local/bin/tokenmaxxing\" hook PreCompact 2>/dev/null || true",
+            "command": "env GUTCHECK_HOME=\"${GUTCHECK_HOME:-$HOME/.local/share/gutcheck}\" TOKENMAXXING_CONFIG_DIR=\"${TOKENMAXXING_CONFIG_DIR:-$HOME/.config/tokenmaxxing}\" TOKENMAXXING_STATE_DIR=\"$HOME/.local/state/tokenmaxxing-codex/state\" TOKENMAXXING_DATA_DIR=\"$HOME/.local/state/tokenmaxxing-codex/data\" GUTCHECK_RULES_DIR=\"$HOME/.local/state/tokenmaxxing-codex/rules\" \"$HOME/.local/bin/tokenmaxxing\" hook PreCompact 2>/dev/null || true",
             "timeout": 120
           }
         ]
@@ -28,7 +28,7 @@ Codex can use the durable checkpoint without installing tokenmaxxing's other hoo
         "hooks": [
           {
             "type": "command",
-            "command": "env GUTCHECK_HOME=\"$HOME/.local/share/gutcheck\" TOKENMAXXING_CONFIG_DIR=\"$HOME/.config/tokenmaxxing\" TOKENMAXXING_STATE_DIR=\"$HOME/.local/state/tokenmaxxing-codex/state\" TOKENMAXXING_DATA_DIR=\"$HOME/.local/state/tokenmaxxing-codex/data\" GUTCHECK_RULES_DIR=\"$HOME/.local/state/tokenmaxxing-codex/rules\" \"$HOME/.local/bin/tokenmaxxing\" hook CompactSessionStart 2>/dev/null || true",
+            "command": "env GUTCHECK_HOME=\"${GUTCHECK_HOME:-$HOME/.local/share/gutcheck}\" TOKENMAXXING_CONFIG_DIR=\"${TOKENMAXXING_CONFIG_DIR:-$HOME/.config/tokenmaxxing}\" TOKENMAXXING_STATE_DIR=\"$HOME/.local/state/tokenmaxxing-codex/state\" TOKENMAXXING_DATA_DIR=\"$HOME/.local/state/tokenmaxxing-codex/data\" GUTCHECK_RULES_DIR=\"$HOME/.local/state/tokenmaxxing-codex/rules\" \"$HOME/.local/bin/tokenmaxxing\" hook CompactSessionStart 2>/dev/null || true",
             "timeout": 15,
             "additionalContextLimit": 0
           }

@@ -252,6 +252,10 @@ def add_message(session, ts, src, text, deadline=PROMPT_DEADLINE, cwd=None):
 
 
 # ---- transcript catch-up ------------------------------------------------------------------------------
+def _turn_id(v):
+    return v if isinstance(v, (str, int)) and not isinstance(v, bool) else None
+
+
 def _messages(path, start=0, until_line=None, cwd=None):
     """(ts, src, text, cwd) of owner/lead messages from byte offset `start`; returns (messages, end_offset). A Codex
     message belongs to the turn its metadata names, else the one the last task_started opened (by order), and gets the
@@ -282,16 +286,17 @@ def _messages(path, start=0, until_line=None, cwd=None):
             payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
             codex = d.get("type") in ("response_item", "event_msg")
             if d.get("type") in ("session_meta", "turn_context"):
-                key = payload.get("turn_id") or turn
-                turns[key] = payload.get("cwd")
-                for i in waiting.pop(key, []):
-                    msgs[i] = msgs[i][:3] + (turns[key],)
+                key = _turn_id(payload.get("turn_id")) or turn
+                if isinstance(payload.get("cwd"), str) and payload["cwd"]:  # a context without a cwd binds nothing
+                    turns[key] = payload["cwd"]
+                    for i in waiting.pop(key, []):
+                        msgs[i] = msgs[i][:3] + (turns[key],)
             elif codex:
                 if payload.get("type") == "task_started":
                     turn_no += 1
-                    turn = payload.get("turn_id") or turn_no
+                    turn = _turn_id(payload.get("turn_id")) or turn_no
                 meta = payload.get("internal_chat_message_metadata_passthrough")
-                codex_turn = (meta.get("turn_id") if isinstance(meta, dict) else None) or turn
+                codex_turn = (_turn_id(meta.get("turn_id")) if isinstance(meta, dict) else None) or turn
                 d = codex_rollout.normalize(d)
                 if d is None:
                     continue

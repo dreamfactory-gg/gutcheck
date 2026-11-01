@@ -158,6 +158,25 @@ class CodexCompactionTest(unittest.TestCase):
         rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
         self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((new / "important.txt").resolve())])
 
+    def test_context_without_a_cwd_leaves_its_message_for_a_valid_one(self):
+        new = self.root / "later"
+        new.mkdir()
+        (new / "important.txt").write_text("later place\n")
+        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
+        message = self.message("user", "Never delete important.txt.")
+        message["payload"]["internal_chat_message_metadata_passthrough"] = {"turn_id": "t"}
+        self.append(self.turn_record("task_started", "t"), message, self.turn_record("context", "t"),
+                    {"type": "turn_context", "payload": "invalid"}, self.turn_record("context", "t", str(new)))
+        rules.sync("codex-1", str(self.transcript), cwd=str(self.root))
+        self.assertEqual(rules.load("codex-1")[-1]["keep"], [str((new / "important.txt").resolve())])
+
+    def test_unhashable_turn_ids_do_not_abort_catch_up(self):
+        message = self.message("user", "Never delete bad-ids.txt.")
+        message["payload"]["internal_chat_message_metadata_passthrough"] = {"turn_id": ["x"]}
+        self.append(self.turn_record("task_started", ["bad"]), message, self.turn_record("context", {"a": 1}, str(self.root)))
+        texts = [m[2] for m in rules._messages(str(self.transcript), cwd=str(self.root))[0]]
+        self.assertIn("Never delete bad-ids.txt.", texts)
+
     def test_open_turn_uses_the_hook_directory_and_the_stored_directory_is_final(self):
         new = self.root / "resumed"
         new.mkdir()
