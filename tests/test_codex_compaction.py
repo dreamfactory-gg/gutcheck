@@ -16,6 +16,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tokenmaxxing" / "s
 from gutcheck_core import codex_rollout, config, jev, rules  # noqa: E402
 from tokenmaxxing import checkpoint, evidence, health, hooks, stopcheck, transitions  # noqa: E402
 
+_anvil = Path(tempfile.mkdtemp())   # anvil finds no board, so no test reaches a live one
+os.environ["ANVIL_CONFIG_DIR"] = str(_anvil / "cfg")
+os.environ["ANVIL_STATE_DIR"] = str(_anvil / "state")
+for _k in ("ANVIL_URL", "ANVIL_ACCOUNT", "ANVIL_KEY"):   # nor a board named in the environment
+    os.environ.pop(_k, None)
+
 
 class CodexCompactionTest(unittest.TestCase):
     def setUp(self):

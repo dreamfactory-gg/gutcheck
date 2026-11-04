@@ -6,6 +6,8 @@ then is built from the transcript with local code plus Jev only:
   - the owner's standing instructions and the lead's instructions to a teammate, verbatim, from the per-session
     rules store (rules.py), which captures them as they are stated and is caught up here;
   - TASKS.md open items and their done bars, plus the session's open todo list;
+  - the Anvil tickets this session claimed, with done bar, missing proof and next step (`anvil prime`, when anvil
+    is installed and logged in);
   - key decisions (the owner's answers to questions; decisions stated in the agent's text);
   - running background work: background Bash, monitors, async subagents and teammates, with IDs;
   - files touched, branches, documents in play (as pointers, never their content).
@@ -17,7 +19,9 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
+import tempfile
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -477,6 +481,33 @@ def open_items(path):
 
 
 # ---- build ---------------------------------------------------------------------------------------------
+def anvil_claimed(cwd, session):
+    """The tickets this session claimed on its Anvil board, from `anvil prime` in its repo: key, title, status, done
+    bar, missing proof and next step. Empty without anvil, a board or a login; never raises. A throwaway state folder
+    keeps the read from stamping the session's claims, which Anvil's own hooks keep."""
+    exe = shutil.which("anvil")
+    if not exe or not cwd or not session:   # without a session id, anvil would read the repo's latest session
+        return []
+    try:
+        with tempfile.TemporaryDirectory() as state:
+            r = subprocess.run([exe, "prime"], cwd=cwd, capture_output=True, text=True, timeout=5, check=False,
+                               env={**os.environ, "ANVIL_SESSION": session, "ANVIL_STATE_DIR": state})
+        lines = []
+        for t in json.loads(r.stdout)["data"]["tickets"]["claimed"]:
+            lines.append(f"- {t['key']} {t['title']} [{t['status']}]")
+            if t.get("done_bar"):
+                lines.append(f"  Done bar: {t['done_bar']}")
+            missing = [f"{p.get('kind')} {p.get('match') or ''}".strip() for p in t.get("proof") or []
+                       if isinstance(p, dict) and not p.get("matched")]
+            if missing:
+                lines.append(f"  Proof missing: {', '.join(missing)}")
+            if t.get("next_step"):
+                lines.append(f"  Next step: {t['next_step']}")
+        return lines
+    except Exception:  # noqa: BLE001 -- a checkpoint never fails over Anvil: no board, a timeout or an odd reply
+        return []
+
+
 def _short(t, n):
     t = " ".join(t.split())
     return t if len(t) <= n else t[:n - 1] + "…"
@@ -522,6 +553,7 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
     tasks = [(p, open_items(p)) for p in tasks_files]
     todos = [t for t in (s["todos"] or []) if isinstance(t, dict) and t.get("status") != "completed"]
     run = running(s, now_ts)
+    anvil_lines = anvil_claimed(cwd, session)
     files = list(reversed(s["files"].keys()))
     docs = [p for p in reversed(s["docs"].keys()) if p not in s["files"]][:8]
     branch = s["git_branch"]
@@ -590,7 +622,8 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
                 out.append("\n" + rules_block)
         return "\n".join(out + foot) + "\n"
 
-    full_parts = [("Open items", open_lines), ("Running background work", run_lines),
+    full_parts = [("Open items", open_lines), ("Anvil tickets this session claimed", anvil_lines),
+                  ("Running background work", run_lines),
                   ("Key decisions", dec_lines), ("Files and branches", ctx_lines)]
     full = render(full_parts)
 
@@ -607,10 +640,11 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
             out.pop()
         return out + [pointer]
 
-    ol = fit(open_lines, int(room * 0.45),
+    ol = fit(open_lines, int(room * (0.35 if anvil_lines else 0.45)),
              f"- (list cut to fit; the rest is in {', '.join(p for p, _ in tasks) or full_path})")
+    an = fit(anvil_lines, int(room * 0.10), "- (cut: run anvil prime)")   # with open items, the 45% they had alone
     rn = fit(run_lines, int(room * 0.25), f"- (more running work in the full checkpoint: {full_path})")
-    parts = [("Open items", ol), ("Running background work", rn)]
+    parts = [("Open items", ol), ("Anvil tickets this session claimed", an), ("Running background work", rn)]
     for title, lines in (("Key decisions", dec_lines), ("Files and branches", ctx_lines)):
         if not lines:
             continue
@@ -630,7 +664,8 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
             "now": bool(now), "rules": rules_meta.get("owner_rules", 0) + rules_meta.get("lead_rules", 0),
             **rules_meta, "rules_sync": sync_st, "rule_how": "jev" if not rules_meta.get("pending") else "partial",
             "decision_how": dec_how, "decisions": len(decisions), "open_items":
-                sum(len(i) for _, i in tasks) + len(todos), "tasks_files": tasks_files, "running": len(run_lines),
+                sum(len(i) for _, i in tasks) + len(todos), "tasks_files": tasks_files,
+            "anvil_claimed": sum(1 for x in anvil_lines if x.startswith("- ")), "running": len(run_lines),
             "files": len(files), "tokens": est_tokens(capped), "rest_tokens": rest_tokens,
             "full_tokens": est_tokens(full), "ms": int((time.monotonic() - t0) * 1000)}
     return capped, full, meta
