@@ -12,6 +12,20 @@ os.environ["TOKENMAXXING_STATE_DIR"] = str(tmp / "state")
 os.environ["GUTCHECK_RULES_DIR"] = str(tmp / "rules")
 os.environ["TOKENMAXXING_CONFIG_DIR"] = str(tmp / "cfg")
 os.environ["CLAUDE_PLUGIN_DATA"] = str(tmp / "plugin-data")
+# A fake anvil shadows the real one, so no test reaches a live board. It logs each call; FAKE_ANVIL_OUT is what
+# `anvil prime` prints, and without it the fake fails like a repo with no board.
+(tmp / "bin").mkdir()
+(tmp / "bin" / "anvil").write_text("""#!/usr/bin/env python3
+import json, os, sys
+with open(os.environ["FAKE_ANVIL_LOG"], "a") as f:
+    f.write(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd(), "session": os.environ.get("ANVIL_SESSION")}) + "\\n")
+if not os.environ.get("FAKE_ANVIL_OUT"):
+    sys.exit(3)
+print(open(os.environ["FAKE_ANVIL_OUT"]).read())
+""")
+(tmp / "bin" / "anvil").chmod(0o755)
+os.environ["PATH"] = f"{tmp / 'bin'}{os.pathsep}{os.environ['PATH']}"
+os.environ["FAKE_ANVIL_LOG"] = str(tmp / "anvil.log")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
 from gutcheck_core import jev  # noqa: E402
 
@@ -130,6 +144,24 @@ assert meta2["rest_tokens"] <= C.CAP_TOKENS, meta2["rest_tokens"]          # the
 assert all(f"Never touch module {i}:" in capped2 for i in range(200))       # rules are never truncated
 assert meta2["owner_tokens"] > C.CAP_TOKENS
 assert "ship the parser" in capped2 and "bgaaa111" in capped2
+
+# ---- Anvil: the tickets this session claimed, from `anvil prime` in its repo; no board, no section ----
+prime = {"ok": True, "data": {"text": "Anvil brief", "tickets": {
+    "claimed": [{"key": "ANV-60", "title": "Stop hook asks only after 30 minutes", "status": "In progress",
+                 "done_bar": "Stop blocks only after 30 minutes without a write.", "next_step": "Run the live check.",
+                 "proof": [{"kind": "output", "match": "*.txt", "matched": False}]}],
+    "next": [{"key": "ANV-47", "title": "Not claimed", "status": "To do"}]}}}
+(tmp / "prime.json").write_text(json.dumps(prime))
+os.environ["FAKE_ANVIL_OUT"] = str(tmp / "prime.json")
+capped5, full5, meta5 = C.build(str(tp), session="sess-1")
+assert "ANV-60 Stop hook asks only after 30 minutes" in capped5 and "Run the live check." in capped5, capped5
+assert "Stop blocks only after 30 minutes without a write." in capped5 and "output *.txt" in capped5
+assert "ANV-47" not in capped5 and meta5["anvil_claimed"] == 1, meta5
+call = json.loads((tmp / "anvil.log").read_text().splitlines()[-1])
+assert call["argv"] == ["prime"] and call["session"] == "sess-1" and os.path.samefile(call["cwd"], proj), call
+del os.environ["FAKE_ANVIL_OUT"]
+capped6, _, meta6 = C.build(str(tp), session="sess-1")
+assert "ANV-60" not in capped6 and meta6["anvil_claimed"] == 0, meta6
 
 # ---- Jev down: heuristic fallback, still written ----
 def boom(*a, **k):

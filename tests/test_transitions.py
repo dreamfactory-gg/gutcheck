@@ -12,6 +12,8 @@ tmp = Path(tempfile.mkdtemp())
 os.environ["TOKENMAXXING_STATE_DIR"] = str(tmp / "state")
 os.environ["GUTCHECK_RULES_DIR"] = str(tmp / "rules")
 os.environ["TOKENMAXXING_CONFIG_DIR"] = str(tmp / "cfg")
+os.environ["ANVIL_CONFIG_DIR"] = str(tmp / "anvil-cfg")   # anvil finds no board, so no test reaches a live one
+os.environ["ANVIL_STATE_DIR"] = str(tmp / "anvil-state")
 os.environ.pop("CLAUDE_PLUGIN_DATA", None)
 os.environ["CLAUDE_CODE_ENTRYPOINT"] = "cli"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing", "src"))
