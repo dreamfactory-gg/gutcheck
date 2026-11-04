@@ -18,7 +18,8 @@ os.environ["CLAUDE_PLUGIN_DATA"] = str(tmp / "plugin-data")
 (tmp / "bin" / "anvil").write_text("""#!/usr/bin/env python3
 import json, os, sys
 with open(os.environ["FAKE_ANVIL_LOG"], "a") as f:
-    f.write(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd(), "session": os.environ.get("ANVIL_SESSION")}) + "\\n")
+    f.write(json.dumps({"argv": sys.argv[1:], "cwd": os.getcwd(), "session": os.environ.get("ANVIL_SESSION"),
+                        "state": os.environ.get("ANVIL_STATE_DIR")}) + "\\n")
 if not os.environ.get("FAKE_ANVIL_OUT"):
     sys.exit(3)
 print(open(os.environ["FAKE_ANVIL_OUT"]).read())
@@ -159,6 +160,18 @@ assert "Stop blocks only after 30 minutes without a write." in capped5 and "outp
 assert "ANV-47" not in capped5 and meta5["anvil_claimed"] == 1, meta5
 call = json.loads((tmp / "anvil.log").read_text().splitlines()[-1])
 assert call["argv"] == ["prime"] and call["session"] == "sess-1" and os.path.samefile(call["cwd"], proj), call
+assert call["state"] and not os.path.exists(call["state"]), call   # a throwaway state folder: the read stamps nothing
+# a kind-only proof and an odd proof item keep every ticket; a reply of another shape gives no section, no error
+prime["data"]["tickets"]["claimed"] = [
+    {"key": "ANV-61", "title": "One", "status": "To do", "proof": [{"kind": "pr", "matched": False}, None]},
+    {"key": "ANV-62", "title": "Two", "status": "In progress"}]
+(tmp / "prime.json").write_text(json.dumps(prime))
+capped7, _, meta7 = C.build(str(tp), session="sess-1")
+assert "ANV-61 One [To do]" in capped7 and "Proof missing: pr" in capped7 and "ANV-62 Two" in capped7, capped7
+assert meta7["anvil_claimed"] == 2, meta7
+(tmp / "prime.json").write_text(json.dumps({"ok": True, "data": {"tickets": {"claimed": [{"key": "ANV-63"}]}}}))
+capped8, _, meta8 = C.build(str(tp), session="sess-1")
+assert "ANV-63" not in capped8 and meta8["anvil_claimed"] == 0, meta8
 del os.environ["FAKE_ANVIL_OUT"]
 capped6, _, meta6 = C.build(str(tp), session="sess-1")
 assert "ANV-60" not in capped6 and meta6["anvil_claimed"] == 0, meta6

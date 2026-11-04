@@ -21,6 +21,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -482,27 +483,29 @@ def open_items(path):
 # ---- build ---------------------------------------------------------------------------------------------
 def anvil_claimed(cwd, session):
     """The tickets this session claimed on its Anvil board, from `anvil prime` in its repo: key, title, status, done
-    bar, missing proof and next step. Empty without anvil, a board or a login; never raises."""
+    bar, missing proof and next step. Empty without anvil, a board or a login; never raises. A throwaway state folder
+    keeps the read from stamping the session's claims, which Anvil's own hooks keep."""
     exe = shutil.which("anvil")
     if not exe or not cwd:
         return []
     try:
-        r = subprocess.run([exe, "prime"], cwd=cwd, capture_output=True, text=True, timeout=5, check=False,
-                           env={**os.environ, "ANVIL_SESSION": session or ""})
-        claimed = json.loads(r.stdout)["data"]["tickets"]["claimed"]
+        with tempfile.TemporaryDirectory() as state:
+            r = subprocess.run([exe, "prime"], cwd=cwd, capture_output=True, text=True, timeout=5, check=False,
+                               env={**os.environ, "ANVIL_SESSION": session or "", "ANVIL_STATE_DIR": state})
         lines = []
-        for t in claimed:
+        for t in json.loads(r.stdout)["data"]["tickets"]["claimed"]:
             lines.append(f"- {t['key']} {t['title']} [{t['status']}]")
             if t.get("done_bar"):
                 lines.append(f"  Done bar: {t['done_bar']}")
-            missing = [f"{p['kind']} {p['match']}" for p in t.get("proof") or [] if not p.get("matched")]
+            missing = [f"{p.get('kind')} {p.get('match') or ''}".strip() for p in t.get("proof") or []
+                       if isinstance(p, dict) and not p.get("matched")]
             if missing:
                 lines.append(f"  Proof missing: {', '.join(missing)}")
             if t.get("next_step"):
                 lines.append(f"  Next step: {t['next_step']}")
         return lines
-    except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError):   # no board, a timeout, a reply
-        return []                                                                    # of another shape
+    except Exception:  # noqa: BLE001 -- a checkpoint never fails over Anvil: no board, a timeout or an odd reply
+        return []
 
 
 def _short(t, n):
@@ -637,9 +640,9 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
             out.pop()
         return out + [pointer]
 
-    ol = fit(open_lines, int(room * 0.45),
+    ol = fit(open_lines, int(room * 0.35),
              f"- (list cut to fit; the rest is in {', '.join(p for p, _ in tasks) or full_path})")
-    an = fit(anvil_lines, int(room * 0.15), "- (cut: run anvil prime)")
+    an = fit(anvil_lines, int(room * 0.10), "- (cut: run anvil prime)")   # with open items, the 45% they had
     rn = fit(run_lines, int(room * 0.25), f"- (more running work in the full checkpoint: {full_path})")
     parts = [("Open items", ol), ("Anvil tickets this session claimed", an), ("Running background work", rn)]
     for title, lines in (("Key decisions", dec_lines), ("Files and branches", ctx_lines)):
