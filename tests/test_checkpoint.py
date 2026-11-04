@@ -172,6 +172,8 @@ assert meta7["anvil_claimed"] == 2, meta7
 (tmp / "prime.json").write_text(json.dumps({"ok": True, "data": {"tickets": {"claimed": [{"key": "ANV-63"}]}}}))
 capped8, _, meta8 = C.build(str(tp), session="sess-1")
 assert "ANV-63" not in capped8 and meta8["anvil_claimed"] == 0, meta8
+calls = len((tmp / "anvil.log").read_text().splitlines())
+assert C.anvil_claimed(str(proj), None) == [] and len((tmp / "anvil.log").read_text().splitlines()) == calls
 del os.environ["FAKE_ANVIL_OUT"]
 capped6, _, meta6 = C.build(str(tp), session="sess-1")
 assert "ANV-60" not in capped6 and meta6["anvil_claimed"] == 0, meta6

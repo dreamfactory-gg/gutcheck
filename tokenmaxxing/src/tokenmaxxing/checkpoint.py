@@ -486,12 +486,12 @@ def anvil_claimed(cwd, session):
     bar, missing proof and next step. Empty without anvil, a board or a login; never raises. A throwaway state folder
     keeps the read from stamping the session's claims, which Anvil's own hooks keep."""
     exe = shutil.which("anvil")
-    if not exe or not cwd:
+    if not exe or not cwd or not session:   # without a session id, anvil would read the repo's latest session
         return []
     try:
         with tempfile.TemporaryDirectory() as state:
             r = subprocess.run([exe, "prime"], cwd=cwd, capture_output=True, text=True, timeout=5, check=False,
-                               env={**os.environ, "ANVIL_SESSION": session or "", "ANVIL_STATE_DIR": state})
+                               env={**os.environ, "ANVIL_SESSION": session, "ANVIL_STATE_DIR": state})
         lines = []
         for t in json.loads(r.stdout)["data"]["tickets"]["claimed"]:
             lines.append(f"- {t['key']} {t['title']} [{t['status']}]")
@@ -640,9 +640,9 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
             out.pop()
         return out + [pointer]
 
-    ol = fit(open_lines, int(room * 0.35),
+    ol = fit(open_lines, int(room * (0.35 if anvil_lines else 0.45)),
              f"- (list cut to fit; the rest is in {', '.join(p for p, _ in tasks) or full_path})")
-    an = fit(anvil_lines, int(room * 0.10), "- (cut: run anvil prime)")   # with open items, the 45% they had
+    an = fit(anvil_lines, int(room * 0.10), "- (cut: run anvil prime)")   # with open items, the 45% they had alone
     rn = fit(run_lines, int(room * 0.25), f"- (more running work in the full checkpoint: {full_path})")
     parts = [("Open items", ol), ("Anvil tickets this session claimed", an), ("Running background work", rn)]
     for title, lines in (("Key decisions", dec_lines), ("Files and branches", ctx_lines)):
