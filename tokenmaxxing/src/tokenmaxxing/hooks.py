@@ -542,8 +542,11 @@ def compact_log(inp):
 
 def subagent_start(inp):
     """A new agent gets the hand-back report shape (handback.py); a replacement also starts from its retired
-    predecessor's handoff note (soldier.py)."""
+    predecessor's handoff note (soldier.py). A resumed agent gets nothing: Claude Code keeps the copy injected at
+    launch and drops a rerun's context, so a note handed over then would be lost."""
     from . import handback, soldier
+    if _resumed(inp):
+        return
     note = _safe("soldier note in", soldier.start_context, inp)
     if note:
         log("soldier", {"session": inp.get("session_id"), "agent": inp.get("agent_id"),
@@ -551,6 +554,18 @@ def subagent_start(inp):
     ctx = "\n\n".join(x for x in (_safe("handback brief", handback.brief, inp), note) if x)
     if ctx:
         emit({"hookSpecificOutput": {"hookEventName": "SubagentStart", "additionalContext": ctx}})
+
+
+def _resumed(inp):
+    """The agent's own transcript already records a SubagentStart (its launch): this run is a resume."""
+    path = agent_transcript(inp)
+    if path == inp.get("transcript_path"):
+        return False
+    try:
+        with open(path, "rb") as fh:
+            return b'"hookEvent":"SubagentStart"' in fh.read(256_000)
+    except OSError:
+        return False
 
 
 def subagent_stop(inp):

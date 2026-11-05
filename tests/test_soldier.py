@@ -18,7 +18,7 @@ Path(_TMP, "cfg", "config.toml").write_text('[soldier.agents.bigctx]\nmax_contex
 
 from gutcheck_core import config  # noqa: E402
 
-from tokenmaxxing import hooks, soldier  # noqa: E402
+from tokenmaxxing import handback, hooks, soldier  # noqa: E402
 
 config.load(refresh=True)
 PROJ = Path(_TMP, "proj")
@@ -36,6 +36,10 @@ def _run_hook(event, inp):
     return json.loads(out.getvalue()) if out.getvalue() else None
 
 
+def _ctx(r):
+    return r["hookSpecificOutput"]["additionalContext"] if r else None
+
+
 NOTE = ("HANDOFF NOTE\n- Damage is applied in ServerScriptService.Combat.Damage:41-58\n- open: crit multiplier "
         "ignores armor")
 
@@ -47,16 +51,29 @@ def test_note_saved_then_handed_over_once():
     p = soldier.note_path(PROJ, "studio")
     assert p.exists() and "Combat.Damage:41-58" in p.read_text() and str(PROJ) not in str(p.parent.parent)
     start = {"session_id": "s1", "cwd": str(PROJ), "agent_id": "a2", "agent_type": "studio",
-             "hook_event_name": "SubagentStart"}
-    other = _run_hook("SubagentStart", {**start, "agent_type": "general-purpose"})
-    assert other is None  # another agent type doesn't get it
-    assert _run_hook("SubagentStart", {**start, "cwd": _TMP}) is None  # another project doesn't either
+             "hook_event_name": "SubagentStart", "transcript_path": str(PROJ / "main.jsonl")}
+    # every new agent gets the report shape; only the replacement (same type, same project) gets the note
+    assert _ctx(_run_hook("SubagentStart", {**start, "agent_type": "general-purpose"})) == handback.SHAPE
+    assert _ctx(_run_hook("SubagentStart", {**start, "cwd": _TMP})) == handback.SHAPE
     r = _run_hook("SubagentStart", start)
-    ctx = r["hookSpecificOutput"]["additionalContext"]
+    ctx = _ctx(r)
     assert r["hookSpecificOutput"]["hookEventName"] == "SubagentStart"
-    assert "Combat.Damage:41-58" in ctx and "previous studio agent" in ctx
-    assert _run_hook("SubagentStart", start) is None  # handed over once
+    assert ctx.startswith(handback.SHAPE) and "Combat.Damage:41-58" in ctx and "previous studio agent" in ctx
+    assert _ctx(_run_hook("SubagentStart", start)) == handback.SHAPE  # note handed over once
     assert soldier.start_context({**start, "agent_id": "a3"}) is None
+
+
+def test_resumed_agent_leaves_the_note_pending():
+    stop = {"session_id": "s1", "cwd": str(PROJ), "agent_id": "b1", "agent_type": "mapper",
+            "agent_transcript_path": "/nonexistent", "last_assistant_message": NOTE, "stop_hook_active": False}
+    _run_hook("SubagentStop", stop)
+    own = PROJ / "main" / "subagents" / "agent-b2.jsonl"
+    own.parent.mkdir(parents=True, exist_ok=True)
+    own.write_text('{"type":"attachment","attachment":{"type":"hook_success","hookEvent":"SubagentStart"}}\n')
+    start = {"session_id": "s1", "cwd": str(PROJ), "agent_id": "b2", "agent_type": "mapper",
+             "hook_event_name": "SubagentStart", "transcript_path": str(PROJ / "main.jsonl")}
+    assert _run_hook("SubagentStart", start) is None  # resumed: Claude Code would drop the context
+    assert "Combat.Damage:41-58" in _ctx(_run_hook("SubagentStart", {**start, "agent_id": "b3"}))
 
 
 def test_ordinary_reply_is_not_a_note():
