@@ -549,14 +549,19 @@ def subagent_start(inp):
     seen = config.STATE_DIR / "subagents" / f"{re.sub(r'[^\w.-]', '_', str(inp.get('session_id')))}.ids"
     agent = str(inp.get("agent_id"))
     try:
-        again = agent in seen.read_text().split()
+        new = agent not in seen.read_text().split()
+    except FileNotFoundError:
+        new = True
     except OSError:
-        again = False
-    if not again:
-        seen.parent.mkdir(parents=True, exist_ok=True)
-        with seen.open("a") as fh:
-            fh.write(agent + "\n")
-    note = None if again else _safe("soldier note in", soldier.start_context, inp)
+        new = False  # can't tell: the note waits for a launch we can confirm
+    if new:
+        try:
+            seen.parent.mkdir(parents=True, exist_ok=True)
+            with seen.open("a") as fh:
+                fh.write(agent + "\n")
+        except OSError:
+            new = False
+    note = _safe("soldier note in", soldier.start_context, inp) if new else None
     if note:
         log("soldier", {"session": inp.get("session_id"), "agent": inp.get("agent_id"),
                         "agent_type": inp.get("agent_type"), "note_in": len(note)})
