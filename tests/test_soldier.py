@@ -51,10 +51,11 @@ def test_note_saved_then_handed_over_once():
     p = soldier.note_path(PROJ, "studio")
     assert p.exists() and "Combat.Damage:41-58" in p.read_text() and str(PROJ) not in str(p.parent.parent)
     start = {"session_id": "s1", "cwd": str(PROJ), "agent_id": "a2", "agent_type": "studio",
-             "hook_event_name": "SubagentStart", "transcript_path": str(PROJ / "main.jsonl")}
+             "hook_event_name": "SubagentStart"}
     # every new agent gets the report shape; only the replacement (same type, same project) gets the note
-    assert _ctx(_run_hook("SubagentStart", {**start, "agent_type": "general-purpose"})) == handback.SHAPE
-    assert _ctx(_run_hook("SubagentStart", {**start, "cwd": _TMP})) == handback.SHAPE
+    other = {**start, "agent_id": "x1", "agent_type": "general-purpose"}
+    assert _ctx(_run_hook("SubagentStart", other)) == handback.SHAPE
+    assert _ctx(_run_hook("SubagentStart", {**start, "agent_id": "x2", "cwd": _TMP})) == handback.SHAPE
     r = _run_hook("SubagentStart", start)
     ctx = _ctx(r)
     assert r["hookSpecificOutput"]["hookEventName"] == "SubagentStart"
@@ -64,15 +65,13 @@ def test_note_saved_then_handed_over_once():
 
 
 def test_resumed_agent_leaves_the_note_pending():
-    stop = {"session_id": "s1", "cwd": str(PROJ), "agent_id": "b1", "agent_type": "mapper",
-            "agent_transcript_path": "/nonexistent", "last_assistant_message": NOTE, "stop_hook_active": False}
-    _run_hook("SubagentStop", stop)
-    own = PROJ / "main" / "subagents" / "agent-b2.jsonl"
-    own.parent.mkdir(parents=True, exist_ok=True)
-    own.write_text('{"type":"attachment","attachment":{"type":"hook_success","hookEvent":"SubagentStart"}}\n')
     start = {"session_id": "s1", "cwd": str(PROJ), "agent_id": "b2", "agent_type": "mapper",
-             "hook_event_name": "SubagentStart", "transcript_path": str(PROJ / "main.jsonl")}
-    assert _run_hook("SubagentStart", start) is None  # resumed: Claude Code would drop the context
+             "hook_event_name": "SubagentStart"}
+    assert _ctx(_run_hook("SubagentStart", start)) == handback.SHAPE  # b2 launches; no note yet
+    _run_hook("SubagentStop", {"session_id": "s1", "cwd": str(PROJ), "agent_id": "b1", "agent_type": "mapper",
+                               "agent_transcript_path": "/nonexistent", "last_assistant_message": NOTE,
+                               "stop_hook_active": False})
+    assert _ctx(_run_hook("SubagentStart", start)) == handback.SHAPE  # b2 resumed: shape again, note left alone
     assert "Combat.Damage:41-58" in _ctx(_run_hook("SubagentStart", {**start, "agent_id": "b3"}))
 
 

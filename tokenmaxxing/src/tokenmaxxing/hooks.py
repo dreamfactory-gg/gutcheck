@@ -542,12 +542,21 @@ def compact_log(inp):
 
 def subagent_start(inp):
     """A new agent gets the hand-back report shape (handback.py); a replacement also starts from its retired
-    predecessor's handoff note (soldier.py). A resumed agent gets nothing: Claude Code keeps the copy injected at
-    launch and drops a rerun's context, so a note handed over then would be lost."""
+    predecessor's handoff note (soldier.py). An agent seen here before (a resume, a teammate's next message) gets the
+    shape again but never a note: Claude Code keeps the launch copy and drops a rerun's context unless compaction
+    removed it, so a note handed over then could be lost."""
     from . import handback, soldier
-    if _resumed(inp):
-        return
-    note = _safe("soldier note in", soldier.start_context, inp)
+    seen = config.STATE_DIR / "subagents" / f"{re.sub(r'[^\w.-]', '_', str(inp.get('session_id')))}.ids"
+    agent = str(inp.get("agent_id"))
+    try:
+        again = agent in seen.read_text().split()
+    except OSError:
+        again = False
+    if not again:
+        seen.parent.mkdir(parents=True, exist_ok=True)
+        with seen.open("a") as fh:
+            fh.write(agent + "\n")
+    note = None if again else _safe("soldier note in", soldier.start_context, inp)
     if note:
         log("soldier", {"session": inp.get("session_id"), "agent": inp.get("agent_id"),
                         "agent_type": inp.get("agent_type"), "note_in": len(note)})
@@ -555,17 +564,6 @@ def subagent_start(inp):
     if ctx:
         emit({"hookSpecificOutput": {"hookEventName": "SubagentStart", "additionalContext": ctx}})
 
-
-def _resumed(inp):
-    """The agent's own transcript already records a SubagentStart (its launch): this run is a resume."""
-    path = agent_transcript(inp)
-    if path == inp.get("transcript_path"):
-        return False
-    try:
-        with open(path, "rb") as fh:
-            return b'"hookEvent":"SubagentStart"' in fh.read(256_000)
-    except OSError:
-        return False
 
 
 def subagent_stop(inp):
