@@ -134,17 +134,28 @@ assert capped.count("ever push to main") == 1                              # nea
 assert "superseded by" in capped and "Only deploy to staging-a." in capped and "staging-b instead" in capped
 assert meta["open_items"] == 2 and meta["running"] == 3, meta
 
-# ---- cap: many rules -> capped under the limit, open items and running work kept, pointer to the rest ----
+# ---- cap: Now and whole rule lines first; omitted rules point up front to the full checkpoint ----
 big = [json.dumps({"type": "user", "timestamp": f"2026-09-01T11:{i % 60:02d}:00Z", "cwd": str(proj), "sessionId": "sess-2",
                    "message": {"role": "user", "content": f"Never touch module {i}: " + "it is load bearing and fragile. " * 8}})
        for i in range(200)]
 tp2 = tmp / "t2.jsonl"
 tp2.write_text("\n".join(lines + big) + "\n")
-capped2, full2, meta2 = C.build(str(tp2), session="sess-2")
-assert meta2["rest_tokens"] <= C.CAP_TOKENS, meta2["rest_tokens"]          # the cap covers everything but rules
-assert all(f"Never touch module {i}:" in capped2 for i in range(200))       # rules are never truncated
+now2 = "## Now\n- Goal: ship the parser\n- Next: run the fixtures"
+capped2, full2, meta2 = C.build(str(tp2), session="sess-2", now=now2)
+md2, fullp2, _ = C.paths_for("sess-2")
+assert len(capped2) + len(C.RECALL_LINE) <= C.CAP_CHARS
+assert now2 in capped2 and meta2["rest_tokens"] <= C.CAP_TOKENS
+assert "Read the full checkpoint file before anything else:" in capped2.splitlines()[1]
+assert str(fullp2) in capped2[:400]
+assert all(f"Never touch module {i}:" in full2 for i in range(200))
+assert not all(f"Never touch module {i}:" in capped2 for i in range(200))
 assert meta2["owner_tokens"] > C.CAP_TOKENS
-assert "ship the parser" in capped2 and "bgaaa111" in capped2
+assert all(line in full2.splitlines() for line in capped2.splitlines() if "Never touch module" in line)
+md2.parent.mkdir(parents=True, exist_ok=True)
+md2.write_text(capped2)
+fullp2.write_text(full2)
+injected2 = C.for_session_start({"source": "compact", "session_id": "sess-2"})
+assert now2 in injected2 and len(injected2) <= C.CAP_CHARS
 
 # ---- Anvil: the tickets this session claimed, from `anvil prime` in its repo; no board, no section ----
 prime = {"ok": True, "data": {"text": "Anvil brief", "tickets": {

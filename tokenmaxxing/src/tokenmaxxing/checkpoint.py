@@ -12,8 +12,9 @@ then is built from the transcript with local code plus Jev only:
   - running background work: background Bash, monitors, async subagents and teammates, with IDs;
   - files touched, branches, documents in play (as pointers, never their content).
 
-The standing rules have their own budget and are never truncated. Everything else stays under CAP_TOKENS: open
-items and running work first, then the rest, which turns into pointers (the uncapped version, recall).
+The injection, including its recall line, stays under 9,500 characters: header and Now first, then whole standing
+rule lines, then open items and running work, then pointers. If rules do not fit, an upfront Read instruction points
+to the full checkpoint, which always keeps every rule line.
 """
 import hashlib
 import json
@@ -30,6 +31,7 @@ from gutcheck_core import codex_rollout, config
 from gutcheck_core.messages import (
     _HEUR,
     _SENT_RE,
+    CHARS_PER_TOKEN,
     _clean,
     _fmt_ts,
     _texts,
@@ -38,6 +40,8 @@ from gutcheck_core.messages import (
 )
 
 CAP_TOKENS = 4800            # the spec's ceiling is ~5k; keep a margin for the estimate
+CAP_CHARS = 9500             # below Claude Code's hook-context limit, including the recall line
+RECALL_LINE = '\n\nUse `tokenmaxxing recall "<question>"` for anything else from before the compaction.'
 JEV_DEADLINE = 25.0
 MAX_JEV_ITEMS = 1200           # per checkpoint; older unanswered units fall back to the keyword heuristic
 DECISION_MIN_P = 0.6
@@ -627,36 +631,29 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
                   ("Key decisions", dec_lines), ("Files and branches", ctx_lines)]
     full = render(full_parts)
 
-    # --- capped version. The standing rules sit outside the cap (their own budget, never truncated); the cap
-    # applies to everything else: open items and running work stay (terse), decisions and files become pointers.
-    budget = cap_tokens
-    room = budget - est_tokens(now or "")  # the Now block sits in the head, which the later renders count
+    # Reserve the SessionStart suffix before fitting anything; Now and the header remain whole.
+    budget = min(CAP_CHARS, int(cap_tokens * CHARS_PER_TOKEN)) - len(RECALL_LINE)
 
     def fit(lines, cap, pointer):
-        if est_tokens("\n".join(lines)) <= cap:
+        if len("\n".join(lines)) <= cap:
             return list(lines)
-        out = [x if len(x) <= 180 else x[:179] + "…" for x in lines]
-        while out and est_tokens("\n".join(out + [pointer])) > cap:
+        out = list(lines)
+        tail = [pointer] if pointer else []
+        while out and len("\n".join(out + tail)) > cap:
             out.pop()
-        return out + [pointer]
+        return out + tail if len("\n".join(out + tail)) <= cap else []
 
-    ol = fit(open_lines, int(room * (0.35 if anvil_lines else 0.45)),
-             f"- (list cut to fit; the rest is in {', '.join(p for p, _ in tasks) or full_path})")
-    an = fit(anvil_lines, int(room * 0.10), "- (cut: run anvil prime)")   # with open items, the 45% they had alone
-    rn = fit(run_lines, int(room * 0.25), f"- (more running work in the full checkpoint: {full_path})")
-    parts = [("Open items", ol), ("Anvil tickets this session claimed", an), ("Running background work", rn)]
-    for title, lines in (("Key decisions", dec_lines), ("Files and branches", ctx_lines)):
+    parts = [(title, []) for title, _ in full_parts]
+    if len(render(parts)) > budget:
+        head.insert(1, f"Read the full checkpoint file before anything else: {full_path} (standing rules omitted below).")
+        rules_block = "\n".join(fit(rules_block.splitlines(), budget - len(render(parts, False)) - 2, None))
+
+    pointer = f"- (more in the full checkpoint: {full_path})"
+    for i, (title, lines) in enumerate(full_parts):
         if not lines:
             continue
-        pointer = f"- (more in the full checkpoint: {full_path})"
-        if est_tokens(render(parts + [(title, lines)], False)) <= budget:
-            parts.append((title, lines))
-            continue
-        keep = list(lines)
-        while keep and est_tokens(render(parts + [(title, keep + [pointer])], False)) > budget:
-            keep.pop()
-        if est_tokens(render(parts + [(title, keep + [pointer])], False)) <= budget:
-            parts.append((title, keep + [pointer]))
+        parts[i] = (title, [""])
+        parts[i] = (title, fit(lines, budget - len(render(parts)), pointer))
     capped = render(parts)
     rest_tokens = est_tokens(render(parts, False))
 
@@ -718,7 +715,7 @@ def for_session_start(inp, max_age_s=6 * 3600):
         text = md.read_text()
     except OSError:
         return None
-    return text.rstrip() + "\n\nUse `tokenmaxxing recall \"<question>\"` for anything else from before the compaction."
+    return text.rstrip() + RECALL_LINE
 
 
 def main(args):
