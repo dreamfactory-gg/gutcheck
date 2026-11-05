@@ -43,6 +43,8 @@ from gutcheck_core.messages import (
 CAP_TOKENS = 4800            # the spec's ceiling is ~5k; keep a margin for the estimate
 CAP_CHARS = 9500             # below Claude Code's hook-context limit, including the recall line
 RECALL_LINE = '\n\nUse `tokenmaxxing recall "<question>"` for anything else from before the compaction.'
+NOTICE_MARKER = ("tokenmaxxing: a health notice was left out to fit the checkpoint; non-MCP notices repeat at the next "
+                 "session start, MCP ones: run `tokenmaxxing mcp`.")
 JEV_DEADLINE = 25.0
 MAX_JEV_ITEMS = 1200           # per checkpoint; older unanswered units fall back to the keyword heuristic
 DECISION_MIN_P = 0.6
@@ -649,7 +651,8 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
     head = [secretscan.redact(line) for line in head]
     foot = secretscan.redact("\n".join(foot)).splitlines()
     full = secretscan.redact(render(full_parts))
-    budget = min(CAP_CHARS, int(cap_tokens * CHARS_PER_TOKEN)) - len(RECALL_LINE)
+    # room for the recall line and a health-notice marker, so SessionStart never trims the checkpoint again
+    budget = min(CAP_CHARS, int(cap_tokens * CHARS_PER_TOKEN)) - len(RECALL_LINE) - len(NOTICE_MARKER) - 2
     parts = full_parts
     if len(full) <= budget:
         capped = full
@@ -667,8 +670,8 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
 
             parts[i] = (title, fit(lines, cap, pointer, size))
 
-        allocate(0, budget)  # the owner's note for this compaction, then Now, before any optional section
-        allocate(1, budget)
+        allocate(1, budget)  # Now, then the owner's note for this compaction, before any optional section
+        allocate(0, budget)
         room = max(0, budget - len(render(parts)))
         for i, share in ((2, 0.35 if anvil_lines else 0.45), (4, 0.10), (5, 0.25)):
             allocate(i, min(budget, len(render(parts)) + int(room * share)))

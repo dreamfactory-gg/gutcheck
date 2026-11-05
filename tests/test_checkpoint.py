@@ -287,7 +287,7 @@ with patch.object(health, "session_start", return_value=notice), \
 ctx = out["hookSpecificOutput"]["additionalContext"]
 assert len(ctx) <= C.CAP_CHARS, len(ctx)
 assert now2 in ctx
-assert "MCP health notice left out" in ctx and "`tokenmaxxing mcp`" in ctx
+assert C.NOTICE_MARKER in ctx
 
 # ---- Redaction can grow short secrets: fit what write saves and SessionStart actually injects ----
 secret = "aB3dE5fG7hI9jK1m"

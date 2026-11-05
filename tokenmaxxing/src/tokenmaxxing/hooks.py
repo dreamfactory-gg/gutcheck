@@ -484,7 +484,7 @@ def session_start(inp):
         log("hook_errors", {"event": "SessionStart", "error": f"{type(e).__name__}: {e}"})
     separator = 2 if text and notice else 0
     if notice and len(text) + separator + len(notice) > checkpoint.CAP_CHARS:
-        notice = "MCP health notice left out; run `tokenmaxxing mcp`."
+        notice = checkpoint.NOTICE_MARKER
     room = checkpoint.CAP_CHARS - len(notice or "") - separator
     if len(text) > room:
         ref = re.search(r"(?<=full checkpoint: )\S+", text)
@@ -561,7 +561,7 @@ def subagent_start(inp):
         new = agent not in seen.read_text().split()
     except FileNotFoundError:
         new = True
-    except OSError:
+    except (OSError, ValueError):
         new = False  # can't tell: the note waits for a launch we can confirm
     if new:
         try:
