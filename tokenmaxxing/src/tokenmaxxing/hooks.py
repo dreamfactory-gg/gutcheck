@@ -475,13 +475,24 @@ def prompt_submit(inp):
 
 # ---- SessionStart ------------------------------------------------------------------------------
 def session_start(inp):
-    from . import health
+    from . import checkpoint, health
     parts = [reinject(inp)]
     try:
         parts.append(health.session_start(inp))
     except Exception as e:
         log("hook_errors", {"event": "SessionStart", "error": f"{type(e).__name__}: {e}"})
-    text = "\n\n".join(p for p in parts if p)
+    kept = []
+    for part in parts:
+        if not part:
+            continue
+        room = checkpoint.CAP_CHARS - len("\n\n".join(kept)) - (2 if kept else 0)
+        ref = re.search(r"(?<=full checkpoint: )\S+", part) or re.search(r"`[^`]+`|/\S+", part)
+        pointer = f"(more: {ref[0]})" if ref else ""
+        if room >= len(pointer):
+            text = "\n".join(checkpoint.fit(part.splitlines(), room, pointer))
+            if text:
+                kept.append(text)
+    text = "\n\n".join(kept)
     if text:
         emit({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}})
 

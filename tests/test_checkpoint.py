@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 tmp = Path(tempfile.mkdtemp())
 os.environ["TOKENMAXXING_STATE_DIR"] = str(tmp / "state")
@@ -31,7 +32,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tokenmaxxing",
 from gutcheck_core import jev  # noqa: E402
 
 from tokenmaxxing import checkpoint as C  # noqa: E402
-from tokenmaxxing import evidence, hooks
+from tokenmaxxing import evidence, hooks, transitions
 
 evidence._claude = lambda *a, **k: ("- Goal: ship the parser\n- In progress: parser", {"cost_usd": 0})
 
@@ -247,6 +248,34 @@ assert run_hook("SessionStart", {"session_id": "sess-1", "transcript_path": str(
 # a session id that changed across compaction: found by transcript path
 out = json.loads(run_hook("SessionStart", {"session_id": "other", "transcript_path": str(tp), "source": "compact"}))
 assert "Never push to main." in out["hookSpecificOutput"]["additionalContext"]
+
+# ---- SessionStart budgets the checkpoint and health notice together, checkpoint first ----
+notice = "MCP health status\n" + "\n".join(f"- server {i}: " + "unavailable; " * 7 for i in range(100))
+notice += "\nSee `tokenmaxxing mcp`"
+for checkpoint_text in (injected2, None):
+    with patch.object(health, "session_start", return_value=notice), \
+            patch.object(transitions, "on_start", return_value=checkpoint_text):
+        out = json.loads(run_hook("SessionStart", {"session_id": "sess-2", "source": "compact"}))
+    ctx = out["hookSpecificOutput"]["additionalContext"]
+    assert len(ctx) <= C.CAP_CHARS, len(ctx)
+    if checkpoint_text:
+        assert ctx.startswith(checkpoint_text)
+    else:
+        assert "(more: `tokenmaxxing mcp`)" in ctx
+        assert all(line in notice.splitlines() for line in ctx.splitlines()[:-1])
+
+# ---- Redaction can grow short secrets: fit what write saves and SessionStart actually injects ----
+secret = "aB3dE5fG7hI9jK1m"
+secret_now = "## Now\n" + "\n".join(f"- Rotate {i:03d}: token={secret}; ".ljust(85, "x") for i in range(100))
+with patch.object(transitions, "prepare", return_value=secret_now):
+    C.write({"session_id": "sess-redact", "transcript_path": str(tp), "cwd": str(proj)})
+redacted = C.for_session_start({"source": "compact", "session_id": "sess-redact"})
+redacted_full = C.paths_for("sess-redact")[1].read_text()
+assert "<ASSIGNED-SECRET-REDACTED>" in redacted
+assert secret not in redacted and secret not in redacted_full
+assert len(redacted) <= C.CAP_CHARS, len(redacted)
+assert "Read the full checkpoint file before anything else:" in redacted.splitlines()[1]
+assert redacted_full.count("<ASSIGNED-SECRET-REDACTED>") == 100
 
 # ---- fail open: a broken transcript path or a crash inside build never raises out of the hook ----
 real_build = C.build

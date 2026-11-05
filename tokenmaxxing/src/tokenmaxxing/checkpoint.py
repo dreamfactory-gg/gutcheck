@@ -12,9 +12,10 @@ then is built from the transcript with local code plus Jev only:
   - running background work: background Bash, monitors, async subagents and teammates, with IDs;
   - files touched, branches, documents in play (as pointers, never their content).
 
-The injection, including its recall line, stays under 9,500 characters: header and Now first, then whole standing
-rule lines, then open items and running work, then pointers. If rules do not fit, an upfront Read instruction points
-to the full checkpoint, which always keeps every rule line.
+The redacted injection, including its recall line, stays under 9,500 characters. After the header and Now, reserve
+space for open items, Anvil tickets and running work, then fit whole standing-rule lines and decisions/files. Cuts
+keep omission pointers; truncated rules or an oversized Now get an upfront Read instruction. The full checkpoint
+keeps every rule and Now line.
 """
 import hashlib
 import json
@@ -27,7 +28,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from gutcheck_core import codex_rollout, config
+from gutcheck_core import codex_rollout, config, secretscan
 from gutcheck_core.messages import (
     _HEUR,
     _SENT_RE,
@@ -517,6 +518,16 @@ def _short(t, n):
     return t if len(t) <= n else t[:n - 1] + "…"
 
 
+def fit(lines, cap, pointer):
+    out = list(lines)
+    if len("\n".join(out)) <= cap:
+        return out
+    tail = [pointer] if pointer else []
+    while out and len("\n".join(out + tail)) > cap:
+        out.pop()
+    return out + tail
+
+
 def build(transcript_path, session=None, cwd=None, trigger=None, custom_instructions=None, until_line=None,
           now_ts=None, deadline=JEV_DEADLINE, cap_tokens=CAP_TOKENS, s=None, now=None, source=None):
     """Returns (capped_markdown, full_markdown, meta). `now`: the Now block, put first; `source`: what the
@@ -631,29 +642,41 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
                   ("Key decisions", dec_lines), ("Files and branches", ctx_lines)]
     full = render(full_parts)
 
-    # Reserve the SessionStart suffix before fitting anything; Now and the header remain whole.
+    # Fit the representation write() saves, reserving every omission pointer and the SessionStart suffix.
     budget = min(CAP_CHARS, int(cap_tokens * CHARS_PER_TOKEN)) - len(RECALL_LINE)
-
-    def fit(lines, cap, pointer):
-        if len("\n".join(lines)) <= cap:
-            return list(lines)
-        out = list(lines)
-        tail = [pointer] if pointer else []
-        while out and len("\n".join(out + tail)) > cap:
-            out.pop()
-        return out + tail if len("\n".join(out + tail)) <= cap else []
-
-    parts = [(title, []) for title, _ in full_parts]
-    if len(render(parts)) > budget:
-        head.insert(1, f"Read the full checkpoint file before anything else: {full_path} (standing rules omitted below).")
-        rules_block = "\n".join(fit(rules_block.splitlines(), budget - len(render(parts, False)) - 2, None))
-
+    header = secretscan.redact(head[0])
+    now_lines = secretscan.redact("\n" + now.strip()).splitlines() if now else []
+    rule_lines = secretscan.redact(rules_block).splitlines()
+    foot = secretscan.redact("\n".join(foot)).splitlines()
+    cap_parts = [(title, secretscan.redact("\n".join(lines)).splitlines()) for title, lines in full_parts]
+    if custom_instructions:
+        cap_parts.append(("Owner's note for this compaction", secretscan.redact(custom_instructions.strip()).splitlines()))
     pointer = f"- (more in the full checkpoint: {full_path})"
-    for i, (title, lines) in enumerate(full_parts):
-        if not lines:
+    read_line = (f"Read the full checkpoint file before anything else: {full_path} "
+                 "(some standing rules are only in that file).")
+    for with_read in (False, True):
+        head = [header] + ([read_line] if with_read else [])
+        parts = [(title, [pointer] if lines else []) for title, lines in cap_parts]
+        rules_block = pointer
+        kept_now = fit(now_lines, max(0, budget - len(render(parts)) - 1), None)
+        if kept_now:
+            head.append("\n".join(kept_now))
+        room = max(0, budget - len(render([], False)))
+        for i, share in enumerate((0.35 if anvil_lines else 0.45, 0.10, 0.25)):
+            title, lines = cap_parts[i]
+            if lines:
+                cap = max(len(pointer), int(room * share))
+                cap = min(cap, len(pointer) + max(0, budget - len(render(parts))))
+                parts[i] = (title, fit(lines, cap, pointer))
+        kept_rules = fit(rule_lines, len(pointer) + max(0, budget - len(render(parts))), pointer)
+        rules_block = "\n".join(kept_rules)
+        if not with_read and (kept_now != now_lines or kept_rules != rule_lines):
             continue
-        parts[i] = (title, [""])
-        parts[i] = (title, fit(lines, budget - len(render(parts)), pointer))
+        for i in range(3, len(cap_parts)):
+            title, lines = cap_parts[i]
+            if lines:
+                parts[i] = (title, fit(lines, len(pointer) + max(0, budget - len(render(parts))), pointer))
+        break
     capped = render(parts)
     rest_tokens = est_tokens(render(parts, False))
 
@@ -670,8 +693,6 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
 
 def write(inp, deadline=JEV_DEADLINE, source=None, s=None):
     """PreCompact and SessionEnd: build and write the checkpoint, Now block first (transitions.py). Returns meta."""
-    from gutcheck_core import secretscan
-
     from . import transitions
     session, tp = inp.get("session_id"), inp.get("transcript_path") or ""
     s = s or scan(tp)
@@ -681,9 +702,9 @@ def write(inp, deadline=JEV_DEADLINE, source=None, s=None):
                                now=transitions.prepare(inp, s), source=source)
     md, fullp, metap = paths_for(session)
     md.parent.mkdir(parents=True, exist_ok=True)
-    for p, text in ((md, capped), (fullp, full)):
+    for p, text in ((md, capped), (fullp, secretscan.redact(full))):
         tmp = p.with_suffix(p.suffix + ".tmp")
-        tmp.write_text(secretscan.redact(text))
+        tmp.write_text(text)
         tmp.replace(p)
     meta.update(path=str(md), transcript=inp.get("transcript_path"), written=time.time())
     metap.write_text(json.dumps(meta))
@@ -726,8 +747,7 @@ def main(args):
     until = None
     if "--until-line" in args:
         until = int(args[args.index("--until-line") + 1])
-    from gutcheck_core import secretscan
     capped, full, meta = build(args[1], until_line=until)
-    print(secretscan.redact(full if "--full" in args else capped))
+    print(secretscan.redact(full) if "--full" in args else capped)
     if "--meta" in args:
         print(json.dumps(meta), file=sys.stderr)
