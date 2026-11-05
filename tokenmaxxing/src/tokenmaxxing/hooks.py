@@ -476,23 +476,21 @@ def prompt_submit(inp):
 # ---- SessionStart ------------------------------------------------------------------------------
 def session_start(inp):
     from . import checkpoint, health
-    parts = [reinject(inp)]
+    text = reinject(inp) or ""
+    notice = None
     try:
-        parts.append(health.session_start(inp))
+        notice = health.session_start(inp)
     except Exception as e:
         log("hook_errors", {"event": "SessionStart", "error": f"{type(e).__name__}: {e}"})
-    kept = []
-    for part in parts:
-        if not part:
-            continue
-        room = checkpoint.CAP_CHARS - len("\n\n".join(kept)) - (2 if kept else 0)
-        ref = re.search(r"(?<=full checkpoint: )\S+", part) or re.search(r"`[^`]+`|/\S+", part)
-        pointer = f"(more: {ref[0]})" if ref else ""
-        if room >= len(pointer):
-            text = "\n".join(checkpoint.fit(part.splitlines(), room, pointer))
-            if text:
-                kept.append(text)
-    text = "\n\n".join(kept)
+    separator = 2 if text and notice else 0
+    if notice and len(text) + separator + len(notice) > checkpoint.CAP_CHARS:
+        notice = "MCP health notice left out; run `tokenmaxxing mcp`."
+    room = checkpoint.CAP_CHARS - len(notice or "") - separator
+    if len(text) > room:
+        ref = re.search(r"(?<=full checkpoint: )\S+", text)
+        pointer = f"(more: {ref[0]})" if ref else "(more in the full checkpoint above)"
+        text = "\n".join(checkpoint.fit(text.splitlines(), room, pointer))
+    text = "\n\n".join(p for p in (text, notice) if p)
     if text:
         emit({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}})
 

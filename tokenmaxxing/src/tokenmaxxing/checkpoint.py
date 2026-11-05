@@ -12,10 +12,10 @@ then is built from the transcript with local code plus Jev only:
   - running background work: background Bash, monitors, async subagents and teammates, with IDs;
   - files touched, branches, documents in play (as pointers, never their content).
 
-The redacted injection, including its recall line, stays under 9,500 characters. After the header and Now, reserve
-space for open items, Anvil tickets and running work, then fit whole standing-rule lines and decisions/files. Cuts
-keep omission pointers; truncated rules or an oversized Now get an upfront Read instruction. The full checkpoint
-keeps every rule and Now line.
+The redacted injection, including its recall line, stays under 9,500 characters. A checkpoint that fits stays whole.
+Otherwise, preserve Now first, reserve space for open items, Anvil tickets and running work, then fit standing rules
+and backfill unused room in priority order. Cuts keep omission pointers and an upfront Read instruction naming the
+cut sections. The full checkpoint keeps every rule and Now line.
 """
 import hashlib
 import json
@@ -518,14 +518,14 @@ def _short(t, n):
     return t if len(t) <= n else t[:n - 1] + "…"
 
 
-def fit(lines, cap, pointer):
+def fit(lines, cap, pointer, size=lambda lines: len("\n".join(lines))):
     out = list(lines)
-    if len("\n".join(out)) <= cap:
+    if size(out) <= cap:
         return out
     tail = [pointer] if pointer else []
-    while out and len("\n".join(out + tail)) > cap:
+    while out and size(out + tail) > cap:
         out.pop()
-    return out + tail
+    return out + tail if size(out + tail) <= cap else []
 
 
 def build(transcript_path, session=None, cwd=None, trigger=None, custom_instructions=None, until_line=None,
@@ -578,10 +578,6 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
     # --- sections (each: title, lines) ---
     kind = {"manual": "manual ", "auto": "automatic "}.get(trigger, "")
     head = [f"# WHERE WE ARE (from {source or kind + 'compaction'}, {_fmt_ts(now_ts or s['last_ts'])} UTC)"]
-    if custom_instructions:
-        head.append(f"Owner's note for this compaction: {custom_instructions.strip()}")
-    if now:
-        head.append("\n" + now.strip())
     foot = ["", "Written from the transcript by tokenmaxxing. The standing instructions are the owner's own words and still "
             "apply. For anything not here, run `tokenmaxxing recall \"<question>\"` (past sessions, memory, git) or "
             f"read the full checkpoint: {full_path}"]
@@ -629,55 +625,56 @@ def build(transcript_path, session=None, cwd=None, trigger=None, custom_instruct
 
     def render(parts, with_rules=True):
         out = list(head)
-        for i, (title, lines) in enumerate(parts):
-            if lines:
+        cuts = [title if title == "Now" else title.lower()
+                for (title, lines), (_, original) in zip(parts, full_parts) if lines != original]
+        if cuts:
+            out.append(f"Read the full checkpoint file before anything else: {full_path} "
+                       f"(cut to fit here: {', '.join(cuts)})")
+        for title, lines in parts:
+            if not lines or (title == "Standing rules" and not with_rules):
+                continue
+            if title in ("Now", "Standing rules"):
+                out.append("")
+            elif title != "Compaction note":
                 out.append(f"\n## {title}")
-                out.extend(lines)
-            if i == 0 and with_rules:  # after the open items
-                out.append("\n" + rules_block)
+            out.extend(lines)
         return "\n".join(out + foot) + "\n"
 
-    full_parts = [("Open items", open_lines), ("Anvil tickets this session claimed", anvil_lines),
-                  ("Running background work", run_lines),
+    full_parts = [("Compaction note", [f"Owner's note for this compaction: {custom_instructions.strip()}"]
+                   if custom_instructions else []), ("Now", [now.strip()] if now else []),
+                  ("Open items", open_lines), ("Standing rules", [rules_block]),
+                  ("Anvil tickets this session claimed", anvil_lines), ("Running background work", run_lines),
                   ("Key decisions", dec_lines), ("Files and branches", ctx_lines)]
-    full = render(full_parts)
-
-    # Fit the representation write() saves, reserving every omission pointer and the SessionStart suffix.
-    budget = min(CAP_CHARS, int(cap_tokens * CHARS_PER_TOKEN)) - len(RECALL_LINE)
-    header = secretscan.redact(head[0])
-    now_lines = secretscan.redact("\n" + now.strip()).splitlines() if now else []
-    rule_lines = secretscan.redact(rules_block).splitlines()
+    full_parts = [(title, secretscan.redact("\n".join(lines)).splitlines()) for title, lines in full_parts]
+    head = [secretscan.redact(line) for line in head]
     foot = secretscan.redact("\n".join(foot)).splitlines()
-    cap_parts = [(title, secretscan.redact("\n".join(lines)).splitlines()) for title, lines in full_parts]
-    if custom_instructions:
-        cap_parts.append(("Owner's note for this compaction", secretscan.redact(custom_instructions.strip()).splitlines()))
-    pointer = f"- (more in the full checkpoint: {full_path})"
-    read_line = (f"Read the full checkpoint file before anything else: {full_path} "
-                 "(some standing rules are only in that file).")
-    for with_read in (False, True):
-        head = [header] + ([read_line] if with_read else [])
-        parts = [(title, [pointer] if lines else []) for title, lines in cap_parts]
-        rules_block = pointer
-        kept_now = fit(now_lines, max(0, budget - len(render(parts)) - 1), None)
-        if kept_now:
-            head.append("\n".join(kept_now))
-        room = max(0, budget - len(render([], False)))
-        for i, share in enumerate((0.35 if anvil_lines else 0.45, 0.10, 0.25)):
-            title, lines = cap_parts[i]
-            if lines:
-                cap = max(len(pointer), int(room * share))
-                cap = min(cap, len(pointer) + max(0, budget - len(render(parts))))
-                parts[i] = (title, fit(lines, cap, pointer))
-        kept_rules = fit(rule_lines, len(pointer) + max(0, budget - len(render(parts))), pointer)
-        rules_block = "\n".join(kept_rules)
-        if not with_read and (kept_now != now_lines or kept_rules != rule_lines):
-            continue
-        for i in range(3, len(cap_parts)):
-            title, lines = cap_parts[i]
-            if lines:
-                parts[i] = (title, fit(lines, len(pointer) + max(0, budget - len(render(parts))), pointer))
-        break
-    capped = render(parts)
+    full = secretscan.redact(render(full_parts))
+    budget = min(CAP_CHARS, int(cap_tokens * CHARS_PER_TOKEN)) - len(RECALL_LINE)
+    parts = full_parts
+    if len(full) <= budget:
+        capped = full
+    else:
+        foot = []  # SessionStart already appends the recall line; the Read line names the full file.
+        parts = [(title, []) for title, _ in full_parts]
+        pointer = "- (more in the full checkpoint above)"
+
+        def allocate(i, cap):
+            title, lines = full_parts[i]
+
+            def size(kept):
+                parts[i] = (title, kept)
+                return len(render(parts))
+
+            parts[i] = (title, fit(lines, cap, pointer, size))
+
+        allocate(0, budget)  # the owner's note for this compaction, then Now, before any optional section
+        allocate(1, budget)
+        room = max(0, budget - len(render(parts)))
+        for i, share in ((2, 0.35 if anvil_lines else 0.45), (4, 0.10), (5, 0.25)):
+            allocate(i, min(budget, len(render(parts)) + int(room * share)))
+        for i in (3, 2, 5, 4, 6, 7):  # rules, then backfill reservations before decisions/files
+            allocate(i, budget)
+        capped = render(parts)
     rest_tokens = est_tokens(render(parts, False))
 
     meta = {"session": session, "name": session_name(s),
@@ -702,7 +699,7 @@ def write(inp, deadline=JEV_DEADLINE, source=None, s=None):
                                now=transitions.prepare(inp, s), source=source)
     md, fullp, metap = paths_for(session)
     md.parent.mkdir(parents=True, exist_ok=True)
-    for p, text in ((md, capped), (fullp, secretscan.redact(full))):
+    for p, text in ((md, capped), (fullp, full)):
         tmp = p.with_suffix(p.suffix + ".tmp")
         tmp.write_text(text)
         tmp.replace(p)
@@ -748,6 +745,6 @@ def main(args):
     if "--until-line" in args:
         until = int(args[args.index("--until-line") + 1])
     capped, full, meta = build(args[1], until_line=until)
-    print(secretscan.redact(full) if "--full" in args else capped)
+    print(full if "--full" in args else capped)
     if "--meta" in args:
         print(json.dumps(meta), file=sys.stderr)

@@ -219,6 +219,34 @@ R.on_stop({"session_id": "sess-1", "transcript_path": str(tp)})
 assert len(R.load("sess-1")) == n1
 
 
+# ---- A fitting checkpoint stays whole, including jobs beyond the running-work reservation ----
+with patch.object(R, "sync", return_value={}), \
+        patch.object(R, "section", return_value=("## Standing instructions\n- Keep all job IDs.", {})), \
+        patch.object(C, "find_tasks_files", return_value=[]), \
+        patch.object(C, "anvil_claimed", return_value=[]) as anvil:
+    jobs = C.scan("/nonexistent")
+    jobs["bg"] = {f"job{i:02d}": {"kind": "bash", "desc": "monitor this long running task " * 4, "started": None}
+                  for i in range(20)}
+    jobs_capped, jobs_full, _ = C.build("/nonexistent", session="jobs", s=jobs)
+    assert jobs_capped == jobs_full
+    assert all(job in jobs_capped for job in jobs["bg"])
+    assert "Read the full checkpoint" not in jobs_capped
+
+    # A five-line Now that fits with all sections is never displaced by provisional pointers.
+    jobs["bg"] = {"job00": jobs["bg"]["job00"]}
+    jobs["todos"] = [{"content": "ship the parser", "status": "pending"}]
+    jobs["asks"] = [{"ts": None, "text": "Use the new schema."}]
+    jobs["files"]["parser.py"] = None
+    anvil.return_value = ["- ANV-1 verify parser"]
+    _, base, _ = C.build("/nonexistent", session="five-lines", s=jobs)
+    line_width = (C.CAP_CHARS - len(base) - len(C.RECALL_LINE) - 200) // 4
+    five_lines = "## Now\n" + "\n".join(f"- step {i}: " + "x" * line_width for i in range(4))
+    now_capped, now_full, _ = C.build("/nonexistent", session="five-lines", s=jobs, now=five_lines)
+    assert len(now_full) + len(C.RECALL_LINE) <= C.CAP_CHARS
+    assert five_lines in now_capped and now_capped == now_full
+    assert "Read the full checkpoint" not in now_capped
+
+
 # ---- hooks: PreCompact writes (redacted), SessionStart(compact) re-injects; other sources don't ----
 def run_hook(event, inp):
     out = io.StringIO()
@@ -249,20 +277,17 @@ assert run_hook("SessionStart", {"session_id": "sess-1", "transcript_path": str(
 out = json.loads(run_hook("SessionStart", {"session_id": "other", "transcript_path": str(tp), "source": "compact"}))
 assert "Never push to main." in out["hookSpecificOutput"]["additionalContext"]
 
-# ---- SessionStart budgets the checkpoint and health notice together, checkpoint first ----
-notice = "MCP health status\n" + "\n".join(f"- server {i}: " + "unavailable; " * 7 for i in range(100))
-notice += "\nSee `tokenmaxxing mcp`"
-for checkpoint_text in (injected2, None):
-    with patch.object(health, "session_start", return_value=notice), \
-            patch.object(transitions, "on_start", return_value=checkpoint_text):
-        out = json.loads(run_hook("SessionStart", {"session_id": "sess-2", "source": "compact"}))
-    ctx = out["hookSpecificOutput"]["additionalContext"]
-    assert len(ctx) <= C.CAP_CHARS, len(ctx)
-    if checkpoint_text:
-        assert ctx.startswith(checkpoint_text)
-    else:
-        assert "(more: `tokenmaxxing mcp`)" in ctx
-        assert all(line in notice.splitlines() for line in ctx.splitlines()[:-1])
+# ---- A full checkpoint cannot silently consume a one-shot MCP health notice ----
+notice = "tokenmaxxing: MCP servers " + ", ".join(f"server{i} (+100 tokens every request)" for i in range(9))
+notice += ". Show the user `tokenmaxxing mcp`."
+checkpoint_text = injected2 + "\n" + "x" * (C.CAP_CHARS - len(injected2) - 2)
+with patch.object(health, "session_start", return_value=notice), \
+        patch.object(transitions, "on_start", return_value=checkpoint_text):
+    out = json.loads(run_hook("SessionStart", {"session_id": "sess-2", "source": "compact"}))
+ctx = out["hookSpecificOutput"]["additionalContext"]
+assert len(ctx) <= C.CAP_CHARS, len(ctx)
+assert now2 in ctx
+assert "MCP health notice left out" in ctx and "`tokenmaxxing mcp`" in ctx
 
 # ---- Redaction can grow short secrets: fit what write saves and SessionStart actually injects ----
 secret = "aB3dE5fG7hI9jK1m"
