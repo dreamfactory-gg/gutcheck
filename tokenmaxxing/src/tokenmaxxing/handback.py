@@ -1,5 +1,6 @@
-"""Hand-back reports: the brief asks for the verdict and everything the parent must act on first, and supporting
-material under a `## Details` heading. The parent gets the part before that heading (at most 3,000 chars) plus the
+"""Hand-back reports: each new subagent is told (SubagentStart context, never a rewrite of the Agent call, which auto
+mode refuses) to put the verdict and everything the parent must act on first, and supporting material under a
+`## Details` heading. The parent gets the part before that heading (at most 3,000 chars) plus the
 path of the whole report, saved like a trimmed output. A report rides every later call of the parent, so its size
 is paid on each of them. A report with no Details heading passes whole; nothing is ever refused.
 
@@ -24,13 +25,14 @@ def _mode():
 
 
 def brief(inp):
-    """PreToolUse Agent: the tool input with the report shape appended to the brief, or None."""
-    ti = inp.get("tool_input") or {}
+    """SubagentStart: the report shape as the new agent's context, or None. Never a rewrite of the Agent call:
+    auto mode refuses a call whose input a hook changed."""
     mode = _mode()
-    if mode == "off" or not isinstance(ti.get("prompt"), str):
+    if mode == "off":
         return None
-    log("handback", {"session": inp.get("session_id"), "decision": "brief", "mode": mode})
-    return {**ti, "prompt": f"{ti['prompt']}\n\n{SHAPE}"} if mode == "on" else None
+    log("handback", {"session": inp.get("session_id"), "agent": inp.get("agent_id"), "decision": "brief",
+                     "mode": mode})
+    return SHAPE if mode == "on" else None
 
 
 def _details_at(text):

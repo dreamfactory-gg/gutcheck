@@ -127,8 +127,8 @@ def context_tokens(transcript_path, max_bytes=2_000_000):
 
 def pre_agent(inp):
     """Fork guard: a fork copies the whole context every turn; above ~50k, a fresh agent with a brief is cheaper.
-    Otherwise the brief gets the hand-back report shape (handback.py), plus the recall dedup note for a fresh agent."""
-    from . import handback
+    Otherwise the recall dedup note for a fresh agent. The call itself is never rewritten: auto mode refuses a call a
+    hook changed, so the hand-back report shape reaches the agent at SubagentStart."""
     ti = inp.get("tool_input") or {}
     if ti.get("subagent_type") == "fork":
         n = context_tokens(inp.get("transcript_path") or "")
@@ -140,16 +140,11 @@ def pre_agent(inp):
                                              f"tokenmaxxing fork guard: a fork would copy ~{n // 1000}k tokens of "
                                              f"context on every turn; brief a fresh agent instead (small "
                                              f"self-contained brief, absolute paths)."}})
-            return
-        out = {"hookEventName": "PreToolUse"}
-    else:
-        from . import recall
-        out = (_safe("dedup", recall.on_launch, inp) or {}).get("hookSpecificOutput") or {"hookEventName": "PreToolUse"}
-    brief = _safe("handback brief", handback.brief, inp)
-    if brief:
-        out["updatedInput"] = brief
-    if len(out) > 1:
-        emit({"hookSpecificOutput": out})
+        return
+    from . import recall
+    out = _safe("dedup", recall.on_launch, inp)
+    if out:
+        emit(out)
 
 
 def studio_nudge(inp):
@@ -546,12 +541,15 @@ def compact_log(inp):
 
 
 def subagent_start(inp):
-    """A replacement agent starts from its retired predecessor's handoff note (soldier.py)."""
-    from . import soldier
-    ctx = _safe("soldier note in", soldier.start_context, inp)
-    if ctx:
+    """A new agent gets the hand-back report shape (handback.py); a replacement also starts from its retired
+    predecessor's handoff note (soldier.py)."""
+    from . import handback, soldier
+    note = _safe("soldier note in", soldier.start_context, inp)
+    if note:
         log("soldier", {"session": inp.get("session_id"), "agent": inp.get("agent_id"),
-                        "agent_type": inp.get("agent_type"), "note_in": len(ctx)})
+                        "agent_type": inp.get("agent_type"), "note_in": len(note)})
+    ctx = "\n\n".join(x for x in (_safe("handback brief", handback.brief, inp), note) if x)
+    if ctx:
         emit({"hookSpecificOutput": {"hookEventName": "SubagentStart", "additionalContext": ctx}})
 
 
